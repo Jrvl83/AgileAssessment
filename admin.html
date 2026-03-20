@@ -146,12 +146,29 @@ const DIMS = [
   { key:'transparencia', label:'Transparencia',   max:9,  color:'#7c3aed', field:'Score Transparencia' }
 ];
 
-const REC_MAP = {
-  eventos:       'Fortalecer las ceremonias: asegurar timebox, propósito claro y Sprint Goal que guíe cada decisión del Sprint.',
-  backlog:       'Invertir en refinamiento: el PO debe ordenar por valor y garantizar criterios de aceptación antes de cada Sprint.',
-  devteam:       'Trabajar en autoorganización y DoD: el equipo debe comprometerse con un Increment usable al final de cada Sprint.',
-  transparencia: 'Mejorar la visibilidad: tablero actualizado en tiempo real y Retros con compromisos medibles y rastreables.'
+const RECS = {
+  eventos: [
+    "Las ceremonias no se realizan de forma consistente. Establecer el ritmo básico: Sprint Planning con Goal claro, Daily de 15 minutos orientado al objetivo y Sprint Review con stakeholders reales. Sin eventos regulares no hay empirismo posible.",
+    "Las ceremonias ocurren pero sin el propósito correcto. Trabajar en la calidad del Sprint Goal — debe ser retador y guiar cada decisión del Sprint. El Daily debe adaptarse al plan, no ser un reporte de estado.",
+    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint."
+  ],
+  backlog: [
+    "El Product Backlog no cumple su función. Definir un Product Goal claro y ordenar los ítems por valor de negocio. Sin priorización real el equipo no puede decidir qué construir primero.",
+    "El backlog existe pero la priorización no refleja valor real. Invertir en refinamiento regular donde el PO trabaje con el equipo para definir criterios de aceptación antes de cada Sprint Planning.",
+    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento."
+  ],
+  devteam: [
+    "El equipo no se autoorganiza y depende de asignación externa. Establecer una Definition of Done y empoderar al equipo para que decida cómo lograr el Sprint Goal sin dirección externa.",
+    "Hay autoorganización parcial con dependencias frecuentes. Mapear las dependencias externas y planificar cómo internalizar esas habilidades para entregar valor completo.",
+    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable."
+  ],
+  transparencia: [
+    "La transparencia es muy baja. Empezar con un Scrum Board visible y actualizado en tiempo real. Sin visibilidad compartida no es posible inspeccionar ni adaptar el proceso.",
+    "Hay visibilidad parcial pero los impedimentos no fluyen bien. Trabajar en identificar y escalar impedimentos rápidamente, y en que la Retro genere compromisos concretos y medibles.",
+    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos."
+  ]
 };
+function getRec(dim, pct) { return RECS[dim][pct <= 33 ? 0 : pct <= 66 ? 1 : 2]; }
 
 // ── State ────────────────────────────────────────────────────────
 let authenticated = sessionStorage.getItem('adminAuth') === 'true';
@@ -386,7 +403,7 @@ function renderAnalysis() {
           ? lowDims.map(d => `
               <div class="rec-item">
                 <div class="rec-dot" style="background:${d.color}"></div>
-                <div class="rec-text"><strong>${d.label}:</strong> ${REC_MAP[d.key]}</div>
+                <div class="rec-text"><strong>${d.label}:</strong> ${getRec(d.key, s.avgDims[d.key].pct)}</div>
               </div>`).join('')
           : `<div class="rec-item">
                <div class="rec-dot" style="background:#0d7a52"></div>

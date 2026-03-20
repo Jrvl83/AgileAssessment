@@ -482,6 +482,30 @@ const LEVELS = [
 
 const DIM_COLORS = { eventos:"#1a4fd6", backlog:"#0d7a52", devteam:"#a05c0a", transparencia:"#7c3aed" };
 
+const RECS = {
+  eventos: [
+    "Las ceremonias no se realizan de forma consistente. Comenzar por establecer el ritmo básico: Sprint Planning con Goal claro, Daily de 15 minutos orientado al objetivo y Sprint Review con stakeholders reales. Sin eventos regulares no hay empirismo posible.",
+    "Las ceremonias ocurren pero sin el propósito correcto. Trabajar en la calidad del Sprint Goal — debe ser retador, concreto y guiar cada decisión del Sprint. El Daily debe usarse para adaptar el plan, no como reporte de estado.",
+    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint."
+  ],
+  backlog: [
+    "El Product Backlog no cumple su función. Definir un Product Goal claro y ordenar los ítems por valor de negocio. Sin priorización real el equipo no puede decidir qué construir primero.",
+    "El backlog existe pero la priorización no refleja valor real. Invertir en refinamiento regular donde el PO trabaje con el equipo para definir criterios de aceptación antes de cada Sprint Planning.",
+    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento."
+  ],
+  devteam: [
+    "El equipo no se autoorganiza y depende de asignación externa. Establecer una Definition of Done y comenzar a empoderar al equipo para que decida cómo lograr el Sprint Goal sin dirección externa.",
+    "Hay autoorganización parcial con dependencias frecuentes. Mapear las dependencias externas y planificar cómo internalizar esas habilidades para que el equipo pueda entregar valor completo.",
+    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable."
+  ],
+  transparencia: [
+    "La transparencia es muy baja. Empezar con un Scrum Board visible y actualizado en tiempo real. Sin visibilidad compartida no es posible inspeccionar ni adaptar el proceso.",
+    "Hay visibilidad parcial pero los impedimentos no fluyen bien. Trabajar en identificar y escalar impedimentos rápidamente, y en que la Retro genere compromisos concretos y medibles.",
+    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos."
+  ]
+};
+function getRec(dim, pct) { return RECS[dim][pct <= 33 ? 0 : pct <= 66 ? 1 : 2]; }
+
 let screen = "intro"; // intro | section | results
 let currentSection = 0;
 let answers = {};
@@ -660,17 +684,11 @@ function renderResults() {
     </div>`).join('');
 
   const lowDims = Object.entries(dims).filter(([,v])=>v.pct<70).sort((a,b)=>a[1].pct-b[1].pct);
-  const recMap = {
-    eventos:"Fortalecer las ceremonias: asegurar que cada evento tenga timebox, propósito claro y Sprint Goal que guíe el Sprint.",
-    backlog:"Invertir en refinamiento: el PO debe ordenar por valor y garantizar criterios de aceptación antes de cada Sprint.",
-    devteam:"Trabajar en autoorganización y DoD: el equipo debe comprometerse con un Increment usable al final de cada Sprint.",
-    transparencia:"Mejorar la visibilidad: tablero actualizado en tiempo real y Retros con compromisos medibles y rastreables."
-  };
   const recs = lowDims.length ? lowDims.slice(0,3).map(([id,v])=>`
     <div class="rec">
       <div class="rec-dot" style="background:${DIM_COLORS[id]}"></div>
-      <div class="rec-body"><strong>${v.name}</strong>${recMap[id]}</div>
-    </div>`) : [`<div class="rec"><div class="rec-dot" style="background:#0d7a52"></div><div class="rec-body"><strong>Excelente nivel</strong>Experimentá con métricas de flujo avanzadas (cycle time, throughput) y OKRs ágiles para el siguiente nivel.</div></div>`];
+      <div class="rec-body"><strong>${v.name}</strong>${getRec(id, v.pct)}</div>
+    </div>`) : [`<div class="rec"><div class="rec-dot" style="background:#0d7a52"></div><div class="rec-body"><strong>Excelente nivel</strong>Experimentar con métricas de flujo avanzadas (cycle time, throughput) y OKRs ágiles para el siguiente nivel.</div></div>`];
 
   return `
     <div class="results-header">
