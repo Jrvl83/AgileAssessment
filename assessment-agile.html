@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assessment de Madurez Agile</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117;
+    --ink-muted: #5a5f72;
+    --ink-faint: #9198aa;
+    --surface: #fafaf8;
+    --surface-2: #f2f1ed;
+    --surface-3: #e8e7e1;
+    --accent: #1a4fd6;
+    --accent-light: #dce6ff;
+    --accent-dark: #0f35a0;
+    --green: #0d7a52;
+    --green-light: #d4f0e5;
+    --amber: #a05c0a;
+    --amber-light: #fdefd6;
+    --red: #c0282a;
+    --red-light: #fce8e8;
+    --border: #dddbd4;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .shell {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* Header */
+  .header {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header-eyebrow {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(28px, 5vw, 44px);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .header p {
+    font-size: 16px;
+    color: var(--ink-muted);
+    max-width: 520px;
+    line-height: 1.65;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    margin-bottom: 36px;
+  }
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .progress-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+  }
+  .progress-count {
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+  .progress-track {
+    height: 3px;
+    background: var(--surface-3);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Section */
+  .section-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 4px 10px;
+    border-radius: 99px;
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .section-desc {
+    font-size: 14px;
+    color: var(--ink-muted);
+    margin-bottom: 28px;
+  }
+  .role-tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-left: 8px;
+  }
+
+  /* Question */
+  .question {
+    margin-bottom: 24px;
+  }
+  .question-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .question-num {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-right: 6px;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    text-align: left;
+    width: 100%;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .option:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+    transform: translateX(2px);
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+  .option-score {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .option.selected .option-score {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .option-label {
+    font-size: 14px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  /* Nav */
+  .nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+  .btn {
+    padding: 11px 22px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: white;
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--surface-2); border-color: var(--ink-faint); }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    margin-left: auto;
+  }
+  .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn:disabled:hover { background: white; border-color: var(--border); }
+
+  /* Results */
+  .results-header {
+    margin-bottom: 36px;
+  }
+  .results-header h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .results-header p { font-size: 15px; color: var(--ink-muted); }
+
+  .score-banner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    margin-bottom: 28px;
+  }
+  .score-ring {
+    width: 80px;
+    height: 80px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .score-ring svg { width: 80px; height: 80px; transform: rotate(-90deg); }
+  .score-ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .score-ring-num { font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1; }
+  .score-ring-pct { font-size: 11px; color: var(--ink-faint); }
+  .score-info { flex: 1; }
+  .score-level {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 99px;
+    margin-bottom: 8px;
+  }
+  .score-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.55; }
+
+  .dims-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  @media(max-width: 500px) { .dims-grid { grid-template-columns: 1fr; } }
+  .dim-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+  }
+  .dim-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
+  .dim-track { height: 4px; background: var(--surface-2); border-radius: 99px; margin-bottom: 6px; overflow: hidden; }
+  .dim-fill { height: 100%; border-radius: 99px; }
+  .dim-meta { font-size: 12px; color: var(--ink-faint); }
+
+  .recs-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 14px;
+  }
+  .rec {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rec:last-child { border-bottom: none; }
+  .rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+  .rec-body { font-size: 14px; color: var(--ink); line-height: 1.55; }
+  .rec-body strong { font-weight: 600; display: block; margin-bottom: 2px; }
+
+  .result-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  /* Intro screen */
+  .intro { padding: 8px 0; }
+  .intro-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 28px 0;
+  }
+  @media(max-width:500px){ .intro-cards { grid-template-columns: 1fr; } }
+  .intro-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px 18px;
+  }
+  .intro-card-icon { font-size: 20px; margin-bottom: 8px; }
+  .intro-card-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+  .intro-card-desc { font-size: 13px; color: var(--ink-muted); }
+
+  .role-select { margin-bottom: 0; }
+  .role-select label { font-size: 15px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 10px; }
+  .role-opts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .role-btn {
+    padding: 9px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 99px;
+    background: white;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .role-btn:hover, .role-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); }
+
+  .fade-in { animation: fadeUp 0.35s ease both; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="header-eyebrow">Scrum Guide Standard</div>
+    <h1>Assessment de<br>Madurez Agile</h1>
+    <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 14 preguntas · ~8 minutos.</p>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+const SECTIONS = [
+  {
+    id:"eventos", tag:"Sección 1 de 4", title:"Ceremonias y ritmo del equipo",
+    desc:"Cómo el equipo vive los eventos definidos en la Scrum Guide", role:"PO + Dev Team",
+    questions:[
+      { text:"¿Con qué frecuencia se realiza la Sprint Planning y genera un Sprint Goal claro?",
+        opts:["Nunca o rara vez","A veces, pero el Goal es vago","Casi siempre con Goal definido","Siempre; el Goal guía cada decisión del Sprint"] },
+      { text:"¿El Daily Scrum se usa para inspeccionar el progreso hacia el Sprint Goal y adaptar el plan?",
+        opts:["No hacemos Daily o es un reporte de estado","Hacemos Daily pero sin foco en el Goal","Mayormente nos enfocamos en el Goal","El Daily es una herramienta real de adaptación diaria"] },
+      { text:"¿La Sprint Review involucra a stakeholders reales y genera feedback accionable?",
+        opts:["No hacemos Review o es solo interna","Hay stakeholders pero el feedback no se incorpora","A veces logramos feedback útil","Siempre; los stakeholders influyen el Product Backlog"] },
+      { text:"¿La Retrospectiva produce mejoras concretas que se implementan en el siguiente Sprint?",
+        opts:["No hacemos Retro","Hacemos Retro pero sin compromisos concretos","Definimos mejoras pero pocas se implementan","Las mejoras se rastrean y se implementan sistemáticamente"] }
+    ]
+  },
+  {
+    id:"backlog", tag:"Sección 2 de 4", title:"Gestión del Product Backlog",
+    desc:"Evaluación desde la perspectiva del Product Owner", role:"Product Owner",
+    questions:[
+      { text:"¿El Product Backlog está ordenado por valor y refleja las necesidades reales de los usuarios?",
+        opts:["No está ordenado o no existe claro","Está ordenado por esfuerzo o cronología","Ordenado parcialmente por valor","Ordenado por valor, revisado continuamente con stakeholders"] },
+      { text:"¿Los ítems del backlog tienen criterios de aceptación claros antes de entrar al Sprint?",
+        opts:["Rara vez tienen criterios","Algunos tienen criterios básicos","La mayoría tiene criterios antes del Sprint","Todos tienen criterios claros y el equipo los revisó"] },
+      { text:"¿El Product Goal está definido y el equipo lo conoce?",
+        opts:["No existe Product Goal formal","Existe pero pocos en el equipo lo conocen","El equipo lo conoce pero no lo usa para tomar decisiones","El Product Goal guía el refinamiento y priorización"] }
+    ]
+  },
+  {
+    id:"devteam", tag:"Sección 3 de 4", title:"Autoorganización y entrega",
+    desc:"Capacidades técnicas y de autogestión del equipo de desarrollo", role:"Dev Team",
+    questions:[
+      { text:"¿El equipo se autoorganiza para lograr el Sprint Goal sin necesitar asignación externa de tareas?",
+        opts:["El líder o PM asigna todas las tareas","Hay algo de autoorganización pero con dependencia externa","El equipo mayormente se organiza solo","Plena autoorganización; el equipo decide cómo lograr el Goal"] },
+      { text:"¿El Increment al final de cada Sprint cumple la Definition of Done y está potencialmente entregable?",
+        opts:["No tenemos Definition of Done","Tenemos DoD pero rara vez se cumple","Se cumple en la mayoría de Sprints","Siempre; cada Sprint produce un Increment usable"] },
+      { text:"¿El equipo tiene las habilidades necesarias para entregar valor completo (cross-functional)?",
+        opts:["Hay muchas dependencias externas para completar ítems","Dependencias frecuentes en algunas áreas","Mayormente autónomo, pocas dependencias","Totalmente cross-functional; entrega completa sin externos"] },
+      { text:"¿Qué tan bien maneja el equipo el WIP (work in progress) para evitar cuellos de botella?",
+        opts:["Sin límite de WIP; varios ítems empezados y sin terminar","El WIP crece sin control en cada Sprint","Hay cierta conciencia pero sin límites formales","Limitamos WIP activamente para maximizar el flujo"] }
+    ]
+  },
+  {
+    id:"transparencia", tag:"Sección 4 de 4", title:"Transparencia, inspección y adaptación",
+    desc:"Adhesión a los pilares empíricos del proceso", role:"PO + Dev Team",
+    questions:[
+      { text:"¿El equipo y stakeholders tienen visibilidad real del progreso y los impedimentos?",
+        opts:["La información está fragmentada o desactualizada","Hay visibilidad parcial en algunas áreas","Buena visibilidad, con algunas brechas","Transparencia total; el Scrum Board refleja la realidad"] },
+      { text:"¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?",
+        opts:["El plan no cambia una vez iniciado el Sprint","Adaptaciones mínimas, generalmente al final","Adaptaciones frecuentes con base en la evidencia","Inspección y adaptación continua; el plan es una guía viva"] },
+      { text:"¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?",
+        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"] }
+    ]
+  }
+];
+
+const LEVELS = [
+  { max:40, label:"Inicial", color:"#c0282a", bg:"#fce8e8", desc:"El equipo conoce Scrum en teoría pero la práctica es inconsistente. Alta dependencia de procesos externos." },
+  { max:65, label:"En desarrollo", color:"#a05c0a", bg:"#fdefd6", desc:"Adopción parcial de Scrum. Los eventos ocurren pero el valor generado aún no se optimiza." },
+  { max:82, label:"Maduro", color:"#1a4fd6", bg:"#dce6ff", desc:"Scrum está bien incorporado. El equipo entrega valor consistentemente y mejora de forma continua." },
+  { max:100, label:"Avanzado", color:"#0d7a52", bg:"#d4f0e5", desc:"Equipo de alto rendimiento ágil. El empirismo guía cada decisión; la mejora continua es parte del ADN." }
+];
+
+const DIM_COLORS = { eventos:"#1a4fd6", backlog:"#0d7a52", devteam:"#a05c0a", transparencia:"#7c3aed" };
+
+let screen = "intro"; // intro | section | results
+let currentSection = 0;
+let answers = {};
+let role = "";
+
+function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length-1]; }
+
+function calcResults() {
+  let total=0, max=0;
+  const dims = {};
+  SECTIONS.forEach(sec => {
+    let s=0, m=sec.questions.length*3;
+    sec.questions.forEach((q,qi)=>{ s += (answers[sec.id+"_"+qi]||0); });
+    dims[sec.id]={ score:s, max:m, pct:Math.round(s/m*100), name:sec.title };
+    total+=s; max+=m;
+  });
+  return { total, max, pct:Math.round(total/max*100), dims };
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if(screen==='intro') app.innerHTML = renderIntro();
+  else if(screen==='section') app.innerHTML = renderSection();
+  else app.innerHTML = renderResults();
+  app.classList.remove('fade-in');
+  void app.offsetWidth;
+  app.classList.add('fade-in');
+}
+
+function renderIntro() {
+  return `
+    <div class="intro">
+      <div class="intro-cards">
+        <div class="intro-card"><div class="intro-card-icon">📋</div><div class="intro-card-title">14 preguntas</div><div class="intro-card-desc">4 dimensiones clave de Scrum</div></div>
+        <div class="intro-card"><div class="intro-card-icon">⏱</div><div class="intro-card-title">~8 minutos</div><div class="intro-card-desc">Sin necesidad de cuenta ni login</div></div>
+        <div class="intro-card"><div class="intro-card-icon">📊</div><div class="intro-card-title">Resultado inmediato</div><div class="intro-card-desc">Score por dimensión + recomendaciones</div></div>
+        <div class="intro-card"><div class="intro-card-icon">🔒</div><div class="intro-card-title">100% local</div><div class="intro-card-desc">Nada se envía a ningún servidor</div></div>
+      </div>
+      <div class="role-select">
+        <label>¿Cuál es tu rol en el equipo?</label>
+        <div class="role-opts">
+          ${["Product Owner","Dev Team","Scrum Master","Otro"].map(r=>`<button class="role-btn ${role===r?'selected':''}" onclick="setRole('${r}')">${r}</button>`).join('')}
+        </div>
+        ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
+      </div>
+      <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
+        <button class="btn primary" onclick="startAssessment()" ${!role?'disabled':''}>Comenzar assessment →</button>
+      </div>
+    </div>`;
+}
+
+function renderSection() {
+  const sec = SECTIONS[currentSection];
+  const totalQ = SECTIONS.reduce((a,s)=>a+s.questions.length,0);
+  const answered = Object.keys(answers).length;
+  const pct = Math.round(answered/totalQ*100);
+  const secDone = sec.questions.every((_,qi)=>answers[sec.id+"_"+qi]!==undefined);
+  const isLast = currentSection===SECTIONS.length-1;
+
+  let qs = sec.questions.map((q,qi)=>{
+    const key = sec.id+"_"+qi;
+    const sel = answers[key];
+    return `<div class="question">
+      <div class="question-text"><span class="question-num">P${qi+1}</span>${q.text}</div>
+      <div class="options" role="radiogroup" aria-label="${q.text}">
+        ${q.opts.map((opt,oi)=>`
+          <button class="option ${sel===oi?'selected':''}" onclick="pick('${key}',${oi})" role="radio" aria-checked="${sel===oi}">
+            <span class="option-score">${oi+1}</span>
+            <span class="option-label">${opt}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-label">${sec.tag}</span>
+        <span class="progress-count">${answered}/${totalQ} respondidas</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+    <div class="section-chip">${sec.tag}<span class="role-tag">${sec.role}</span></div>
+    <div class="section-title">${sec.title}</div>
+    <div class="section-desc">${sec.desc}</div>
+    ${qs}
+    <div class="nav">
+      ${currentSection>0?`<button class="btn" onclick="prev()">← Anterior</button>`:''}
+      <button class="btn primary" onclick="${isLast?'showResults()':'next()'}" ${!secDone?'disabled':''}>
+        ${isLast?'Ver resultados →':'Siguiente →'}
+      </button>
+    </div>`;
+}
+
+function renderResults() {
+  const { pct, dims, total, max } = calcResults();
+  const level = getLevel(pct);
+  const circumference = 2*Math.PI*34;
+  const dash = circumference*(pct/100);
+
+  const dimCards = Object.entries(dims).map(([id,v])=>`
+    <div class="dim-card">
+      <div class="dim-name">${v.name}</div>
+      <div class="dim-track"><div class="dim-fill" style="width:${v.pct}%;background:${DIM_COLORS[id]};"></div></div>
+      <div class="dim-meta">${v.pct}% · ${v.score}/${v.max} pts</div>
+    </div>`).join('');
+
+  const lowDims = Object.entries(dims).filter(([,v])=>v.pct<70).sort((a,b)=>a[1].pct-b[1].pct);
+  const recMap = {
+    eventos:"Fortalecer las ceremonias: asegurar que cada evento tenga timebox, propósito claro y Sprint Goal que guíe el Sprint.",
+    backlog:"Invertir en refinamiento: el PO debe ordenar por valor y garantizar criterios de aceptación antes de cada Sprint.",
+    devteam:"Trabajar en autoorganización y DoD: el equipo debe comprometerse con un Increment usable al final de cada Sprint.",
+    transparencia:"Mejorar la visibilidad: tablero actualizado en tiempo real y Retros con compromisos medibles y rastreables."
+  };
+  const recs = lowDims.length ? lowDims.slice(0,3).map(([id,v])=>`
+    <div class="rec">
+      <div class="rec-dot" style="background:${DIM_COLORS[id]}"></div>
+      <div class="rec-body"><strong>${v.name}</strong>${recMap[id]}</div>
+    </div>`) : [`<div class="rec"><div class="rec-dot" style="background:#0d7a52"></div><div class="rec-body"><strong>Excelente nivel</strong>Experimentá con métricas de flujo avanzadas (cycle time, throughput) y OKRs ágiles para el siguiente nivel.</div></div>`];
+
+  return `
+    <div class="results-header">
+      <h2>Resultados</h2>
+      <p>Assessment completado · Rol: <strong>${role}</strong></p>
+    </div>
+    <div class="score-banner">
+      <div class="score-ring">
+        <svg viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e7e1" stroke-width="6"/>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="${level.color}" stroke-width="6"
+            stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"/>
+        </svg>
+        <div class="score-ring-label">
+          <div class="score-ring-num">${pct}%</div>
+          <div class="score-ring-pct">${total}/${max}</div>
+        </div>
+      </div>
+      <div class="score-info">
+        <div class="score-level" style="background:${level.bg};color:${level.color}">${level.label}</div>
+        <div class="score-desc">${level.desc}</div>
+      </div>
+    </div>
+    <div class="dims-grid">${dimCards}</div>
+    <div class="recs-title">Próximos pasos recomendados</div>
+    ${recs.join('')}
+    <div class="result-nav">
+      <button class="btn" onclick="restart()">← Reiniciar</button>
+      <button class="btn" onclick="copyResults()">Copiar resultados</button>
+    </div>`;
+}
+
+function setRole(r) { role=r; render(); }
+function startAssessment() { if(role){ screen='section'; currentSection=0; render(); } }
+function pick(key,val) { answers[key]=val; render(); }
+function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function showResults() { screen='results'; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+function restart() { screen='intro'; currentSection=0; answers={}; role=''; render(); }
+function fallbackCopy(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  alert('Resultados copiados al portapapeles');
+}
+function copyResults() {
+  const {pct,dims} = calcResults();
+  const level = getLevel(pct);
+  let txt = `Assessment de Madurez Agile — ${role}\nNivel: ${level.label} (${pct}%)\n\n`;
+  Object.values(dims).forEach(d=>{ txt+=`${d.name}: ${d.pct}%\n`; });
+  if(navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(()=>alert('Resultados copiados al portapapeles')).catch(()=>fallbackCopy(txt));
+  } else { fallbackCopy(txt); }
+}
+
+render();
+</script>
+</body>
+</html>
