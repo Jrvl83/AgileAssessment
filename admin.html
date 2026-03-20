@@ -13,15 +13,25 @@
     --green: #0d7a52; --green-light: #d4f0e5;
     --amber: #a05c0a; --amber-light: #fdefd6;
     --red: #c0282a; --red-light: #fce8e8;
+    --purple: #7c3aed; --purple-light: #ede9fe;
     --border: #dddbd4; --radius: 12px; --radius-sm: 8px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.6; }
-  .shell { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
-  .header { padding: 48px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+  .shell { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
   .header-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
   .header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(24px, 4vw, 36px); line-height: 1.1; margin-bottom: 8px; }
   .header p { font-size: 15px; color: var(--ink-muted); }
+
+  /* Tabs */
+  .tab-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; border-bottom: 2px solid var(--border); }
+  .tabs { display: flex; gap: 4px; }
+  .tab { padding: 10px 20px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; background: none; color: var(--ink-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-actions { display: flex; gap: 8px; padding-bottom: 8px; }
 
   /* Login */
   .login-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 32px; max-width: 360px; }
@@ -36,41 +46,68 @@
   .field-input:focus { border-color: var(--accent); }
 
   /* Buttons */
-  .btn { padding: 11px 22px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--ink); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .btn { padding: 11px 22px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500; cursor: pointer; border: 1.5px solid var(--border); background: white; color: var(--ink); font-family: 'DM Sans', sans-serif; transition: all 0.15s; text-decoration: none; display: inline-block; }
   .btn:hover { background: var(--surface-2); border-color: var(--ink-faint); }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
   .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
   .btn.sm { padding: 6px 14px; font-size: 12px; }
   .btn.danger { border-color: var(--red); color: var(--red); }
   .btn.danger:hover { background: var(--red-light); }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-  /* Section */
-  .section-title { font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
-  .section-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 24px; }
-
-  /* Add team form */
-  .add-row { display: flex; gap: 10px; align-items: flex-end; }
-  .add-row .field-group { flex: 1; margin-bottom: 0; }
-
-  /* Teams table */
-  .team-list { display: flex; flex-direction: column; gap: 10px; }
-  .team-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); }
-  .team-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--ink); }
-  .team-count { font-size: 12px; color: var(--ink-faint); background: var(--surface-2); border: 1px solid var(--border); padding: 2px 10px; border-radius: 99px; }
-  .badge-active { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--green-light); color: var(--green); }
-  .badge-inactive { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--surface-3); color: var(--ink-faint); }
-  .team-actions { display: flex; gap: 6px; }
-
-  /* Stats row */
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
-  @media(max-width:500px){ .stats-row { grid-template-columns: 1fr 1fr; } }
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media(max-width:600px){ .stats-row { grid-template-columns: 1fr 1fr; } }
   .stat-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; }
   .stat-num { font-size: 28px; font-weight: 600; color: var(--ink); line-height: 1; margin-bottom: 4px; }
   .stat-label { font-size: 12px; color: var(--ink-faint); }
 
-  .empty-state { text-align: center; padding: 32px; color: var(--ink-faint); font-size: 14px; }
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: white; font-size: 13px; padding: 10px 18px; border-radius: var(--radius-sm); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  /* Section */
+  .section-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .section-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+
+  /* Comparativo */
+  .org-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .org-row:last-child { border-bottom: none; }
+  .org-name { width: 170px; font-size: 13px; font-weight: 500; color: var(--ink); flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .org-bar-wrap { flex: 1; height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .org-bar { height: 100%; border-radius: 99px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .org-pct { font-size: 13px; font-weight: 600; color: var(--ink); width: 42px; text-align: right; flex-shrink: 0; }
+  .org-badge { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 99px; flex-shrink: 0; }
+
+  /* Team cards */
+  .team-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:600px){ .team-grid { grid-template-columns: 1fr; } }
+  .tac { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .tac-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .tac-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .tac-meta { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+  .tac-score { text-align: right; flex-shrink: 0; margin-left: 12px; }
+  .tac-score-num { font-size: 26px; font-weight: 600; line-height: 1; }
+  .tac-level { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; margin-top: 4px; display: inline-block; }
+  .dim-row { margin-bottom: 10px; }
+  .dim-row-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .dim-label { font-size: 12px; color: var(--ink-muted); }
+  .dim-pct-label { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .dim-bar-wrap { height: 4px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .dim-bar { height: 100%; border-radius: 99px; }
+  .recs-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .recs-label { font-size: 11px; font-weight: 600; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .rec-item { display: flex; gap: 8px; margin-bottom: 7px; }
+  .rec-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .rec-text { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* Teams mgmt */
+  .add-row { display: flex; gap: 10px; align-items: flex-end; }
+  .add-row .field-group { flex: 1; margin-bottom: 0; }
+  .team-list { display: flex; flex-direction: column; gap: 10px; }
+  .team-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); }
+  .team-row-name { flex: 1; font-size: 14px; font-weight: 500; color: var(--ink); }
+  .team-count-badge { font-size: 12px; color: var(--ink-faint); background: var(--surface-2); border: 1px solid var(--border); padding: 2px 10px; border-radius: 99px; }
+  .badge-on  { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--green-light); color: var(--green); }
+  .badge-off { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--surface-3); color: var(--ink-faint); }
+
+  .empty-state { text-align: center; padding: 48px 0; color: var(--ink-faint); font-size: 14px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: white; font-size: 13px; padding: 10px 18px; border-radius: var(--radius-sm); opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
   .toast.show { opacity: 1; }
   .fade-in { animation: fadeUp 0.3s ease both; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -81,7 +118,7 @@
   <div class="header">
     <div class="header-eyebrow">Panel de Administración</div>
     <h1>Assessment Agile</h1>
-    <p>Gestión de equipos y seguimiento de respuestas</p>
+    <p>Análisis comparativo de madurez por equipo</p>
   </div>
   <div id="app"></div>
 </div>
@@ -94,36 +131,101 @@ const AIRTABLE_TOKEN = 'patnH2ZIhl6grBT0N.57316def615cb34f5596a2733b3a5ff248c4e6
 const AIRTABLE_BASE  = 'appVwaCg5q6Ab6CWV';
 const TABLE_EQUIPOS    = 'tbl1pq6BuPfillhP7';
 const TABLE_RESPUESTAS = 'tbl8WjOti7jmRqS12';
-// ────────────────────────────────────────────────────────────────
 
+const LEVELS = [
+  { max:40,  label:'Inicial',       color:'#c0282a', bg:'#fce8e8' },
+  { max:65,  label:'En desarrollo', color:'#a05c0a', bg:'#fdefd6' },
+  { max:82,  label:'Maduro',        color:'#1a4fd6', bg:'#dce6ff' },
+  { max:100, label:'Avanzado',      color:'#0d7a52', bg:'#d4f0e5' }
+];
+
+const DIMS = [
+  { key:'eventos',       label:'Ceremonias',     max:12, color:'#1a4fd6', field:'Score Eventos' },
+  { key:'backlog',       label:'Product Backlog', max:9,  color:'#0d7a52', field:'Score Backlog' },
+  { key:'devteam',       label:'Dev Team',        max:12, color:'#a05c0a', field:'Score Dev Team' },
+  { key:'transparencia', label:'Transparencia',   max:9,  color:'#7c3aed', field:'Score Transparencia' }
+];
+
+const REC_MAP = {
+  eventos:       'Fortalecer las ceremonias: asegurar timebox, propósito claro y Sprint Goal que guíe cada decisión del Sprint.',
+  backlog:       'Invertir en refinamiento: el PO debe ordenar por valor y garantizar criterios de aceptación antes de cada Sprint.',
+  devteam:       'Trabajar en autoorganización y DoD: el equipo debe comprometerse con un Increment usable al final de cada Sprint.',
+  transparencia: 'Mejorar la visibilidad: tablero actualizado en tiempo real y Retros con compromisos medibles y rastreables.'
+};
+
+// ── State ────────────────────────────────────────────────────────
 let authenticated = sessionStorage.getItem('adminAuth') === 'true';
+let activeTab = 'analysis';
 let teams = [];
-let totalResponses = 0;
+let responses = [];
+let teamStats = {};
 let loading = false;
 let newTeamName = '';
 
-// ── API helpers ──────────────────────────────────────────────────
-function headers() {
+// ── Helpers ──────────────────────────────────────────────────────
+function hdrs() {
   return { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' };
 }
 
-async function fetchTeams() {
+function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length - 1]; }
+
+function computeStats() {
+  const stats = {};
+  teams.forEach(t => {
+    stats[t.id] = { name: t.name, active: t.active, count: 0, dimSums: {}, totalPct: 0 };
+    DIMS.forEach(d => { stats[t.id].dimSums[d.key] = 0; });
+  });
+
+  responses.forEach(r => {
+    (r.fields.Equipo || []).forEach(tid => {
+      if (!stats[tid]) return;
+      const s = stats[tid];
+      s.count++;
+      DIMS.forEach(d => { s.dimSums[d.key] += r.fields[d.field] || 0; });
+      s.totalPct += r.fields['Score Total %'] || 0;
+    });
+  });
+
+  Object.values(stats).forEach(s => {
+    if (s.count > 0) {
+      s.avgTotal = Math.round(s.totalPct / s.count);
+      s.avgDims = {};
+      DIMS.forEach(d => {
+        const avg = s.dimSums[d.key] / s.count;
+        s.avgDims[d.key] = { score: +avg.toFixed(1), pct: Math.round((avg / d.max) * 100) };
+      });
+      s.level = getLevel(s.avgTotal);
+    }
+  });
+  teamStats = stats;
+}
+
+// ── API ──────────────────────────────────────────────────────────
+async function fetchAllData() {
   loading = true; render();
   try {
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}`
-      + `?sort[0][field]=Nombre&sort[0][direction]=asc`;
-    const res = await fetch(url, { headers: headers() });
-    const data = await res.json();
-    teams = (data.records || []).map(r => ({
-      id: r.id,
-      name: r.fields.Nombre || '',
-      active: r.fields.Activo || false,
-      responses: r.fields.Respuestas ? r.fields.Respuestas.length : 0
+    const tRes  = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}?sort[0][field]=Nombre&sort[0][direction]=asc`,
+      { headers: hdrs() }
+    );
+    const tData = await tRes.json();
+    teams = (tData.records || []).map(r => ({
+      id: r.id, name: r.fields.Nombre || '', active: !!r.fields.Activo
     }));
-    totalResponses = teams.reduce((a, t) => a + t.responses, 0);
-  } catch(e) {
-    toast('Error al conectar con Airtable');
-  }
+
+    let all = [], offset = null;
+    do {
+      const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_RESPUESTAS}?pageSize=100`
+        + (offset ? `&offset=${offset}` : '');
+      const rRes  = await fetch(url, { headers: hdrs() });
+      const rData = await rRes.json();
+      all = all.concat(rData.records || []);
+      offset = rData.offset;
+    } while (offset);
+    responses = all;
+
+    computeStats();
+  } catch(e) { toast('Error al conectar con Airtable'); }
   loading = false; render();
 }
 
@@ -132,57 +234,50 @@ async function addTeam() {
   if (!name) return;
   try {
     const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}`, {
-      method: 'POST',
-      headers: headers(),
+      method: 'POST', headers: hdrs(),
       body: JSON.stringify({ fields: { Nombre: name, Activo: true } })
     });
-    if (res.ok) {
-      newTeamName = '';
-      toast(`Equipo "${name}" creado`);
-      await fetchTeams();
-    } else { toast('Error al crear equipo'); }
+    if (res.ok) { newTeamName = ''; toast(`Equipo "${name}" creado`); await fetchAllData(); }
+    else toast('Error al crear equipo');
   } catch(e) { toast('Error de conexión'); }
 }
 
-async function toggleActive(team) {
+async function toggleActive(id, name, current) {
   try {
-    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}/${team.id}`, {
-      method: 'PATCH',
-      headers: headers(),
-      body: JSON.stringify({ fields: { Activo: !team.active } })
+    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}/${id}`, {
+      method: 'PATCH', headers: hdrs(),
+      body: JSON.stringify({ fields: { Activo: !current } })
     });
-    if (res.ok) {
-      toast(team.active ? `"${team.name}" desactivado` : `"${team.name}" activado`);
-      await fetchTeams();
-    } else { toast('Error al actualizar'); }
+    if (res.ok) { toast(current ? `"${name}" desactivado` : `"${name}" activado`); await fetchAllData(); }
+    else toast('Error al actualizar');
   } catch(e) { toast('Error de conexión'); }
 }
 
-async function deleteTeam(team) {
-  if (!confirm(`¿Eliminar el equipo "${team.name}"? Esta acción no se puede deshacer.`)) return;
+async function deleteTeam(id, name) {
+  if (!confirm(`¿Eliminar el equipo "${name}"? Esta acción no se puede deshacer.`)) return;
   try {
-    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}/${team.id}`, {
-      method: 'DELETE', headers: headers()
+    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}/${id}`, {
+      method: 'DELETE', headers: hdrs()
     });
-    if (res.ok) { toast(`"${team.name}" eliminado`); await fetchTeams(); }
-    else { toast('Error al eliminar'); }
+    if (res.ok) { toast(`"${name}" eliminado`); await fetchAllData(); }
+    else toast('Error al eliminar');
   } catch(e) { toast('Error de conexión'); }
 }
 
-// ── UI ───────────────────────────────────────────────────────────
+// ── Toast ────────────────────────────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2800);
 }
 
+// ── Auth ─────────────────────────────────────────────────────────
 function login() {
   const pw = document.getElementById('pwInput').value;
   if (pw === ADMIN_PASS) {
     authenticated = true;
     sessionStorage.setItem('adminAuth', 'true');
-    render();
-    fetchTeams();
+    render(); fetchAllData();
   } else {
     document.getElementById('loginError').textContent = 'Contraseña incorrecta';
   }
@@ -191,13 +286,14 @@ function login() {
 function logout() {
   authenticated = false;
   sessionStorage.removeItem('adminAuth');
-  teams = []; render();
+  teams = []; responses = []; teamStats = {}; render();
 }
 
+// ── Render ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
   if (!authenticated) { app.innerHTML = renderLogin(); return; }
-  app.innerHTML = renderAdmin();
+  app.innerHTML = renderShell();
   app.classList.remove('fade-in');
   void app.offsetWidth;
   app.classList.add('fade-in');
@@ -214,77 +310,175 @@ function renderLogin() {
           onkeydown="if(event.key==='Enter')login()"/>
       </div>
       <div id="loginError" class="login-error"></div>
-      <div style="margin-top:16px;">
-        <button class="btn primary" onclick="login()">Ingresar →</button>
-      </div>
+      <div style="margin-top:16px;"><button class="btn primary" onclick="login()">Ingresar →</button></div>
     </div>`;
 }
 
-function renderAdmin() {
-  const activeCount = teams.filter(t => t.active).length;
+function renderShell() {
+  return `
+    <div class="tab-bar">
+      <div class="tabs">
+        <button class="tab ${activeTab==='analysis'?'active':''}" onclick="activeTab='analysis';render()">Análisis</button>
+        <button class="tab ${activeTab==='teams'?'active':''}"    onclick="activeTab='teams';render()">Equipos</button>
+      </div>
+      <div class="tab-actions">
+        <button class="btn sm" onclick="fetchAllData()">↺ Actualizar</button>
+        <button class="btn sm danger" onclick="logout()">Cerrar sesión</button>
+      </div>
+    </div>
+    ${activeTab === 'analysis' ? renderAnalysis() : renderTeams()}`;
+}
 
-  const statsHtml = `
+// ── Analysis tab ─────────────────────────────────────────────────
+function renderAnalysis() {
+  if (loading) return `<div class="empty-state">Cargando datos…</div>`;
+
+  const withData = Object.values(teamStats).filter(s => s.count > 0);
+  const orgAvg   = withData.length
+    ? Math.round(withData.reduce((a, s) => a + s.avgTotal, 0) / withData.length) : 0;
+  const orgLevel = withData.length ? getLevel(orgAvg) : null;
+
+  const stats = `
     <div class="stats-row">
-      <div class="stat-card"><div class="stat-num">${teams.length}</div><div class="stat-label">Equipos total</div></div>
-      <div class="stat-card"><div class="stat-num">${activeCount}</div><div class="stat-label">Equipos activos</div></div>
-      <div class="stat-card"><div class="stat-num">${totalResponses}</div><div class="stat-label">Respuestas totales</div></div>
+      <div class="stat-card"><div class="stat-num">${teams.length}</div><div class="stat-label">Equipos</div></div>
+      <div class="stat-card"><div class="stat-num">${responses.length}</div><div class="stat-label">Respuestas</div></div>
+      <div class="stat-card"><div class="stat-num">${withData.length}</div><div class="stat-label">Con datos</div></div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:${orgLevel ? orgLevel.color : 'var(--ink-faint)'}">
+          ${withData.length ? orgAvg + '%' : '—'}
+        </div>
+        <div class="stat-label">Promedio org · ${orgLevel ? orgLevel.label : 'Sin datos'}</div>
+      </div>
     </div>`;
 
-  const addFormHtml = `
+  if (!withData.length) {
+    return stats + `<div class="empty-state" style="border:1.5px solid var(--border);border-radius:var(--radius);background:white;">
+      Aún no hay respuestas. Comparte el assessment con los equipos para ver el análisis aquí.
+    </div>`;
+  }
+
+  const sorted = [...withData].sort((a, b) => b.avgTotal - a.avgTotal);
+
+  const comparison = `
+    <div class="section-card">
+      <div class="section-title">Comparativo organizacional</div>
+      ${sorted.map(s => `
+        <div class="org-row">
+          <div class="org-name" title="${s.name}">${s.name}</div>
+          <div class="org-bar-wrap">
+            <div class="org-bar" style="width:${s.avgTotal}%;background:${s.level.color}"></div>
+          </div>
+          <div class="org-pct">${s.avgTotal}%</div>
+          <span class="org-badge" style="background:${s.level.bg};color:${s.level.color}">${s.level.label}</span>
+        </div>`).join('')}
+    </div>`;
+
+  const cards = `
+    <div class="section-title">Detalle por equipo</div>
+    <div class="team-grid">
+      ${sorted.map(s => {
+        const lowDims = DIMS
+          .filter(d => s.avgDims[d.key].pct < 70)
+          .sort((a, b) => s.avgDims[a.key].pct - s.avgDims[b.key].pct)
+          .slice(0, 2);
+
+        const recs = lowDims.length
+          ? lowDims.map(d => `
+              <div class="rec-item">
+                <div class="rec-dot" style="background:${d.color}"></div>
+                <div class="rec-text"><strong>${d.label}:</strong> ${REC_MAP[d.key]}</div>
+              </div>`).join('')
+          : `<div class="rec-item">
+               <div class="rec-dot" style="background:#0d7a52"></div>
+               <div class="rec-text">Buen nivel en todas las dimensiones. Explorar métricas de flujo avanzadas (cycle time, throughput).</div>
+             </div>`;
+
+        return `
+          <div class="tac">
+            <div class="tac-header">
+              <div>
+                <div class="tac-name">${s.name}</div>
+                <div class="tac-meta">${s.count} respuesta${s.count !== 1 ? 's' : ''}</div>
+              </div>
+              <div class="tac-score">
+                <div class="tac-score-num" style="color:${s.level.color}">${s.avgTotal}%</div>
+                <span class="tac-level" style="background:${s.level.bg};color:${s.level.color}">${s.level.label}</span>
+              </div>
+            </div>
+            ${DIMS.map(d => {
+              const dp = s.avgDims[d.key];
+              return `<div class="dim-row">
+                <div class="dim-row-header">
+                  <span class="dim-label">${d.label}</span>
+                  <span class="dim-pct-label">${dp.pct}%</span>
+                </div>
+                <div class="dim-bar-wrap">
+                  <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
+                </div>
+              </div>`;
+            }).join('')}
+            <div class="recs-section">
+              <div class="recs-label">Recomendaciones</div>
+              ${recs}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  return stats + comparison + cards;
+}
+
+// ── Teams tab ─────────────────────────────────────────────────────
+function renderTeams() {
+  const addForm = `
     <div class="section-card">
       <div class="section-title">Agregar equipo</div>
       <div class="add-row">
         <div class="field-group">
           <label>Nombre del equipo</label>
-          <input class="field-input" type="text" id="newTeamInput" placeholder="Ej. Equipo Phoenix"
-            value="${newTeamName}"
-            oninput="newTeamName=this.value"
+          <input class="field-input" type="text" placeholder="Ej. Equipo Phoenix"
+            value="${newTeamName}" oninput="newTeamName=this.value"
             onkeydown="if(event.key==='Enter')addTeam()"/>
         </div>
         <button class="btn primary" onclick="addTeam()" style="flex-shrink:0;margin-bottom:1px;">Agregar</button>
       </div>
     </div>`;
 
-  const teamsHtml = loading
+  const list = loading
     ? `<div class="empty-state">Cargando equipos…</div>`
     : teams.length === 0
       ? `<div class="empty-state">No hay equipos aún. Agrega el primero.</div>`
       : `<div class="team-list">
-          ${teams.map(t => `
-            <div class="team-row">
-              <div class="team-name">${t.name}</div>
-              <span class="team-count">${t.responses} respuesta${t.responses !== 1 ? 's' : ''}</span>
-              <span class="${t.active ? 'badge-active' : 'badge-inactive'}">${t.active ? 'Activo' : 'Inactivo'}</span>
-              <div class="team-actions">
-                <button class="btn sm" onclick="toggleActive(teams.find(x=>x.id==='${t.id}'))"
-                  title="${t.active ? 'Desactivar' : 'Activar'}">
+          ${teams.map(t => {
+            const count = teamStats[t.id] ? teamStats[t.id].count : 0;
+            const esc   = t.name.replace(/'/g, "\\'");
+            return `<div class="team-row">
+              <div class="team-row-name">${t.name}</div>
+              <span class="team-count-badge">${count} respuesta${count !== 1 ? 's' : ''}</span>
+              <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
+              <div style="display:flex;gap:6px;">
+                <button class="btn sm" onclick="toggleActive('${t.id}','${esc}',${t.active})">
                   ${t.active ? 'Desactivar' : 'Activar'}
                 </button>
-                <button class="btn sm danger" onclick="deleteTeam(teams.find(x=>x.id==='${t.id}'))"
-                  title="Eliminar">✕</button>
+                <button class="btn sm danger" onclick="deleteTeam('${t.id}','${esc}')">✕</button>
               </div>
-            </div>`).join('')}
+            </div>`;
+          }).join('')}
         </div>`;
 
-  return `
-    ${statsHtml}
-    ${addFormHtml}
+  return addForm + `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div class="section-title" style="margin-bottom:0;">Equipos</div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn sm" onclick="fetchTeams()">Actualizar</button>
-          <a href="https://airtable.com/${AIRTABLE_BASE}" target="_blank" class="btn sm">Ver en Airtable ↗</a>
-          <button class="btn sm danger" onclick="logout()">Cerrar sesión</button>
-        </div>
+        <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>
+        <a href="https://airtable.com/${AIRTABLE_BASE}" target="_blank" class="btn sm">Ver en Airtable ↗</a>
       </div>
-      ${teamsHtml}
+      ${list}
     </div>`;
 }
 
 // ── Init ─────────────────────────────────────────────────────────
 render();
-if (authenticated) fetchTeams();
+if (authenticated) fetchAllData();
 </script>
 </body>
 </html>
