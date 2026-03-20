@@ -380,7 +380,7 @@ function renderAnalysis() {
         const lowDims = DIMS
           .filter(d => s.avgDims[d.key].pct < 70)
           .sort((a, b) => s.avgDims[a.key].pct - s.avgDims[b.key].pct)
-          .slice(0, 2);
+          .slice(0, 3);
 
         const recs = lowDims.length
           ? lowDims.map(d => `
