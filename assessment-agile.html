@@ -381,6 +381,21 @@
   }
   .role-btn:hover, .role-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); }
 
+  .field-group { margin-bottom: 20px; }
+  .field-group > label { font-size: 15px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 10px; }
+  .field-input {
+    width: 100%; padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    background: white; color: var(--ink);
+    outline: none; transition: border-color 0.15s;
+    appearance: none; -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  select.field-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239198aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+  .teams-loading { font-size: 13px; color: var(--ink-faint); padding: 10px 0; }
+
   .fade-in { animation: fadeUp 0.35s ease both; }
   @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
 </style>
@@ -396,6 +411,13 @@
 </div>
 
 <script>
+// ── Airtable config ──────────────────────────────────────────────
+const AIRTABLE_TOKEN = 'patnH2ZIhl6grBT0N.57316def615cb34f5596a2733b3a5ff248c4e6af0d0e4dff2e2a5ed0a8f73711';
+const AIRTABLE_BASE  = 'appVwaCg5q6Ab6CWV';
+const TABLE_EQUIPOS    = 'tbl1pq6BuPfillhP7';
+const TABLE_RESPUESTAS = 'tbl8WjOti7jmRqS12';
+// ────────────────────────────────────────────────────────────────
+
 const SECTIONS = [
   {
     id:"eventos", tag:"Sección 1 de 4", title:"Ceremonias y ritmo del equipo",
@@ -464,6 +486,60 @@ let screen = "intro"; // intro | section | results
 let currentSection = 0;
 let answers = {};
 let role = "";
+let teams = [];          // [{ id, name }] cargado desde Airtable
+let teamId = "";
+let teamName = "";
+let participantName = "";
+let submitStatus = "";   // "" | "sending" | "ok" | "error"
+
+function setTeam(id, text) {
+  teamId = id;
+  teamName = id ? text : '';
+  render();
+}
+
+async function loadTeams() {
+  try {
+    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}`
+      + `?filterByFormula={Activo}=1&sort[0][field]=Nombre&sort[0][direction]=asc`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
+    const data = await res.json();
+    teams = (data.records || []).map(r => ({ id: r.id, name: r.fields.Nombre }));
+  } catch(e) {
+    teams = [];
+  }
+  render();
+}
+
+async function submitResults() {
+  if (submitStatus === 'ok' || submitStatus === 'sending') return;
+  submitStatus = 'sending';
+  render();
+  const { pct, dims } = calcResults();
+  const level = getLevel(pct);
+  try {
+    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_RESPUESTAS}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: {
+        Equipo: [teamId],
+        Participante: participantName.trim() || 'Anónimo',
+        Rol: role,
+        'Score Eventos': dims.eventos.score,
+        'Score Backlog': dims.backlog.score,
+        'Score Dev Team': dims.devteam.score,
+        'Score Transparencia': dims.transparencia.score,
+        'Score Total %': pct,
+        Nivel: level.label,
+        Fecha: new Date().toISOString()
+      }})
+    });
+    submitStatus = res.ok ? 'ok' : 'error';
+  } catch(e) {
+    submitStatus = 'error';
+  }
+  render();
+}
 
 function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length-1]; }
 
@@ -490,13 +566,29 @@ function render() {
 }
 
 function renderIntro() {
+  const teamsField = teams.length === 0
+    ? `<div class="teams-loading">Cargando equipos…</div>`
+    : `<select class="field-input" onchange="setTeam(this.value, this.options[this.selectedIndex].text)">
+        <option value="">— Selecciona tu equipo —</option>
+        ${teams.map(t=>`<option value="${t.id}" ${teamId===t.id?'selected':''}>${t.name}</option>`).join('')}
+       </select>`;
+
   return `
     <div class="intro">
       <div class="intro-cards">
         <div class="intro-card"><div class="intro-card-icon">📋</div><div class="intro-card-title">14 preguntas</div><div class="intro-card-desc">4 dimensiones clave de Scrum</div></div>
         <div class="intro-card"><div class="intro-card-icon">⏱</div><div class="intro-card-title">~8 minutos</div><div class="intro-card-desc">Sin necesidad de cuenta ni login</div></div>
         <div class="intro-card"><div class="intro-card-icon">📊</div><div class="intro-card-title">Resultado inmediato</div><div class="intro-card-desc">Score por dimensión + recomendaciones</div></div>
-        <div class="intro-card"><div class="intro-card-icon">🔒</div><div class="intro-card-title">100% local</div><div class="intro-card-desc">Nada se envía a ningún servidor</div></div>
+        <div class="intro-card"><div class="intro-card-icon">☁️</div><div class="intro-card-title">Resultados guardados</div><div class="intro-card-desc">Análisis organizacional disponible</div></div>
+      </div>
+      <div class="field-group">
+        <label>¿A qué equipo perteneces?</label>
+        ${teamsField}
+      </div>
+      <div class="field-group">
+        <label>Tu nombre <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+        <input class="field-input" type="text" placeholder="Ej. María García"
+          value="${participantName}" oninput="participantName=this.value" autocomplete="off"/>
       </div>
       <div class="role-select">
         <label>¿Cuál es tu rol en el equipo?</label>
@@ -506,7 +598,7 @@ function renderIntro() {
         ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
-        <button class="btn primary" onclick="startAssessment()" ${!role?'disabled':''}>Comenzar assessment →</button>
+        <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
       </div>
     </div>`;
 }
@@ -608,16 +700,20 @@ function renderResults() {
     <div class="result-nav">
       <button class="btn" onclick="restart()">← Reiniciar</button>
       <button class="btn" onclick="copyResults()">Copiar resultados</button>
+      ${submitStatus==='sending' ? `<span style="font-size:13px;color:var(--ink-faint);margin-left:auto;align-self:center;">Guardando…</span>`
+        : submitStatus==='ok'      ? `<span style="font-size:13px;color:var(--green);margin-left:auto;align-self:center;">✓ Guardado en Airtable</span>`
+        : submitStatus==='error'   ? `<span style="font-size:13px;color:var(--red);margin-left:auto;align-self:center;">Error al guardar · <button class="btn" onclick="submitResults()" style="padding:3px 10px;font-size:12px;margin-left:6px;">Reintentar</button></span>`
+        : ''}
     </div>`;
 }
 
 function setRole(r) { role=r; render(); }
-function startAssessment() { if(role){ screen='section'; currentSection=0; render(); } }
+function startAssessment() { if(role && teamId){ screen='section'; currentSection=0; render(); } }
 function pick(key,val) { answers[key]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function showResults() { screen='results'; render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function restart() { screen='intro'; currentSection=0; answers={}; role=''; render(); }
+function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
+function restart() { screen='intro'; currentSection=0; answers={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
@@ -637,6 +733,7 @@ function copyResults() {
 }
 
 render();
+loadTeams();
 </script>
 </body>
 </html>
