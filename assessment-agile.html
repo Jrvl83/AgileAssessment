@@ -410,12 +410,20 @@
   <div id="app"></div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
-// ── Airtable config ──────────────────────────────────────────────
-const AIRTABLE_TOKEN = 'patnH2ZIhl6grBT0N.57316def615cb34f5596a2733b3a5ff248c4e6af0d0e4dff2e2a5ed0a8f73711';
-const AIRTABLE_BASE  = 'appVwaCg5q6Ab6CWV';
-const TABLE_EQUIPOS    = 'tbl1pq6BuPfillhP7';
-const TABLE_RESPUESTAS = 'tbl8WjOti7jmRqS12';
+// ── Firebase config ──────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
+  authDomain: "agile-assessment-5a117.firebaseapp.com",
+  projectId: "agile-assessment-5a117",
+  storageBucket: "agile-assessment-5a117.firebasestorage.app",
+  messagingSenderId: "41571782884",
+  appId: "1:41571782884:web:e8b96178aeffc4649edcf1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 // ────────────────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -515,6 +523,7 @@ let teamId = "";
 let teamName = "";
 let participantName = "";
 let submitStatus = "";   // "" | "sending" | "ok" | "error"
+let cicloNombre = "";
 
 function setTeam(id, text) {
   teamId = id;
@@ -524,13 +533,20 @@ function setTeam(id, text) {
 
 async function loadTeams() {
   try {
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_EQUIPOS}`
-      + `?filterByFormula={Activo}=1&sort[0][field]=Nombre&sort[0][direction]=asc`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}` } });
-    const data = await res.json();
-    teams = (data.records || []).map(r => ({ id: r.id, name: r.fields.Nombre }));
+    const tSnap = await db.collection('equipos').get();
+    teams = tSnap.docs
+      .filter(d => d.data().activo === true)
+      .map(d => ({ id: d.id, name: d.data().nombre }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch(e) {
     teams = [];
+  }
+  try {
+    const cSnap = await db.collection('ciclos').get();
+    const active = cSnap.docs.find(d => d.data().activo === true);
+    cicloNombre = active ? (active.data().nombre || '') : '';
+  } catch(e) {
+    cicloNombre = '';
   }
   render();
 }
@@ -542,23 +558,21 @@ async function submitResults() {
   const { pct, dims } = calcResults();
   const level = getLevel(pct);
   try {
-    const res = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE}/${TABLE_RESPUESTAS}`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${AIRTABLE_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: {
-        Equipo: [teamId],
-        Participante: participantName.trim() || 'Anónimo',
-        Rol: role,
-        'Score Eventos': dims.eventos.score,
-        'Score Backlog': dims.backlog.score,
-        'Score Dev Team': dims.devteam.score,
-        'Score Transparencia': dims.transparencia.score,
-        'Score Total %': pct,
-        Nivel: level.label,
-        Fecha: new Date().toISOString()
-      }})
+    await db.collection('respuestas').add({
+      equipoId: teamId,
+      equipoNombre: teamName,
+      participante: participantName.trim() || 'Anónimo',
+      rol: role,
+      ciclo: cicloNombre,
+      scoreEventos: dims.eventos.score,
+      scoreBacklog: dims.backlog.score,
+      scoreDevTeam: dims.devteam.score,
+      scoreTransparencia: dims.transparencia.score,
+      scoreTotalPct: pct,
+      nivel: level.label,
+      fecha: firebase.firestore.FieldValue.serverTimestamp()
     });
-    submitStatus = res.ok ? 'ok' : 'error';
+    submitStatus = 'ok';
   } catch(e) {
     submitStatus = 'error';
   }
@@ -671,57 +685,16 @@ function renderSection() {
 }
 
 function renderResults() {
-  const { pct, dims, total, max } = calcResults();
-  const level = getLevel(pct);
-  const circumference = 2*Math.PI*34;
-  const dash = circumference*(pct/100);
-
-  const dimCards = Object.entries(dims).map(([id,v])=>`
-    <div class="dim-card">
-      <div class="dim-name">${v.name}</div>
-      <div class="dim-track"><div class="dim-fill" style="width:${v.pct}%;background:${DIM_COLORS[id]};"></div></div>
-      <div class="dim-meta">${v.pct}% · ${v.score}/${v.max} pts</div>
-    </div>`).join('');
-
-  const lowDims = Object.entries(dims).filter(([,v])=>v.pct<70).sort((a,b)=>a[1].pct-b[1].pct);
-  const recs = lowDims.length ? lowDims.slice(0,3).map(([id,v])=>`
-    <div class="rec">
-      <div class="rec-dot" style="background:${DIM_COLORS[id]}"></div>
-      <div class="rec-body"><strong>${v.name}</strong>${getRec(id, v.pct)}</div>
-    </div>`) : [`<div class="rec"><div class="rec-dot" style="background:#0d7a52"></div><div class="rec-body"><strong>Excelente nivel</strong>Experimentar con métricas de flujo avanzadas (cycle time, throughput) y OKRs ágiles para el siguiente nivel.</div></div>`];
-
   return `
-    <div class="results-header">
-      <h2>Resultados</h2>
-      <p>Assessment completado · Rol: <strong>${role}</strong></p>
-    </div>
-    <div class="score-banner">
-      <div class="score-ring">
-        <svg viewBox="0 0 80 80">
-          <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e7e1" stroke-width="6"/>
-          <circle cx="40" cy="40" r="34" fill="none" stroke="${level.color}" stroke-width="6"
-            stroke-dasharray="${dash} ${circumference}" stroke-linecap="round"/>
-        </svg>
-        <div class="score-ring-label">
-          <div class="score-ring-num">${pct}%</div>
-          <div class="score-ring-pct">${total}/${max}</div>
-        </div>
-      </div>
-      <div class="score-info">
-        <div class="score-level" style="background:${level.bg};color:${level.color}">${level.label}</div>
-        <div class="score-desc">${level.desc}</div>
-      </div>
-    </div>
-    <div class="dims-grid">${dimCards}</div>
-    <div class="recs-title">Próximos pasos recomendados</div>
-    ${recs.join('')}
-    <div class="result-nav">
-      <button class="btn" onclick="restart()">← Reiniciar</button>
-      <button class="btn" onclick="copyResults()">Copiar resultados</button>
-      ${submitStatus==='sending' ? `<span style="font-size:13px;color:var(--ink-faint);margin-left:auto;align-self:center;">Guardando…</span>`
-        : submitStatus==='ok'      ? `<span style="font-size:13px;color:var(--green);margin-left:auto;align-self:center;">✓ Guardado en Airtable</span>`
-        : submitStatus==='error'   ? `<span style="font-size:13px;color:var(--red);margin-left:auto;align-self:center;">Error al guardar · <button class="btn" onclick="submitResults()" style="padding:3px 10px;font-size:12px;margin-left:6px;">Reintentar</button></span>`
+    <div style="text-align:center;padding:56px 0 40px;">
+      <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:32px;color:var(--green);">✓</div>
+      <h2 style="font-family:'DM Serif Display',serif;font-size:clamp(24px,4vw,32px);line-height:1.15;margin-bottom:14px;">¡Gracias por completar<br>el assessment!</h2>
+      <p style="font-size:15px;color:var(--ink-muted);max-width:420px;margin:0 auto 32px;line-height:1.7;">Tu respuesta ha sido registrada. El líder del equipo tendrá acceso al análisis de resultados y las recomendaciones de mejora.</p>
+      ${submitStatus==='sending' ? `<p style="font-size:13px;color:var(--ink-faint);margin-bottom:20px;">Guardando respuesta…</p>`
+        : submitStatus==='ok'    ? `<p style="font-size:13px;color:var(--green);margin-bottom:20px);">✓ Respuesta guardada correctamente.</p>`
+        : submitStatus==='error' ? `<p style="font-size:13px;color:var(--red);margin-bottom:20px;">Error al guardar. <button class="btn" onclick="submitResults()" style="padding:3px 10px;font-size:12px;margin-left:6px;">Reintentar</button></p>`
         : ''}
+      <button class="btn" onclick="restart()">← Hacer otro assessment</button>
     </div>`;
 }
 
