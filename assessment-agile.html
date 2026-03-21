@@ -543,7 +543,7 @@ async function loadTeams() {
   }
   try {
     const cSnap = await db.collection('ciclos').get();
-    const active = cSnap.docs.find(d => d.data().activo === true);
+    const active = cSnap.docs.find(d => !!d.data().activo);
     cicloNombre = active ? (active.data().nombre || '') : '';
   } catch(e) {
     cicloNombre = '';
@@ -558,12 +558,19 @@ async function submitResults() {
   const { pct, dims } = calcResults();
   const level = getLevel(pct);
   try {
+    // Fetch active ciclo fresh at submit time
+    let cicloFinal = cicloNombre;
+    if (!cicloFinal) {
+      const cSnap = await db.collection('ciclos').get();
+      const active = cSnap.docs.find(d => !!d.data().activo);
+      cicloFinal = active ? (active.data().nombre || '') : '';
+    }
     await db.collection('respuestas').add({
       equipoId: teamId,
       equipoNombre: teamName,
       participante: participantName.trim() || 'Anónimo',
       rol: role,
-      ciclo: cicloNombre,
+      ciclo: cicloFinal,
       scoreEventos: dims.eventos.score,
       scoreBacklog: dims.backlog.score,
       scoreDevTeam: dims.devteam.score,
