@@ -100,6 +100,10 @@
   .pattern-block { margin-bottom: 10px; padding: 9px 12px; border-radius: var(--radius-sm); border-left: 3px solid; }
   .pattern-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
   .pattern-text { font-size: 11px; line-height: 1.5; }
+  .rec-item--urgent { border-left: 3px solid var(--red); padding-left: 8px; border-radius: 2px; background: var(--red-light, #fce8e8); }
+  .rec-item--improving { border-left: 3px solid #0d7a52; padding-left: 8px; border-radius: 2px; background: #d4f0e5; }
+  .rec-trend { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .badge-critical { display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:1px 7px; border-radius:99px; background:var(--red-light,#fce8e8); color:var(--red,#c0282a); border:1px solid var(--red,#c0282a); margin-right:6px; vertical-align:middle; }
 
   /* Role filter */
   .role-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
@@ -726,15 +730,19 @@ function renderAnalysis() {
             <div class="pattern-text" style="color:${p.color}cc;">${p.text}</div>
           </div>`).join('');
 
+        // Ítem 6: dimensión crítica — la más baja con pct < 33
+        const sortedByPct = DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+        const criticalDim = sortedByPct[0] && ds.avgDims[sortedByPct[0].key].pct < 33 ? sortedByPct[0] : null;
+
         const recs = lowDims.length
           ? lowDims.map(d => {
-              // Ítem 1: nota contextual
-              const ctxNote = getContextNote(d.key, ds.avgDims[d.key].pct, ds.tamano, ds.tiempoScrum);
+              const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, ds.tamano, ds.tiempoScrum);
+              const isCrit   = criticalDim && d.key === criticalDim.key;
               return `
               <div class="rec-item">
                 <div class="rec-dot" style="background:${d.color}"></div>
                 <div class="rec-text">
-                  <strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}
+                  ${isCrit ? `<span class="badge-critical no-print">Crítica</span>` : ''}<strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}
                   ${ctxNote ? `<div class="rec-context">⚑ ${ctxNote}</div>` : ''}
                 </div>
               </div>`;
@@ -899,10 +907,16 @@ function renderEvolution() {
   const recs = toFix.length
     ? toFix.map(d => {
         const regressed = d.prevPct !== null && d.pct < d.prevPct;
-        return `<div class="rec-item">
-          <div class="rec-dot" style="background:${d.color}"></div>
+        const improved  = d.prevPct !== null && d.pct > d.prevPct && d.pct < 60;
+        const delta     = d.prevPct !== null ? Math.abs(d.pct - d.prevPct) : 0;
+        const itemClass = regressed ? 'rec-item rec-item--urgent' : improved ? 'rec-item rec-item--improving' : 'rec-item';
+        let trendBadge = '';
+        if (regressed) trendBadge = `<div class="rec-trend" style="color:var(--red);">▼ Retroceso −${delta}% vs. ciclo anterior</div>`;
+        else if (improved) trendBadge = `<div class="rec-trend" style="color:#0d7a52;">▲ Mejora +${delta}% vs. ciclo anterior — mantener el foco</div>`;
+        return `<div class="${itemClass}">
+          <div class="rec-dot" style="background:${d.color};flex-shrink:0;margin-top:${regressed||improved?'14px':'5px'}"></div>
           <div class="rec-text">
-            ${regressed ? `<span style="color:var(--red);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Retroceso · </span>` : ''}
+            ${trendBadge}
             <strong>${d.label}:</strong> ${getRec(d.key, d.pct, roleForRec)}
           </div>
         </div>`;
