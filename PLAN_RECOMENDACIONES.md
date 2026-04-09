@@ -26,60 +26,62 @@ Fase 4 — Comparativa global
 
 ## Detalle por ítem
 
-### Ítem 4 — "Todos" usa el rol mayoritario `[Baja]`
+### Ítem 4 — "Todos" usa el rol mayoritario `[Baja]` ✅
 
 **Archivos:** `admin.html`
 
 **Problema que resuelve:** Cuando el filtro de rol es "Todos", actualmente se usan los textos genéricos de `RECS` en lugar de los textos específicos por rol de `RECS_ROLE`. Todos los demás ítems heredan este comportamiento, por eso va primero.
 
-**Implementación:**
-- Crear `getMajorityRole(responses)` que cuenta las ocurrencias de cada rol en el subconjunto de respuestas del equipo y devuelve el rol mayoritario. Devuelve `null` si hay empate o menos de 2 respuestas.
-- En `renderAnalysis()` línea ~682: reemplazar `const roleForRec = selectedRole === 'Todos' ? null : selectedRole` por una llamada a `getMajorityRole(filtered)`.
-- Añadir nota discreta bajo el label de recomendaciones: *"Basado en el rol mayoritario (Dev Team)"*.
-- Aplicar el mismo cambio en `renderEvolution()` línea ~833.
+**Implementado:**
+- `getMajorityRole(resps)` — cuenta roles del subconjunto filtrado (excluye "Otro"), devuelve `null` si hay empate.
+- `renderAnalysis()`: `filteredByCycle` aplica el filtro de ciclo activo antes de calcular el rol mayoritario. El label muestra *(rol mayoritario: Dev Team)* cuando aplica.
+- `renderEvolution()`: usa `evolTeamResps` filtrado por equipo para calcular el rol mayoritario.
 
-**Resultado esperado:** Las recomendaciones en vista "Todos" son específicas al rol más representado del equipo, no un fallback genérico.
+**Resultado:** Las recomendaciones en vista "Todos" usan el rol más representado del equipo, con nota discreta visible para el admin.
 
 ---
 
-### Ítem 1 — Contexto del equipo `[Media]`
+### Ítem 1 — Contexto del equipo `[Media]` ✅
 
 **Archivos:** `assessment-config.js` + `admin.html`
 
 **Problema que resuelve:** Los campos `tamanoEquipo` y `tiempoScrum` se guardan en Firestore pero nunca se usan en las recomendaciones. Un equipo nuevo de 10 personas tiene desafíos distintos a uno maduro de 4.
 
-**Implementación:**
-- En `assessment-config.js`: añadir función `getContextNote(dim, pct, tamano, tiempoScrum)` que devuelve una nota corta (string) o `null`. Reglas iniciales:
-  - `tiempoScrum === '<6 meses'` + cualquier dimensión baja → *"Equipo nuevo: priorizar cadencia básica antes que optimización"*
-  - `tamanoEquipo === '10+'` + Ceremonias baja → *"Equipo grande: la coordinación a escala requiere estructura explícita en los eventos"*
-  - `tamanoEquipo === '1–5'` + DevTeam baja → *"Equipo pequeño: la cross-funcionalidad es crítica para no generar cuellos de botella"*
-- En `admin.html`, función `getTeamFilteredStats()`: calcular la moda de `tamanoEquipo` y `tiempoScrum` del subconjunto filtrado y añadirlos al objeto retornado.
-- En `renderAnalysis()`: en cada `rec-item`, si `getContextNote()` devuelve texto, añadirlo como nota en estilo amber debajo de la recomendación principal.
+**Implementado:**
+- `getContextNote(dim, pct, tamano, tiempoScrum)` en `assessment-config.js` — 6 reglas de contexto:
+  - `<6 meses` + cualquier dimensión < 70% → priorizar cadencia básica
+  - `>18 meses` + dimensión < 50% → impedimentos sistémicos o resistencia estructural
+  - `6–18 meses` + dimensión < 40% → posible falta de apoyo organizacional
+  - `10+` personas + Ceremonias < 70% → coordinación a escala
+  - `10+` personas + Dev Team < 60% → autoorganización compleja en equipos grandes
+  - `1–5` personas + Dev Team < 60% → cross-funcionalidad crítica
+- `getTeamFilteredStats()` calcula la moda de `tamanoEquipo` y `tiempoScrum` del subconjunto y los retorna en el objeto de stats.
+- Cada `rec-item` muestra la nota contextual en amber con prefijo ⚑ si aplica.
 
-**Resultado esperado:** Cada recomendación puede ir acompañada de una nota contextual que personaliza el consejo según las características del equipo.
+**Resultado:** Las notas contextuales personalizan cada recomendación según el perfil del equipo sin reemplazar el texto principal.
 
 ---
 
-### Ítem 2 — Análisis cruzado de dimensiones `[Media]`
+### Ítem 2 — Análisis cruzado de dimensiones `[Media]` ✅
 
 **Archivos:** `assessment-config.js` + `admin.html`
 
 **Problema que resuelve:** Las recomendaciones son independientes por dimensión. Cuando múltiples dimensiones bajas co-ocurren hay un patrón sistémico que merece un diagnóstico diferente al de cada dimensión por separado.
 
-**Implementación:**
-- En `assessment-config.js`: definir estructura `CROSS_PATTERNS` — array de objetos con `{ dims, maxPct, label, text }`. Patrones iniciales:
+**Implementado:**
+- `CROSS_PATTERNS` en `assessment-config.js` — 4 patrones con `{ dims, maxPct, label, color, text }`:
 
-  | Patrón | Condición | Label |
+  | Patrón | Condición | Color |
   |--------|-----------|-------|
-  | Base Scrum débil | Ceremonias + Transparencia < 50% | Estructura básica ausente |
-  | Madurez técnica baja | Dev Team + Exc. Técnica < 45% | Limitación técnica sistémica |
-  | Desconexión del valor | Backlog + Orient. Cliente < 45% | El equipo construye sin validar |
-  | Adopción inicial total | Todas las dimensiones < 40% | Scrum en fase muy inicial |
+  | Adopción inicial total | Todas las dimensiones < 40% | Rojo |
+  | Base Scrum débil | Ceremonias + Transparencia < 50% | Amber |
+  | Limitación técnica sistémica | Dev Team + Exc. Técnica < 45% | Cyan |
+  | Desconexión del valor | Backlog + Orient. Cliente < 45% | Violeta |
 
-- En `assessment-config.js`: crear función `detectPatterns(dimScores)` que recibe `{eventos: {pct:X}, ...}` y devuelve los patrones activos como array.
-- En `admin.html`, función `renderAnalysis()`: añadir bloque *"Patrón detectado"* (badge amber, colapsable) antes del bloque de recomendaciones individuales si `detectPatterns()` devuelve al menos un patrón.
+- `detectPatterns(dimScores)` evalúa todos los patrones activos y devuelve array (puede activarse más de uno).
+- En `renderAnalysis()`, bloque `pattern-block` con borde lateral coloreado aparece antes de las recomendaciones individuales cuando hay patrones activos.
 
-**Resultado esperado:** El admin ve de un vistazo si el equipo tiene un problema sistémico identificable, no solo dimensiones sueltas bajas.
+**Resultado:** El admin ve diagnósticos sistémicos antes de leer las recomendaciones por dimensión. Los patrones tienen color diferenciado y pueden co-ocurrir.
 
 ---
 
@@ -173,12 +175,12 @@ Fase 4 — Comparativa global
 
 ## Estado
 
-| Ítem | Estado |
-|------|--------|
-| 4 — Rol mayoritario | Pendiente |
-| 1 — Contexto equipo | Pendiente |
-| 2 — Análisis cruzado | Pendiente |
-| 3 — Tendencia en Evolución | Pendiente |
-| 6 — Badge Crítica | Pendiente |
-| 5 — Botón Plan de Acción | Pendiente |
-| 7 — Comparativa global | Pendiente |
+| Ítem | Estado | Commit |
+|------|--------|--------|
+| 4 — Rol mayoritario | ✅ Completado | `214674c` |
+| 1 — Contexto equipo | ✅ Completado | `214674c` |
+| 2 — Análisis cruzado | ✅ Completado | `214674c` |
+| 3 — Tendencia en Evolución | Pendiente | — |
+| 6 — Badge Crítica | Pendiente | — |
+| 5 — Botón Plan de Acción | Pendiente | — |
+| 7 — Comparativa global | Pendiente | — |
