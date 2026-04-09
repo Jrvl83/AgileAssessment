@@ -23,6 +23,7 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 AssessmentAgile/
 ├── assessment-agile.html   # Formulario público del assessment
 ├── admin.html              # Panel de administración (protegido)
+├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
 ├── firebase.json           # Configuración de hosting y rewrites
 └── .firebaserc             # Proyecto Firebase activo
 ```
@@ -62,10 +63,11 @@ Acceso en `/admin`. Panel con 4 pestañas:
 
 | Pestaña | Función |
 |---------|---------|
-| **Análisis** | Estadísticas agregadas, madurez por equipo y rol, recomendaciones, exportación PDF/CSV |
-| **Evolución** | Progreso de equipos a lo largo de ciclos de medición |
-| **Equipos** | Alta, baja y activación de equipos |
+| **Análisis** | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, recomendaciones, exportación PDF/CSV |
+| **Evolución** | Progreso de equipos a lo largo de ciclos de medición, incluyendo detalle por pregunta con delta vs. ciclo anterior |
+| **Equipos** | Alta, baja y activación de equipos; botón QR por equipo |
 | **Ciclos** | Creación y activación de ciclos de medición |
+| **Plan de Acción** | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo |
 
 ---
 
@@ -73,16 +75,18 @@ Acceso en `/admin`. Panel con 4 pestañas:
 
 ### Dimensiones evaluadas
 
-El assessment mide madurez en 4 dimensiones de Scrum:
+El assessment mide madurez en 6 dimensiones:
 
 | # | Dimensión | Enfoque | Rol | Preguntas | Puntaje Máx. |
 |---|-----------|---------|-----|-----------|--------------|
-| 1 | **Eventos** | Calidad y valor de las ceremonias Scrum | PO + Dev Team | 4 | 12 pts |
-| 2 | **Backlog** | Gestión del Product Backlog por el PO | Product Owner | 3 | 9 pts |
+| 1 | **Ceremonias** | Calidad y valor de los eventos Scrum | PO + Dev Team | 4 | 12 pts |
+| 2 | **Product Backlog** | Gestión del Product Backlog por el PO | Product Owner | 3 | 9 pts |
 | 3 | **Dev Team** | Autoorganización y entrega técnica | Dev Team | 4 | 12 pts |
 | 4 | **Transparencia** | Inspección, adaptación y pilares empíricos | PO + Dev Team | 3 | 9 pts |
+| 5 | **Excelencia Técnica** | CI/CD, pruebas automatizadas, deuda técnica | Dev Team | 3 | 9 pts |
+| 6 | **Orientación al Cliente** | Contacto con usuarios, métricas de valor | PO + Dev Team | 3 | 9 pts |
 
-**Total:** 14 preguntas — puntaje máximo: **42 puntos**
+**Total:** 20 preguntas — puntaje máximo: **60 puntos**
 
 ---
 
@@ -101,7 +105,7 @@ Cada pregunta tiene 4 opciones ordenadas de menor a mayor madurez:
 
 ```
 % Dimensión  = (suma de puntos de dimensión / máximo de dimensión) × 100
-% Total      = (suma total de puntos / 42) × 100
+% Total      = (suma total de puntos / 60) × 100
 ```
 
 ---
@@ -119,61 +123,87 @@ Cada pregunta tiene 4 opciones ordenadas de menor a mayor madurez:
 
 ### Preguntas del assessment
 
-#### Sección 1 — Ceremonias y Ritmo del Equipo (Eventos)
+#### Sección 1 de 6 — Ceremonias y ritmo del equipo
 
-**P1. Sprint Planning y Sprint Goal**
-- Nunca o raramente se planifica → A veces, con objetivo vago → Casi siempre con objetivo definido → Siempre guiando las decisiones del Sprint
+**P1. ¿Con qué frecuencia se realiza la Sprint Planning y genera un Sprint Goal claro?**
+- Nunca o rara vez → A veces, pero el Goal es vago → Casi siempre con Goal definido → Siempre; el Goal guía cada decisión del Sprint
 
-**P2. Daily Scrum enfocado en el Sprint Goal**
-- No hay Daily o es un reporte de estado → Daily sin foco en el Goal → Mayormente enfocado en el Goal → Herramienta real de adaptación diaria
+**P2. ¿El Daily Scrum se usa para inspeccionar el progreso hacia el Sprint Goal y adaptar el plan?**
+- No hacemos Daily o es un reporte de estado → Hacemos Daily pero sin foco en el Goal → Mayormente nos enfocamos en el Goal → El Daily es una herramienta real de adaptación diaria
 
-**P3. Sprint Review con stakeholders y retroalimentación**
-- No hay Review o es solo interna → Hay stakeholders pero sin incorporación de feedback → Feedback útil a veces → Siempre influye en el Product Backlog
+**P3. ¿La Sprint Review involucra a stakeholders reales y genera feedback accionable?**
+- No hacemos Review o es solo interna → Hay stakeholders pero el feedback no se incorpora → A veces logramos feedback útil → Siempre; los stakeholders influyen el Product Backlog
 
-**P4. Retrospectiva con mejoras concretas e implementadas**
-- No hay Retro → Retro sin compromisos → Se definen mejoras, pocas se implementan → Seguimiento sistemático e implementación consistente
-
----
-
-#### Sección 2 — Gestión del Product Backlog (Backlog)
-
-**P5. Ordenamiento del backlog por valor**
-- No ordenado o criterio poco claro → Ordenado por esfuerzo o cronología → Parcialmente por valor → Por valor, revisado continuamente
-
-**P6. Criterios de aceptación antes del Sprint**
-- Raramente tienen criterios → Algunos criterios básicos → La mayoría tiene criterios → Todos con criterios claros y verificables
-
-**P7. Product Goal definido y conocido por el equipo**
-- No hay Goal formal → Existe pero el equipo no lo conoce → Se conoce pero no guía → Guía el refinamiento y la priorización
+**P4. ¿La Retrospectiva produce mejoras concretas que se implementan en el siguiente Sprint?**
+- No hacemos Retro → Hacemos Retro pero sin compromisos concretos → Definimos mejoras pero pocas se implementan → Las mejoras se rastrean y se implementan sistemáticamente
 
 ---
 
-#### Sección 3 — Autoorganización y Entrega (Dev Team)
+#### Sección 2 de 6 — Gestión del Product Backlog
 
-**P8. Autoorganización sin asignación externa de tareas**
-- Un líder asigna todas las tareas → Cierta autoorganización con dependencia → Mayormente autoorganizado → Autonomía plena en cada Sprint
+**P5. ¿El Product Backlog está ordenado por valor y refleja las necesidades reales de los usuarios?**
+- No está ordenado o no existe claro → Está ordenado por esfuerzo o cronología → Ordenado parcialmente por valor → Ordenado por valor, revisado continuamente con stakeholders
 
-**P9. Cumplimiento de la Definition of Done**
-- No hay DoD → Existe pero rara vez se cumple → Se cumple en la mayoría de casos → Siempre; cada Incremento es utilizable
+**P6. ¿Los ítems del backlog tienen criterios de aceptación claros antes de entrar al Sprint?**
+- Rara vez tienen criterios → Algunos tienen criterios básicos → La mayoría tiene criterios antes del Sprint → Todos tienen criterios claros y el equipo los revisó
 
-**P10. Habilidades cross-funcionales y dependencia externa**
-- Muchas dependencias externas → Dependencias frecuentes en algunas áreas → Mayormente autónomo → Totalmente cross-funcional
-
-**P11. Gestión del WIP para evitar cuellos de botella**
-- Sin límites de WIP; crecimiento descontrolado → Crece sin control → Cierta conciencia sin límites formales → Límites activos de WIP en práctica
+**P7. ¿El Product Goal está definido y el equipo lo conoce?**
+- No existe Product Goal formal → Existe pero pocos en el equipo lo conocen → El equipo lo conoce pero no lo usa para tomar decisiones → El Product Goal guía el refinamiento y priorización
 
 ---
 
-#### Sección 4 — Transparencia, Inspección y Adaptación (Transparencia)
+#### Sección 3 de 6 — Autoorganización y entrega
 
-**P12. Visibilidad del progreso e impedimentos**
-- Información fragmentada o desactualizada → Visibilidad parcial en algunas áreas → Buena visibilidad con brechas menores → Transparencia total en tiempo real
+**P8. ¿El equipo se autoorganiza para lograr el Sprint Goal sin necesitar asignación externa de tareas?**
+- El líder o PM asigna todas las tareas → Hay algo de autoorganización pero con dependencia externa → El equipo mayormente se organiza solo → Plena autoorganización; el equipo decide cómo lograr el Goal
 
-**P13. Adaptación del plan basada en el aprendizaje del Sprint**
-- El plan no cambia → Adaptaciones mínimas → Adaptaciones frecuentes basadas en evidencia → Inspección y adaptación continua
+**P9. ¿El Increment al final de cada Sprint cumple la Definition of Done y está potencialmente entregable?**
+- No tenemos Definition of Done → Tenemos DoD pero rara vez se cumple → Se cumple en la mayoría de Sprints → Siempre; cada Sprint produce un Increment usable
 
-**P14. Valores Scrum visibles en las interacciones diarias**
-- Rara vez se manifiestan → Algunos valores presentes de forma inconsistente → La mayoría se practica regularmente → Los valores son parte de la cultura del equipo
+**P10. ¿El equipo tiene las habilidades necesarias para entregar valor completo (cross-functional)?**
+- Hay muchas dependencias externas para completar ítems → Dependencias frecuentes en algunas áreas → Mayormente autónomo, pocas dependencias → Totalmente cross-functional; entrega completa sin externos
+
+**P11. ¿Qué tan bien maneja el equipo el WIP (work in progress) para evitar cuellos de botella?**
+- Sin límite de WIP; varios ítems empezados y sin terminar → El WIP crece sin control en cada Sprint → Hay cierta conciencia pero sin límites formales → Limitamos WIP activamente para maximizar el flujo
+
+---
+
+#### Sección 4 de 6 — Transparencia, inspección y adaptación
+
+**P12. ¿El equipo y stakeholders tienen visibilidad real del progreso y los impedimentos?**
+- La información está fragmentada o desactualizada → Hay visibilidad parcial en algunas áreas → Buena visibilidad, con algunas brechas → Transparencia total; el Scrum Board refleja la realidad
+
+**P13. ¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?**
+- El plan no cambia una vez iniciado el Sprint → Adaptaciones mínimas, generalmente al final → Adaptaciones frecuentes con base en la evidencia → Inspección y adaptación continua; el plan es una guía viva
+
+**P14. ¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?**
+- Rara vez se manifiestan en las interacciones → Algunos valores están presentes de forma inconsistente → La mayoría de valores se practican habitualmente → Los valores son parte de la cultura del equipo
+
+---
+
+#### Sección 5 de 6 — Excelencia técnica
+
+**P15. ¿El equipo tiene integración continua (CI) que detecta errores automáticamente?**
+- No hay CI; el build es manual o esporádico → CI configurado pero con fallos frecuentes no resueltos → CI estable; los fallos se resuelven antes de continuar → CI + CD; despliegues automatizados frecuentes y fiables
+
+**P16. ¿El equipo tiene pruebas automatizadas que generan confianza para hacer cambios?**
+- Sin pruebas automatizadas → Algunas pruebas pero con cobertura muy baja → Buena cobertura en áreas críticas del sistema → Suite sólida de pruebas; se refactoriza y despliega con confianza
+
+**P17. ¿El equipo gestiona activamente la deuda técnica?**
+- No se reconoce ni se habla de deuda técnica → Se reconoce pero nunca se prioriza → Se incluye en el backlog y se prioriza con criterio → Se gestiona como parte del refinamiento y de la Definition of Done
+
+---
+
+#### Sección 6 de 6 — Orientación al cliente
+
+**P18. ¿El equipo tiene contacto directo con usuarios o clientes reales?**
+- Nunca; todo pasa a través del PO o Management → Raramente, solo en demos formales → Ocasionalmente en Sprint Reviews o entrevistas puntuales → Regularmente; el equipo valida hipótesis directamente con usuarios
+
+**P19. ¿El equipo mide si lo que entrega genera valor real para el negocio o el usuario?**
+- No se mide impacto; solo se cuentan features entregadas → Hay algunas métricas de negocio pero no se revisan con regularidad → Seguimiento de métricas clave por producto en cada Sprint Review → Cultura de experimentación: hipótesis → medición → aprendizaje
+
+**P20. ¿El equipo entiende el 'por qué' de negocio detrás de cada ítem del backlog?**
+- Rara vez se explica el propósito de negocio de los ítems → A veces, cuando se pregunta explícitamente → El PO explica el valor esperado en el refinamiento → El equipo cuestiona y co-diseña la solución basado en el problema real
 
 ---
 
@@ -191,28 +221,34 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 
 | Dimensión | 0–33% | 34–66% | 67–100% |
 |-----------|-------|--------|---------|
-| Eventos | Definir Sprint Goal claro; enfocar Reviews en valor de negocio | Conectar Sprint Goal con Product Goal; inspeccionar backlog tras feedback | Asegurar que las Reviews sean sesiones reales de inspección/adaptación con métricas |
-| Backlog | Definir Product Goal inspirador; implementar User Stories con criterios de aceptación | Implementar refinamiento regular con el equipo; evaluar WSJF/Kano para priorización | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs |
-| Dev Team | Estar disponible durante el Sprint para clarificaciones rápidas | Revisar detalle y claridad de User Stories; eliminar dependencias externas | Participar en la DoD para asegurar criterios de calidad de negocio |
-| Transparencia | Hacer el Product Backlog visible; definir métricas simples de progreso | Compartir activamente el Product Goal; conectar Sprint Backlog con objetivos de negocio | Rastrear métricas de outcome (impacto de negocio), no solo output (features) |
+| Ceremonias | El Sprint Goal no existe o no guía las decisiones. Definir un objetivo de negocio claro y medible para cada Sprint. | El Sprint Goal existe pero no conecta con el Product Goal. Trabajar en que cada Sprint Goal sea un paso concreto hacia el Product Goal. | Profundizar en que cada Sprint Review sea una sesión de inspección/adaptación del Product Backlog basada en feedback real y métricas. |
+| Product Backlog | Definir Product Goal inspirador; escribir User Stories con criterios de aceptación claros. | Implementar refinamiento regular; evaluar WSJF o Kano para priorización por valor. | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs para entrega estratégica. |
+| Dev Team | Estar disponible durante el Sprint para clarificaciones rápidas — la accesibilidad del PO es crítica. | Asegurar que las User Stories lleguen al Sprint Planning con suficiente detalle. Trabajar con el SM para eliminar dependencias externas. | Involucrarse en la DoD para que refleje los criterios de calidad que el negocio realmente necesita. |
+| Transparencia | Hacer el Product Backlog visible a todos. Definir métricas simples de progreso hacia el Product Goal. | Compartir activamente el Product Goal en cada Sprint Review; conectar Sprint Backlog con objetivos de negocio. | Rastrear métricas de outcome (impacto en negocio), no solo output (features entregadas). |
+| Exc. Técnica | Exigir que la DoD incluya pruebas automatizadas básicas — sin esto cada Increment acumula riesgo oculto. | Asegurar que la deuda técnica tenga visibilidad en el backlog y se priorice regularmente, no solo en crisis. | Conectar métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal. |
+| Orient. Cliente | Facilitar acceso a usuarios reales: organizar entrevistas, invitar clientes a Sprint Reviews. Sin feedback real, el backlog es especulación. | Definir métricas de outcome claras (retención, adopción, NPS) y revisarlas en cada Sprint Review. | Evolucionar hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos, ajuste del Product Goal con datos reales. |
 
 #### Dev Team
 
 | Dimensión | 0–33% | 34–66% | 67–100% |
 |-----------|-------|--------|---------|
-| Eventos | Apropiarse del Daily; enfocarse en el Sprint Goal; co-crear el Sprint Plan | Generar compromisos concretos en Retro con responsable; Sprint Reviews como conversaciones reales | Generar mejoras sistémicas en Retros; evaluar técnicas avanzadas |
-| Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos | Participar activamente; rechazar Stories sin criterios de aceptación claros | Conectar Stories con el "por qué" de negocio; tomar mejores decisiones técnicas |
-| Dev Team | Definir DoD que todos validen; distribuir el conocimiento | Rotar tareas; implementar pair programming; mapear y eliminar dependencias externas | Implementar límites de WIP; medir cycle time; mejorar el flujo |
-| Transparencia | Mantener el Scrum Board actualizado en tiempo real | Escalar impedimentos temprano en el Daily antes de que bloqueen | Incorporar métricas de flujo (burndown, velocity, cycle time) |
+| Ceremonias | Apropiarse del Daily (15 min orientados al Sprint Goal); co-crear el Sprint Plan. | En el Daily, preguntar si se está en camino al Sprint Goal. En la Retro, generar 1–2 compromisos concretos con dueño. | Profundizar en que la Retro genere mejoras sistémicas; que el Sprint Review sea una conversación real sobre el valor entregado. |
+| Product Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos antes de comprometerse. | Involucrarse activamente: rechazar Stories sin criterios de aceptación claros en el Sprint Planning. | Conectar Stories con el "por qué" de negocio para tomar mejores decisiones técnicas durante el Sprint. |
+| Dev Team | Definir DoD que todos validen; distribuir el conocimiento. Cada miembro debe poder trabajar en cualquier tarea. | Rotar tareas, implementar pair programming, mapear y eliminar dependencias externas frecuentes. | Implementar límites de WIP; medir cycle time; mejorar el flujo para mayor predictibilidad. |
+| Transparencia | Mantener el Scrum Board actualizado en tiempo real. Sin visibilidad compartida no hay inspección posible. | Escalar impedimentos en el Daily antes de que bloqueen el Sprint Goal. | Incorporar métricas de flujo (burndown, velocity, cycle time) para retrospectivas basadas en datos. |
+| Exc. Técnica | Definir DoD con pruebas automatizadas y configurar CI mínimo. Sin esto, entregar con frecuencia es arriesgado. | Aumentar cobertura de tests en áreas críticas; estabilizar CI; incluir deuda técnica en el backlog como ítem de valor. | Evolucionar hacia CD y gestión proactiva de deuda técnica. Medir DORA metrics para seguir mejorando. |
+| Orient. Cliente | Pedir al PO que comparta métricas de uso y organice sesiones de observación de usuarios. Entender el problema real mejora las decisiones técnicas. | Involucrarse en entrevistas de usuario y Sprint Reviews con stakeholders reales. | Conectar métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. |
 
 #### Scrum Master
 
 | Dimensión | 0–33% | 34–66% | 67–100% |
 |-----------|-------|--------|---------|
-| Eventos | Facilitar formación sobre el propósito de cada evento; asegurar compromiso con el Sprint Goal | Mejorar calidad de facilitación; usar técnicas para eventos autónomos del equipo | Enfocarse en la autonomía del equipo para facilitar sus propios eventos |
-| Backlog | Facilitar colaboración PO-equipo; organizar sesiones de refinamiento | Observar sesiones; identificar malentendidos; educar en escritura de User Stories | Conectar backlog con métricas de valor; explorar priorización avanzada |
-| Dev Team | Crear espacios seguros para tomar decisiones; comenzar con autoselección de tareas | Mapear dependencias externas; trabajar en eliminación de impedimentos | Enfocarse en métricas de velocidad y predictibilidad |
-| Transparencia | Establecer Scrum Board visible; formar al equipo sobre su importancia | Trabajar en visibilidad y seguimiento de impedimentos | Crear dashboard de métricas de flujo para conversaciones basadas en datos |
+| Ceremonias | Facilitar formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos. | Mejorar calidad de facilitación; que el Daily sea del equipo (no dirigido al SM); que la Retro genere compromisos medibles con dueño. | Lograr que el equipo sea autónomo en la facilitación — el SM no debería ser facilitador permanente. |
+| Product Backlog | Facilitar la relación PO-equipo; organizar las primeras sesiones de refinamiento; ayudar al PO a escribir User Stories con criterios claros. | Observar sesiones de refinamiento; identificar malentendidos; educar en escritura de historias y estimación relativa. | Apoyar al PO en conectar backlog con métricas de valor; explorar priorización avanzada (WSJF, Cost of Delay). |
+| Dev Team | Crear espacios seguros para que el equipo tome decisiones; empezar con autoselección de tareas en el Sprint Planning. | Mapear dependencias externas e impedimentos sistémicos; trabajar con la organización para eliminarlos. | Trabajar en métricas de equipo (velocity, predictibilidad) y evolucionar la DoD para incrementar calidad continuamente. |
+| Transparencia | Establecer Scrum Board visible; formar al equipo sobre su importancia para la inspección y adaptación. | Crear registro de impedimentos visible y dar seguimiento a su resolución — genera confianza en el proceso. | Crear dashboard de métricas de flujo para conversaciones basadas en datos con stakeholders y decisiones más informadas en la Retro. |
+| Exc. Técnica | Facilitar la conversación sobre la DoD incluyendo criterios de calidad técnica. Conectar con el equipo para entender impedimentos estructurales. | Hacer visible la deuda técnica en el backlog; facilitar la conversación con el PO para priorizarla. Un equipo con deuda descontrolada no puede ser predecible. | Trabajar en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para mejoras basadas en datos objetivos. |
+| Orient. Cliente | Facilitar sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final. Sin esta conexión, el equipo optimiza procesos en lugar de valor. | Trabajar con el PO para establecer métricas de outcome en el concepto del Sprint. Cuando el equipo ve el impacto, la motivación y calidad de decisiones mejoran. | Facilitar la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debe informar tanto el proceso como la estrategia del producto. |
 
 ---
 
@@ -240,13 +276,29 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `participante` | string | Nombre del participante ("Anónimo" si no completó) |
 | `rol` | string | Rol: Product Owner / Dev Team / Scrum Master / Otro |
 | `ciclo` | string | Nombre del ciclo activo al momento del envío |
-| `scoreEventos` | number | Puntaje bruto de la dimensión Eventos |
-| `scoreBacklog` | number | Puntaje bruto de la dimensión Backlog |
+| `tamanoEquipo` | string | Tamaño del equipo: "1–5" / "6–9" / "10+" (opcional) |
+| `tiempoScrum` | string | Tiempo usando Scrum: "<6 meses" / "6–18 meses" / ">18 meses" (opcional) |
+| `scoreEventos` | number | Puntaje bruto de la dimensión Ceremonias |
+| `scoreBacklog` | number | Puntaje bruto de la dimensión Product Backlog |
 | `scoreDevTeam` | number | Puntaje bruto de la dimensión Dev Team |
 | `scoreTransparencia` | number | Puntaje bruto de la dimensión Transparencia |
+| `scoreTecnico` | number | Puntaje bruto de la dimensión Excelencia Técnica |
+| `scoreCliente` | number | Puntaje bruto de la dimensión Orientación al Cliente |
 | `scoreTotalPct` | number | Porcentaje total (0–100) |
 | `nivel` | string | Etiqueta del nivel de madurez |
+| `answers` | object | Respuestas individuales por pregunta (índice → valor 0–3) |
 | `fecha` | timestamp | Timestamp del servidor al momento del envío |
+
+#### `planes`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `equipoId` | string | ID del equipo al que aplica el plan |
+| `equipoNombre` | string | Nombre del equipo (desnormalizado) |
+| `iniciativa` | string | Descripción de la acción de mejora |
+| `responsable` | string | Persona responsable de la acción |
+| `fecha` | string | Fecha objetivo (formato YYYY-MM-DD) |
+| `estado` | string | Estado: "Pendiente" / "En progreso" / "Completado" |
+| `ciclo` | string | Ciclo en que se creó la acción |
 
 ---
 
@@ -262,18 +314,18 @@ Desde el panel admin se puede exportar:
 
 ---
 
-## Mejoras implementadas
+## Mejoras implementadas (commit `58e5a14`)
 
 | Prioridad | Mejora | Descripción |
 |-----------|--------|-------------|
-| Alta | `assessment-config.js` | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan dinámicamente. |
-| Alta | Dispersión / alineación del equipo | Cada tarjeta de equipo muestra badge "Alineación Alta/Media/Baja" y rango min–max por dimensión cuando hay 2+ respuestas. |
-| Alta | Plan de Acción | Nueva pestaña en admin con acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Colección Firestore `planes`. |
-| Media | Nuevas dimensiones | 2 dimensiones nuevas: **Excelencia Técnica** (CI/CD, tests, deuda técnica) y **Orientación al Cliente** (contacto con usuarios, métricas de valor). 14 → **20 preguntas**, 4 → **6 dimensiones**. |
-| Media | Contexto del equipo | Campos opcionales en el intro: tamaño del equipo (1–5 / 6–9 / 10+) y tiempo usando Scrum (<6 / 6–18 / >18 meses). Se guardan en Firestore y en CSV. |
-| Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?teamId=` para pre-seleccionar el equipo en el formulario. |
-| Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear). |
-| Baja | Evolución por pregunta | Las respuestas individuales se guardan en Firestore. En la pestaña Evolución aparece un detalle por pregunta mostrando % del último ciclo y delta respecto al anterior. |
+| Alta | `assessment-config.js` | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan como script externo. |
+| Alta | Dispersión / alineación del equipo | Cada tarjeta de equipo muestra badge "Alineación Alta/Media/Baja" (basado en desviación estándar) y rango min–max por dimensión cuando hay 2+ respuestas. |
+| Alta | Plan de Acción | Nueva pestaña en admin con acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Persiste en colección Firestore `planes`. |
+| Media | Nuevas dimensiones | 2 dimensiones nuevas: **Excelencia Técnica** (CI/CD, tests, deuda técnica) y **Orientación al Cliente** (contacto con usuarios, métricas de valor). 14 → **20 preguntas**, 4 → **6 dimensiones**, 42 → **60 pts máx**. |
+| Media | Contexto del equipo | Campos opcionales en el intro: tamaño del equipo (1–5 / 6–9 / 10+) y tiempo usando Scrum (<6 / 6–18 / >18 meses). Se guardan en Firestore y se incluyen en exportación CSV. |
+| Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?teamId=` para pre-seleccionar el equipo en el formulario público. |
+| Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario). |
+| Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
 
 ---
 
@@ -281,6 +333,7 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `58e5a14` | Feat: mejoras assessment — config centralizada, 6 dimensiones, contexto equipo, alineación, plan de acción, QR, evolución por pregunta |
 | `afe26c9` | Fix: fetch ciclo activo en el momento del submit |
 | `1f0c8d4` | Feat: migración a Firebase + ciclos de medición + exportación + filtros por rol |
 | `d0ae33e` | Feat: recomendaciones por nivel de madurez por dimensión |
