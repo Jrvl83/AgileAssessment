@@ -85,33 +85,34 @@ Fase 4 — Comparativa global
 
 ---
 
-### Ítem 3 — Recomendaciones con tendencia `[Baja]`
+### Ítem 3 — Recomendaciones con tendencia `[Baja]` ✅
 
 **Archivos:** `admin.html` (función `renderEvolution()`)
 
 **Problema que resuelve:** Actualmente la pestaña Evolución detecta retrocesos pero solo añade un prefijo de texto. No reconoce el progreso ni diferencia la urgencia visualmente.
 
-**Implementación:**
-- Cuando `pct > prevPct` pero `pct < 60` (subió pero sigue siendo área de mejora): añadir nota *"Mejora detectada: +X% vs. ciclo anterior. Mantener el foco."* en color verde.
-- Cuando `regressed === true` (`pct < prevPct`): envolver el `rec-item` completo con borde rojo y clase `rec-item--urgent` en lugar de solo el prefijo de texto actual.
-- Cuando `prevPct === null` (solo un ciclo): no mostrar ningún indicador de tendencia.
+**Implementado:**
+- `rec-item--urgent`: fondo rojo + borde izquierdo rojo cuando `pct < prevPct`. Badge *"▼ Retroceso −X% vs. ciclo anterior"* en rojo.
+- `rec-item--improving`: fondo verde + borde izquierdo verde cuando `pct > prevPct && pct < 60`. Badge *"▲ Mejora +X% vs. ciclo anterior — mantener el foco"* en verde.
+- Cuando `prevPct === null` (un solo ciclo): sin indicador de tendencia.
+- El delta numérico exacto aparece en ambos casos.
 
-**Resultado esperado:** La vista de Evolución diferencia visualmente si una dimensión está mejorando, estancada o en retroceso, con urgencia explícita en el último caso.
+**Resultado:** La vista de Evolución diferencia visualmente retrocesos (rojo), mejoras en proceso (verde) y dimensiones sin cambio. La urgencia es inmediatamente reconocible.
 
 ---
 
-### Ítem 6 — Badge "Crítica" `[Baja]`
+### Ítem 6 — Badge "Crítica" `[Baja]` ✅
 
 **Archivos:** `admin.html` (función `renderAnalysis()`)
 
 **Problema que resuelve:** Todas las recomendaciones tienen el mismo peso visual. El admin no sabe de un vistazo cuál dimensión requiere atención inmediata.
 
-**Implementación:**
-- Versión simple: si la dimensión más baja del equipo tiene `pct < 33`, añadir badge rojo *"Crítica"* en su `rec-item` antes de las demás.
-- Máximo un badge "Crítica" por tarjeta de equipo.
-- Añadir clase `no-print` para que no aparezca en el PDF exportado.
+**Implementado:**
+- `criticalDim`: la dimensión con menor pct si ese pct es < 33. Máximo una por tarjeta.
+- Badge `<span class="badge-critical no-print">Crítica</span>` aparece inline antes del label de la dimensión.
+- Clase `no-print` asegura que no aparece en el PDF exportado.
 
-**Resultado esperado:** El admin identifica en segundos si hay una dimensión crítica sin leer todos los textos.
+**Resultado:** El admin identifica en segundos la dimensión más crítica sin necesidad de leer todos los textos. El badge no aparece si ninguna dimensión está bajo 33%.
 
 ---
 
@@ -180,7 +181,7 @@ Fase 4 — Comparativa global
 | 4 — Rol mayoritario | ✅ Completado | `214674c` |
 | 1 — Contexto equipo | ✅ Completado | `214674c` |
 | 2 — Análisis cruzado | ✅ Completado | `214674c` |
-| 3 — Tendencia en Evolución | Pendiente | — |
-| 6 — Badge Crítica | Pendiente | — |
+| 3 — Tendencia en Evolución | ✅ Completado | `1bf9013` |
+| 6 — Badge Crítica | ✅ Completado | `1bf9013` |
 | 5 — Botón Plan de Acción | Pendiente | — |
 | 7 — Comparativa global | Pendiente | — |
