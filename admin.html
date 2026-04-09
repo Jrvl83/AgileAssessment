@@ -142,6 +142,9 @@
   .badge-active { font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px; background:var(--green-light); color:var(--green); }
   .badge-inactive { font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px; background:var(--surface-3); color:var(--ink-faint); }
 
+  /* Plan de Acción */
+  .plan-state-badge { font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px; flex-shrink:0; }
+
   /* Print */
   @media print {
     .tab-bar, .toast, .no-print, .role-filter { display:none !important; }
@@ -165,9 +168,12 @@
   <div id="app"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div id="qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="assessment-config.js"></script>
 <script>
 // ── Config ───────────────────────────────────────────────────────
 const ADMIN_PASS = 'AgileAdmin';   // ← cambia esta contraseña
@@ -182,117 +188,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-const LEVELS = [
-  { max:40,  label:'Inicial',       color:'#c0282a', bg:'#fce8e8' },
-  { max:65,  label:'En desarrollo', color:'#a05c0a', bg:'#fdefd6' },
-  { max:82,  label:'Maduro',        color:'#1a4fd6', bg:'#dce6ff' },
-  { max:100, label:'Avanzado',      color:'#0d7a52', bg:'#d4f0e5' }
-];
+// LEVELS, DIMS, RECS, RECS_ROLE, getLevel, getRec → assessment-config.js
 
-const DIMS = [
-  { key:'eventos',       label:'Ceremonias',     max:12, color:'#1a4fd6', field:'Score Eventos' },
-  { key:'backlog',       label:'Product Backlog', max:9,  color:'#0d7a52', field:'Score Backlog' },
-  { key:'devteam',       label:'Dev Team',        max:12, color:'#a05c0a', field:'Score Dev Team' },
-  { key:'transparencia', label:'Transparencia',   max:9,  color:'#7c3aed', field:'Score Transparencia' }
-];
-
-const RECS = {
-  eventos: [
-    "Las ceremonias no se realizan de forma consistente. Establecer el ritmo básico: Sprint Planning con Goal claro, Daily de 15 minutos orientado al objetivo y Sprint Review con stakeholders reales. Sin eventos regulares no hay empirismo posible.",
-    "Las ceremonias ocurren pero sin el propósito correcto. Trabajar en la calidad del Sprint Goal — debe ser retador y guiar cada decisión del Sprint. El Daily debe adaptarse al plan, no ser un reporte de estado.",
-    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint."
-  ],
-  backlog: [
-    "El Product Backlog no cumple su función. Definir un Product Goal claro y ordenar los ítems por valor de negocio. Sin priorización real el equipo no puede decidir qué construir primero.",
-    "El backlog existe pero la priorización no refleja valor real. Invertir en refinamiento regular donde el PO trabaje con el equipo para definir criterios de aceptación antes de cada Sprint Planning.",
-    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento."
-  ],
-  devteam: [
-    "El equipo no se autoorganiza y depende de asignación externa. Establecer una Definition of Done y empoderar al equipo para que decida cómo lograr el Sprint Goal sin dirección externa.",
-    "Hay autoorganización parcial con dependencias frecuentes. Mapear las dependencias externas y planificar cómo internalizar esas habilidades para entregar valor completo.",
-    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable."
-  ],
-  transparencia: [
-    "La transparencia es muy baja. Empezar con un Scrum Board visible y actualizado en tiempo real. Sin visibilidad compartida no es posible inspeccionar ni adaptar el proceso.",
-    "Hay visibilidad parcial pero los impedimentos no fluyen bien. Trabajar en identificar y escalar impedimentos rápidamente, y en que la Retro genere compromisos concretos y medibles.",
-    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos."
-  ]
-};
-
-const RECS_ROLE = {
-  'Product Owner': {
-    eventos: [
-      "El Sprint Goal no existe o no guía las decisiones del Sprint. Como PO, tu primera prioridad es definir un objetivo de negocio claro y medible para cada Sprint. Sin Sprint Goal, el equipo no puede priorizar ni rechazar trabajo durante el Sprint.",
-      "El Sprint Goal existe pero no conecta con el Product Goal. Trabaja en que cada Sprint Goal sea un paso concreto hacia el Product Goal. En la Sprint Review, enfoca la conversación en valor de negocio validado, no solo en funcionalidades demostradas.",
-      "Buena práctica de ceremonias. Profundiza en que cada Sprint Review sea una sesión de inspección y adaptación del Product Backlog basada en feedback real de stakeholders y métricas de negocio."
-    ],
-    backlog: [
-      "El Product Backlog no cumple su función. Define un Product Goal inspirador y ordena el backlog por valor de negocio. Empieza escribiendo User Stories con criterios de aceptación claros — sin esto el equipo no puede comprometerse en el Sprint Planning.",
-      "La priorización no refleja valor real. Implementa refinamiento regular donde trabajes con el equipo definiendo criterios de aceptación antes del Sprint Planning. Evalúa WSJF o Kano para priorizar con datos de negocio.",
-      "Buena gestión del backlog. Conecta cada ítem explícitamente con el Product Goal y explora Impact Mapping u OKRs para asegurar que cada Sprint entrega valor estratégico, no solo funcionalidad."
-    ],
-    devteam: [
-      "El equipo no puede autoorganizarse sin contexto de negocio. Estate disponible durante el Sprint para aclarar dudas rápidamente — tu accesibilidad es crítica para que el equipo tome decisiones sin esperar.",
-      "Hay dependencias que frenan al equipo. Revisa si las User Stories llegan al Sprint Planning con suficiente detalle y criterios claros. Trabaja con el Scrum Master para eliminar las dependencias externas que el equipo no puede resolver solo.",
-      "Buena colaboración con el equipo. Involúcrate en definir la Definition of Done para que refleje los criterios de calidad que el negocio realmente necesita, no solo los criterios técnicos."
-    ],
-    transparencia: [
-      "La transparencia del producto es baja. El Product Backlog debe ser visible a todos los stakeholders. Define métricas sencillas de progreso hacia el Product Goal para poder inspeccionar si el equipo va por buen camino.",
-      "Hay visibilidad parcial. Mejora compartiendo el Product Goal activamente en cada Sprint Review y conectando el Sprint Backlog con los objetivos de negocio para que los stakeholders entiendan el valor que se está creando.",
-      "Excelente transparencia. Evoluciona hacia métricas de outcome (impacto en el negocio) en lugar de output (funcionalidades entregadas) para demostrar el valor real del trabajo del equipo."
-    ]
-  },
-  'Dev Team': {
-    eventos: [
-      "Las ceremonias no generan valor para el equipo. Apropiáos del Daily: 15 minutos orientados al Sprint Goal, no un reporte de tareas al Scrum Master. El Sprint Planning debe terminar con un plan co-creado que el equipo crea factible.",
-      "Las ceremonias ocurren pero son rituales vacíos. En el Daily, preguntad: ¿estamos en camino al Sprint Goal, hay algo que nos bloquea? En la Retro, generad 1-2 compromisos concretos con dueño y revisad su cumplimiento en la siguiente.",
-      "Buena práctica. Profundizad en que la Retro genere mejoras sistémicas (proceso, técnica, colaboración) y en que el Sprint Review sea una conversación real con stakeholders sobre el valor entregado."
-    ],
-    backlog: [
-      "El equipo llega al Sprint Planning sin entender los ítems. Exigid sesiones de refinamiento regulares con el PO donde podáis hacer preguntas técnicas, identificar riesgos y estimar con confianza antes de comprometerse.",
-      "La participación en el refinamiento es irregular. Involucrarse activamente: si una User Story llega al Sprint Planning sin criterios de aceptación claros, es legítimo no aceptarla. El equipo co-crea el Sprint Backlog.",
-      "Buena participación en el backlog. Avanzad en conectar cada User Story con el 'por qué' de negocio para que el equipo pueda tomar mejores decisiones técnicas durante el Sprint."
-    ],
-    devteam: [
-      "El equipo depende de asignación externa. Empezad por definir una Definition of Done que todos validen. Cada miembro debe poder trabajar en cualquier tarea del Sprint — la autoorganización requiere responsabilidad colectiva.",
-      "Hay autoorganización parcial y silos de especialización. Rotad tareas, implementad pair programming o code reviews para distribuir el conocimiento. Las dependencias externas frecuentes deben mapearse y eliminarse.",
-      "Excelente autonomía. Implementad límites de WIP para reducir el multitasking y maximizar el flujo. Medir el cycle time ayuda a identificar cuellos de botella y hacer proyecciones más fiables."
-    ],
-    transparencia: [
-      "El Scrum Board no refleja la realidad. Cada miembro es responsable de actualizarlo en tiempo real. Sin visibilidad compartida el equipo no puede colaborar ni identificar impedimentos antes de que bloqueen el Sprint Goal.",
-      "La visibilidad existe pero los impedimentos no se escalan a tiempo. Cread el hábito de levantar impedimentos en el Daily antes de que bloqueen el Sprint. El Scrum Master os ayuda a eliminarlos, pero primero deben ser visibles.",
-      "Gran transparencia. Incorporad métricas de flujo (burndown, velocity, cycle time) para hacer retrospectivas basadas en datos y proyecciones más predictibles para los stakeholders."
-    ]
-  },
-  'Scrum Master': {
-    eventos: [
-      "Las ceremonias no tienen el propósito correcto. Facilita sesiones de formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos, no solo con una lista de tareas.",
-      "Las ceremonias ocurren pero son superficiales. Mejora la calidad de facilitación: usa técnicas para que el Daily sea del equipo (no dirigido al SM) y que la Retro genere compromisos medibles con dueño.",
-      "Buenas ceremonias. Enfócate en que el equipo sea autónomo en la facilitación — tu objetivo es hacer que los eventos fluyan bien sin necesitarte como facilitador permanente."
-    ],
-    backlog: [
-      "El PO y el equipo no colaboran en el backlog. Facilita la relación: organiza las primeras sesiones de refinamiento, ayuda al PO a escribir User Stories con criterios claros y al equipo a estimar con confianza.",
-      "El refinamiento ocurre pero podría ser más efectivo. Observa las sesiones e identifica dónde se generan malentendidos. Educa al PO en técnicas de escritura de historias y al equipo en estimación relativa.",
-      "Buena gestión del backlog. Apoya al PO en conectar el backlog con métricas de valor y explora con el equipo técnicas de priorización avanzadas como WSJF o Cost of Delay."
-    ],
-    devteam: [
-      "El equipo no se autoorganiza. Crea espacios seguros para que tome decisiones: empieza con que el equipo elija sus propias tareas en el Sprint Planning. Identifica y elimina las dependencias externas que impiden la autonomía.",
-      "Hay autoorganización parcial. Mapea las dependencias externas e impedimentos sistémicos que frenan al equipo. Trabajar con la organización para eliminarlos es tu palanca de mayor impacto como SM.",
-      "Buen nivel de autoorganización. Trabaja en métricas de equipo (velocity, predictibilidad) y ayúdales a evolucionar la DoD para incrementar la calidad del Increment continuamente."
-    ],
-    transparencia: [
-      "La transparencia es el pilar más urgente. Establece un Scrum Board visible y forma al equipo en la importancia de actualizarlo. Sin artefactos que reflejen la realidad, la inspección y adaptación son imposibles.",
-      "Hay visibilidad parcial. Trabaja en que los impedimentos sean visibles antes de que escalen: crea un registro de impedimentos visible y da seguimiento a su resolución — esto genera confianza en el proceso.",
-      "Gran transparencia. Evoluciona hacia un dashboard de métricas de flujo que permita conversaciones basadas en datos con stakeholders y decisiones de mejora más informadas en la Retro."
-    ]
-  }
-};
-
-function getRec(dim, pct, role) {
-  const idx = pct <= 33 ? 0 : pct <= 66 ? 1 : 2;
-  if (role && RECS_ROLE[role] && RECS_ROLE[role][dim]) return RECS_ROLE[role][dim][idx];
-  return RECS[dim][idx];
-}
 
 // ── State ────────────────────────────────────────────────────────
 let authenticated = sessionStorage.getItem('adminAuth') === 'true';
@@ -309,10 +206,28 @@ let cycleFilter = 'Todos';
 let evolTeamId = '';
 let evolRole = 'Todos';
 let newCycleName = '';
+let plans = [];
+let newPlanTeamId = '';
+let newPlanIniciativa = '';
+let newPlanResponsable = '';
+let newPlanFecha = '';
+let newPlanCiclo = '';
+let planTeamFilter = 'Todos';
+let planCycleFilter = 'Todos';
 
 // ── Helpers ──────────────────────────────────────────────────────
 
-function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length - 1]; }
+function calcDispersion(pctArr) {
+  if (pctArr.length < 2) return null;
+  const mean = pctArr.reduce((a,b) => a+b, 0) / pctArr.length;
+  const sd = Math.round(Math.sqrt(pctArr.reduce((a,b) => a + Math.pow(b-mean, 2), 0) / pctArr.length));
+  const min = Math.min(...pctArr);
+  const max = Math.max(...pctArr);
+  const align = sd < 15 ? { label:'Alta',  color:'#0d7a52', bg:'#d4f0e5' }
+              : sd < 25 ? { label:'Media', color:'#a05c0a', bg:'#fdefd6' }
+              :            { label:'Baja',  color:'#c0282a', bg:'#fce8e8' };
+  return { sd, min, max, align };
+}
 
 function getTeamFilteredStats(tid, roleFilter, cFilter) {
   const cf = cFilter || 'Todos';
@@ -335,7 +250,13 @@ function getTeamFilteredStats(tid, roleFilter, cFilter) {
     const avg = dimSums[d.key] / filtered.length;
     avgDims[d.key] = { score: +avg.toFixed(1), pct: Math.round((avg / d.max) * 100) };
   });
-  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal) };
+  const dispersion = {};
+  DIMS.forEach(d => {
+    const pcts = filtered.map(r => Math.round(((r.fields[d.field] || 0) / d.max) * 100));
+    dispersion[d.key] = calcDispersion(pcts);
+  });
+  dispersion.overall = calcDispersion(filtered.map(r => r.fields['Score Total %'] || 0));
+  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion };
 }
 
 function computeStats() {
@@ -432,7 +353,7 @@ function exportSummary() {
 }
 
 function exportRaw() {
-  const headers = ['Fecha', 'Equipo', 'Participante', 'Rol', 'Ciclo',
+  const headers = ['Fecha', 'Equipo', 'Participante', 'Rol', 'Ciclo', 'Tamaño Equipo', 'Tiempo Scrum',
     'Score Total %', 'Nivel', ...DIMS.map(d => d.label)];
   const rows = [headers];
   [...responses]
@@ -445,6 +366,8 @@ function exportRaw() {
         r.fields.Participante || '',
         r.fields.Rol || '',
         r.fields.Ciclo || '',
+        r.fields['Tamaño Equipo'] || '',
+        r.fields['Tiempo Scrum'] || '',
         r.fields['Score Total %'] || 0,
         r.fields.Nivel || '',
         ...DIMS.map(d => r.fields[d.field] || 0)
@@ -481,7 +404,18 @@ function getEvolutionData(tid, role) {
       const avg = dimSums[d.key] / rs.length;
       avgDims[d.key] = { pct: Math.round((avg / d.max) * 100) };
     });
-    return { cycleName, count: rs.length, avgTotal, avgDims, level: getLevel(avgTotal) };
+    const qSums = {};
+    let qCount = 0;
+    rs.forEach(r => {
+      if (r.fields.Answers && Object.keys(r.fields.Answers).length > 0) {
+        qCount++;
+        Object.entries(r.fields.Answers).forEach(([k, v]) => { qSums[k] = (qSums[k] || 0) + Number(v); });
+      }
+    });
+    const avgQuestions = qCount > 0
+      ? Object.fromEntries(Object.entries(qSums).map(([k, sum]) => [k, +(sum / qCount).toFixed(2)]))
+      : null;
+    return { cycleName, count: rs.length, avgTotal, avgDims, level: getLevel(avgTotal), avgQuestions };
   }).sort((a, b) => {
     const ia = cycles.findIndex(c => c.name === a.cycleName);
     const ib = cycles.findIndex(c => c.name === b.cycleName);
@@ -510,13 +444,13 @@ async function fetchAllData() {
           Participante: r.participante,
           Rol: r.rol,
           Ciclo: r.ciclo || '',
-          'Score Eventos': r.scoreEventos || 0,
-          'Score Backlog': r.scoreBacklog || 0,
-          'Score Dev Team': r.scoreDevTeam || 0,
-          'Score Transparencia': r.scoreTransparencia || 0,
+          ...Object.fromEntries(DIMS.map(d => [d.field, r[d.storeKey] || 0])),
           'Score Total %': r.scoreTotalPct || 0,
           Nivel: r.nivel || '',
-          Fecha: r.fecha ? r.fecha.toDate().toISOString() : ''
+          Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
+          'Tamaño Equipo': r.tamanoEquipo || '',
+          'Tiempo Scrum': r.tiempoScrum || '',
+          Answers: r.answers || {}
         }
       };
     }).sort((a, b) => (b.fields.Fecha || '').localeCompare(a.fields.Fecha || ''));
@@ -525,6 +459,7 @@ async function fetchAllData() {
     cycles = cSnap.docs.map(d => ({ id: d.id, name: d.data().nombre, active: !!d.data().activo }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
+    await fetchPlans();
     computeStats();
   } catch(e) { toast('Error al conectar con Firebase'); }
   loading = false; render();
@@ -580,7 +515,7 @@ function login() {
 function logout() {
   authenticated = false;
   sessionStorage.removeItem('adminAuth');
-  teams = []; responses = []; teamStats = {}; render();
+  teams = []; responses = []; teamStats = {}; plans = []; render();
 }
 
 // ── Render ───────────────────────────────────────────────────────
@@ -614,6 +549,7 @@ function renderShell() {
       <div class="tabs">
         <button class="tab ${activeTab==='analysis'?'active':''}"  onclick="activeTab='analysis';render()">Análisis</button>
         <button class="tab ${activeTab==='evolution'?'active':''}" onclick="activeTab='evolution';render()">Evolución</button>
+        <button class="tab ${activeTab==='plan'?'active':''}"      onclick="activeTab='plan';render()">Plan de Acción</button>
         <button class="tab ${activeTab==='teams'?'active':''}"     onclick="activeTab='teams';render()">Equipos</button>
       </div>
       <div class="tab-actions">
@@ -621,7 +557,7 @@ function renderShell() {
         <button class="btn sm danger" onclick="logout()">Cerrar sesión</button>
       </div>
     </div>
-    ${activeTab === 'analysis' ? renderAnalysis() : activeTab === 'evolution' ? renderEvolution() : renderTeams()}`;
+    ${activeTab === 'analysis' ? renderAnalysis() : activeTab === 'evolution' ? renderEvolution() : activeTab === 'plan' ? renderPlan() : renderTeams()}`;
 }
 
 // ── Analysis tab ─────────────────────────────────────────────────
@@ -766,7 +702,7 @@ function renderAnalysis() {
             <div class="tac-header">
               <div>
                 <div class="tac-name">${s.name}</div>
-                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}</div>
+                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}</div>
               </div>
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>
@@ -776,6 +712,7 @@ function renderAnalysis() {
             <div class="role-filter no-print">${rolePills}</div>
             ${DIMS.map(d => {
               const dp = ds.avgDims[d.key];
+              const disp = ds.dispersion && ds.dispersion[d.key];
               return `<div class="dim-row">
                 <div class="dim-row-header">
                   <span class="dim-label">${d.label}</span>
@@ -784,6 +721,10 @@ function renderAnalysis() {
                 <div class="dim-bar-wrap">
                   <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
                 </div>
+                ${disp ? `<div style="display:flex;justify-content:space-between;margin-top:2px;">
+                  <span style="font-size:10px;color:var(--ink-faint);">Rango: ${disp.min}%–${disp.max}%</span>
+                  <span style="font-size:10px;color:${disp.align.color};">±${disp.sd}%</span>
+                </div>` : ''}
               </div>`;
             }).join('')}
             <div class="recs-section">
@@ -919,6 +860,46 @@ function renderEvolution() {
          <div class="rec-text">Excelente progreso en todas las dimensiones. Mantener el ritmo de mejora continua.</div>
        </div>`;
 
+  // Detalle por pregunta (ciclo anterior → último ciclo)
+  let qDetailCard = '';
+  if (data.length > 1 && latest.avgQuestions && prevCycle && prevCycle.avgQuestions) {
+    const qRows = SECTIONS.flatMap(sec =>
+      sec.questions.map((q, qi) => {
+        const key = sec.id + '_' + qi;
+        const latestPct = Math.round((latest.avgQuestions[key] || 0) / 3 * 100);
+        const prevPct   = Math.round((prevCycle.avgQuestions[key] || 0) / 3 * 100);
+        return { key, text: q.text, secId: sec.id, latestPct, prevPct, delta: latestPct - prevPct };
+      })
+    );
+    const dimSections = DIMS.map(d => {
+      const qs = qRows.filter(q => q.secId === d.key);
+      if (!qs.length) return '';
+      return `
+        <div style="margin-bottom:20px;">
+          <div style="font-size:11px;font-weight:600;color:${d.color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
+            <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;vertical-align:middle;"></span>${d.label}
+          </div>
+          ${qs.map((q, i) => `
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+              <div style="font-size:11px;font-weight:600;color:var(--ink-faint);width:22px;flex-shrink:0;">P${i+1}</div>
+              <div style="flex:1;font-size:12px;color:var(--ink-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${q.text}">${q.text.length > 72 ? q.text.slice(0,72)+'…' : q.text}</div>
+              <div style="font-size:12px;font-weight:600;color:var(--ink);flex-shrink:0;min-width:36px;text-align:right;">${q.latestPct}%</div>
+              <div style="flex-shrink:0;min-width:54px;text-align:right;">
+                ${q.delta > 0 ? `<span class="delta-up">▲ +${q.delta}%</span>`
+                : q.delta < 0 ? `<span class="delta-dn">▼ ${q.delta}%</span>`
+                : `<span class="delta-eq">→ 0%</span>`}
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
+    qDetailCard = `
+      <div class="section-card" style="margin-top:0;">
+        <div class="section-title">Detalle por pregunta · ${prevCycle.cycleName} → ${latest.cycleName}</div>
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;line-height:1.5;">Puntaje promedio de cada pregunta en el último ciclo y variación respecto al anterior.</p>
+        ${dimSections}
+      </div>`;
+  }
+
   return `
     <div class="section-card">
       <div class="section-title">Evolución · ${teamName}${evolRole !== 'Todos' ? ' · ' + evolRole : ''}</div>
@@ -930,7 +911,8 @@ function renderEvolution() {
         <div class="recs-label">Recomendaciones · ${data[data.length-1].cycleName}${evolRole !== 'Todos' ? ' · ' + evolRole : ''}</div>
         ${recs}
       </div>
-    </div>`;
+    </div>
+    ${qDetailCard}`;
 }
 
 // ── Teams tab ─────────────────────────────────────────────────────
@@ -994,6 +976,7 @@ function renderTeams() {
               <span class="team-count-badge">${count} respuesta${count !== 1 ? 's' : ''}</span>
               <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
               <div style="display:flex;gap:6px;">
+                <button class="btn sm" onclick="showQR('${t.id}','${esc}')">QR</button>
                 <button class="btn sm" onclick="toggleActive('${t.id}','${esc}',${t.active})">
                   ${t.active ? 'Desactivar' : 'Activar'}
                 </button>
@@ -1009,6 +992,228 @@ function renderTeams() {
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>
         <a href="https://console.firebase.google.com/project/agile-assessment-5a117/firestore" target="_blank" class="btn sm">Ver en Firebase ↗</a>
       </div>
+      ${list}
+    </div>`;
+}
+
+// ── QR Code ──────────────────────────────────────────────────────
+function showQR(teamId, teamName) {
+  const url = window.location.origin + '/?teamId=' + teamId;
+  const modal = document.getElementById('qr-modal');
+  modal.style.display = 'flex';
+  modal.innerHTML = `
+    <div style="background:white;border-radius:var(--radius);padding:28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:600;color:var(--ink);">Compartir assessment</div>
+        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+      </div>
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:20px;">Comparte este QR con el equipo <strong>${teamName}</strong> para que accedan al assessment con el equipo pre-seleccionado.</div>
+      <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:20px;"></div>
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" onclick="copyQRUrl('${url}')" style="flex:1;">Copiar link</button>
+        <button class="btn" onclick="closeQR()">Cerrar</button>
+      </div>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) closeQR(); };
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(document.getElementById('qr-canvas'), {
+      text: url, width: 180, height: 180,
+      colorDark: '#0f1117', colorLight: '#ffffff'
+    });
+  } else {
+    document.getElementById('qr-canvas').innerHTML =
+      `<div style="font-size:12px;color:var(--ink-faint);text-align:center;padding:16px;">Copia el link de arriba para compartir.</div>`;
+  }
+}
+
+function closeQR() {
+  const modal = document.getElementById('qr-modal');
+  modal.style.display = 'none';
+  modal.innerHTML = '';
+}
+
+function copyQRUrl(url) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => toast('Link copiado'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('Link copiado');
+  }
+}
+
+// ── Plan de Acción ───────────────────────────────────────────────
+async function fetchPlans() {
+  try {
+    const snap = await db.collection('planes').get();
+    plans = snap.docs.map(d => ({
+      id: d.id, ...d.data(),
+      _ms: d.data().fechaCreacion ? d.data().fechaCreacion.toMillis() : 0
+    })).sort((a, b) => b._ms - a._ms);
+  } catch(e) { plans = []; }
+}
+
+async function addPlan() {
+  if (!newPlanTeamId || !newPlanIniciativa.trim()) return;
+  const team = teams.find(t => t.id === newPlanTeamId);
+  const cicloFinal = newPlanCiclo || (cycles.find(c => c.active) || {}).name || '';
+  try {
+    await db.collection('planes').add({
+      equipoId: newPlanTeamId,
+      equipoNombre: team ? team.name : '',
+      iniciativa: newPlanIniciativa.trim(),
+      responsable: newPlanResponsable.trim(),
+      fechaObjetivo: newPlanFecha,
+      estado: 'pendiente',
+      ciclo: cicloFinal,
+      fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    newPlanIniciativa = ''; newPlanResponsable = ''; newPlanFecha = '';
+    toast('Acción agregada');
+    await fetchPlans();
+    render();
+  } catch(e) { toast('Error al guardar'); }
+}
+
+async function updatePlanStatus(id, status) {
+  try {
+    await db.collection('planes').doc(id).update({ estado: status });
+    await fetchPlans();
+    render();
+  } catch(e) { toast('Error de conexión'); }
+}
+
+async function deletePlan(id) {
+  if (!confirm('¿Eliminar esta acción?')) return;
+  try {
+    await db.collection('planes').doc(id).delete();
+    toast('Acción eliminada');
+    await fetchPlans();
+    render();
+  } catch(e) { toast('Error de conexión'); }
+}
+
+function renderPlan() {
+  if (loading) return `<div class="empty-state">Cargando datos…</div>`;
+
+  const STATE = {
+    'pendiente': { label:'Pendiente', color:'#a05c0a', bg:'#fdefd6' },
+    'en-curso':  { label:'En curso',  color:'#1a4fd6', bg:'#dce6ff' },
+    'completado':{ label:'Completado',color:'#0d7a52', bg:'#d4f0e5' }
+  };
+
+  const activeTeams = teams.filter(t => t.active);
+  const availCycles = cycles.map(c => c.name);
+
+  const filtered = plans
+    .filter(p => planTeamFilter === 'Todos' || p.equipoNombre === planTeamFilter)
+    .filter(p => planCycleFilter === 'Todos' || p.ciclo === planCycleFilter);
+
+  const counts = { pendiente:0, 'en-curso':0, completado:0 };
+  filtered.forEach(p => { if (counts[p.estado] !== undefined) counts[p.estado]++; });
+
+  // Filters
+  const teamNames = [...new Set(plans.map(p => p.equipoNombre).filter(Boolean))].sort();
+  const teamPills = teamNames.length > 1 ? `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;">Equipo</span>
+      ${['Todos', ...teamNames].map(n => `<button class="role-pill ${n===planTeamFilter?'active':''}" onclick="planTeamFilter='${n.replace(/'/g,"\\'")}';render()">${n}</button>`).join('')}
+    </div>` : '';
+
+  const cyclePills = availCycles.length ? `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;">Ciclo</span>
+      ${['Todos', ...availCycles].map(c => `<button class="role-pill ${c===planCycleFilter?'active':''}" onclick="planCycleFilter='${c.replace(/'/g,"\\'")}';render()">${c}</button>`).join('')}
+    </div>` : '';
+
+  // Add form
+  const addForm = `
+    <div class="section-card">
+      <div class="section-title">Nueva acción de mejora</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Equipo</label>
+          <select class="field-input" onchange="newPlanTeamId=this.value">
+            <option value="">— Seleccionar equipo —</option>
+            ${activeTeams.map(t => `<option value="${t.id}" ${newPlanTeamId===t.id?'selected':''}>${t.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Ciclo</label>
+          <select class="field-input" onchange="newPlanCiclo=this.value">
+            <option value="">— Ciclo activo —</option>
+            ${cycles.map(c => `<option value="${c.name}" ${newPlanCiclo===c.name?'selected':''}>${c.name}${c.active?' (activo)':''}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Iniciativa / Acción</label>
+        <input class="field-input" type="text" placeholder="Ej. Definir Definition of Done con el equipo"
+          value="${newPlanIniciativa.replace(/"/g,'&quot;')}" oninput="newPlanIniciativa=this.value"
+          onkeydown="if(event.key==='Enter')addPlan()"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Responsable</label>
+          <input class="field-input" type="text" placeholder="Ej. Scrum Master"
+            value="${newPlanResponsable.replace(/"/g,'&quot;')}" oninput="newPlanResponsable=this.value"/>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Fecha objetivo</label>
+          <input class="field-input" type="date" value="${newPlanFecha}" oninput="newPlanFecha=this.value"/>
+        </div>
+      </div>
+      <button class="btn primary" onclick="addPlan()" ${(!newPlanTeamId||!newPlanIniciativa.trim())?'disabled':''}>+ Agregar acción</button>
+    </div>`;
+
+  // Stats
+  const statsRow = `
+    <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+      ${Object.entries(STATE).map(([k,v]) => `
+        <div class="stat-card">
+          <div class="stat-num" style="color:${v.color}">${counts[k]}</div>
+          <div class="stat-label">${v.label}</div>
+        </div>`).join('')}
+    </div>`;
+
+  // List
+  const list = filtered.length === 0
+    ? `<div class="empty-state" style="padding:24px 0;">No hay acciones para los filtros seleccionados.</div>`
+    : `<div style="display:flex;flex-direction:column;gap:10px;">
+        ${filtered.map(p => {
+          const sc = STATE[p.estado] || STATE['pendiente'];
+          const otherStates = Object.entries(STATE).filter(([k]) => k !== p.estado);
+          return `
+            <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:14px;font-weight:500;color:var(--ink);margin-bottom:6px;">${p.iniciativa}</div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    ${p.equipoNombre ? `<span style="font-size:11px;font-weight:500;color:var(--ink-muted);">${p.equipoNombre}</span>` : ''}
+                    ${p.responsable ? `<span style="font-size:11px;color:var(--ink-faint);">· ${p.responsable}</span>` : ''}
+                    ${p.ciclo ? `<span style="font-size:11px;color:var(--ink-faint);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:99px;">${p.ciclo}</span>` : ''}
+                    ${p.fechaObjetivo ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${p.fechaObjetivo}</span>` : ''}
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+                  <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:${sc.bg};color:${sc.color};">${sc.label}</span>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+                    ${otherStates.map(([k,v]) => `<button class="btn sm" onclick="updatePlanStatus('${p.id}','${k}')" style="padding:3px 8px;font-size:11px;">${v.label}</button>`).join('')}
+                    <button class="btn sm danger" onclick="deletePlan('${p.id}')" style="padding:3px 8px;font-size:11px;">✕</button>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+
+  return addForm + `
+    <div class="section-card">
+      <div class="section-title">Acciones en seguimiento</div>
+      <div class="no-print">${teamPills}${cyclePills}</div>
+      ${statsRow}
       ${list}
     </div>`;
 }

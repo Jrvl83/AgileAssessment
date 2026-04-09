@@ -405,13 +405,14 @@
   <div class="header">
     <div class="header-eyebrow">Scrum Guide Standard</div>
     <h1>Assessment de<br>Madurez Agile</h1>
-    <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 14 preguntas · ~8 minutos.</p>
+    <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 20 preguntas · ~12 minutos.</p>
   </div>
   <div id="app"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="assessment-config.js"></script>
 <script>
 // ── Firebase config ──────────────────────────────────────────────
 const firebaseConfig = {
@@ -426,93 +427,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 // ────────────────────────────────────────────────────────────────
 
-const SECTIONS = [
-  {
-    id:"eventos", tag:"Sección 1 de 4", title:"Ceremonias y ritmo del equipo",
-    desc:"Cómo el equipo vive los eventos definidos en la Scrum Guide", role:"PO + Dev Team",
-    questions:[
-      { text:"¿Con qué frecuencia se realiza la Sprint Planning y genera un Sprint Goal claro?",
-        opts:["Nunca o rara vez","A veces, pero el Goal es vago","Casi siempre con Goal definido","Siempre; el Goal guía cada decisión del Sprint"] },
-      { text:"¿El Daily Scrum se usa para inspeccionar el progreso hacia el Sprint Goal y adaptar el plan?",
-        opts:["No hacemos Daily o es un reporte de estado","Hacemos Daily pero sin foco en el Goal","Mayormente nos enfocamos en el Goal","El Daily es una herramienta real de adaptación diaria"] },
-      { text:"¿La Sprint Review involucra a stakeholders reales y genera feedback accionable?",
-        opts:["No hacemos Review o es solo interna","Hay stakeholders pero el feedback no se incorpora","A veces logramos feedback útil","Siempre; los stakeholders influyen el Product Backlog"] },
-      { text:"¿La Retrospectiva produce mejoras concretas que se implementan en el siguiente Sprint?",
-        opts:["No hacemos Retro","Hacemos Retro pero sin compromisos concretos","Definimos mejoras pero pocas se implementan","Las mejoras se rastrean y se implementan sistemáticamente"] }
-    ]
-  },
-  {
-    id:"backlog", tag:"Sección 2 de 4", title:"Gestión del Product Backlog",
-    desc:"Evaluación desde la perspectiva del Product Owner", role:"Product Owner",
-    questions:[
-      { text:"¿El Product Backlog está ordenado por valor y refleja las necesidades reales de los usuarios?",
-        opts:["No está ordenado o no existe claro","Está ordenado por esfuerzo o cronología","Ordenado parcialmente por valor","Ordenado por valor, revisado continuamente con stakeholders"] },
-      { text:"¿Los ítems del backlog tienen criterios de aceptación claros antes de entrar al Sprint?",
-        opts:["Rara vez tienen criterios","Algunos tienen criterios básicos","La mayoría tiene criterios antes del Sprint","Todos tienen criterios claros y el equipo los revisó"] },
-      { text:"¿El Product Goal está definido y el equipo lo conoce?",
-        opts:["No existe Product Goal formal","Existe pero pocos en el equipo lo conocen","El equipo lo conoce pero no lo usa para tomar decisiones","El Product Goal guía el refinamiento y priorización"] }
-    ]
-  },
-  {
-    id:"devteam", tag:"Sección 3 de 4", title:"Autoorganización y entrega",
-    desc:"Capacidades técnicas y de autogestión del equipo de desarrollo", role:"Dev Team",
-    questions:[
-      { text:"¿El equipo se autoorganiza para lograr el Sprint Goal sin necesitar asignación externa de tareas?",
-        opts:["El líder o PM asigna todas las tareas","Hay algo de autoorganización pero con dependencia externa","El equipo mayormente se organiza solo","Plena autoorganización; el equipo decide cómo lograr el Goal"] },
-      { text:"¿El Increment al final de cada Sprint cumple la Definition of Done y está potencialmente entregable?",
-        opts:["No tenemos Definition of Done","Tenemos DoD pero rara vez se cumple","Se cumple en la mayoría de Sprints","Siempre; cada Sprint produce un Increment usable"] },
-      { text:"¿El equipo tiene las habilidades necesarias para entregar valor completo (cross-functional)?",
-        opts:["Hay muchas dependencias externas para completar ítems","Dependencias frecuentes en algunas áreas","Mayormente autónomo, pocas dependencias","Totalmente cross-functional; entrega completa sin externos"] },
-      { text:"¿Qué tan bien maneja el equipo el WIP (work in progress) para evitar cuellos de botella?",
-        opts:["Sin límite de WIP; varios ítems empezados y sin terminar","El WIP crece sin control en cada Sprint","Hay cierta conciencia pero sin límites formales","Limitamos WIP activamente para maximizar el flujo"] }
-    ]
-  },
-  {
-    id:"transparencia", tag:"Sección 4 de 4", title:"Transparencia, inspección y adaptación",
-    desc:"Adhesión a los pilares empíricos del proceso", role:"PO + Dev Team",
-    questions:[
-      { text:"¿El equipo y stakeholders tienen visibilidad real del progreso y los impedimentos?",
-        opts:["La información está fragmentada o desactualizada","Hay visibilidad parcial en algunas áreas","Buena visibilidad, con algunas brechas","Transparencia total; el Scrum Board refleja la realidad"] },
-      { text:"¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?",
-        opts:["El plan no cambia una vez iniciado el Sprint","Adaptaciones mínimas, generalmente al final","Adaptaciones frecuentes con base en la evidencia","Inspección y adaptación continua; el plan es una guía viva"] },
-      { text:"¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?",
-        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"] }
-    ]
-  }
-];
-
-const LEVELS = [
-  { max:40, label:"Inicial", color:"#c0282a", bg:"#fce8e8", desc:"El equipo conoce Scrum en teoría pero la práctica es inconsistente. Alta dependencia de procesos externos." },
-  { max:65, label:"En desarrollo", color:"#a05c0a", bg:"#fdefd6", desc:"Adopción parcial de Scrum. Los eventos ocurren pero el valor generado aún no se optimiza." },
-  { max:82, label:"Maduro", color:"#1a4fd6", bg:"#dce6ff", desc:"Scrum está bien incorporado. El equipo entrega valor consistentemente y mejora de forma continua." },
-  { max:100, label:"Avanzado", color:"#0d7a52", bg:"#d4f0e5", desc:"Equipo de alto rendimiento ágil. El empirismo guía cada decisión; la mejora continua es parte del ADN." }
-];
-
-const DIM_COLORS = { eventos:"#1a4fd6", backlog:"#0d7a52", devteam:"#a05c0a", transparencia:"#7c3aed" };
-
-const RECS = {
-  eventos: [
-    "Las ceremonias no se realizan de forma consistente. Comenzar por establecer el ritmo básico: Sprint Planning con Goal claro, Daily de 15 minutos orientado al objetivo y Sprint Review con stakeholders reales. Sin eventos regulares no hay empirismo posible.",
-    "Las ceremonias ocurren pero sin el propósito correcto. Trabajar en la calidad del Sprint Goal — debe ser retador, concreto y guiar cada decisión del Sprint. El Daily debe usarse para adaptar el plan, no como reporte de estado.",
-    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint."
-  ],
-  backlog: [
-    "El Product Backlog no cumple su función. Definir un Product Goal claro y ordenar los ítems por valor de negocio. Sin priorización real el equipo no puede decidir qué construir primero.",
-    "El backlog existe pero la priorización no refleja valor real. Invertir en refinamiento regular donde el PO trabaje con el equipo para definir criterios de aceptación antes de cada Sprint Planning.",
-    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento."
-  ],
-  devteam: [
-    "El equipo no se autoorganiza y depende de asignación externa. Establecer una Definition of Done y comenzar a empoderar al equipo para que decida cómo lograr el Sprint Goal sin dirección externa.",
-    "Hay autoorganización parcial con dependencias frecuentes. Mapear las dependencias externas y planificar cómo internalizar esas habilidades para que el equipo pueda entregar valor completo.",
-    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable."
-  ],
-  transparencia: [
-    "La transparencia es muy baja. Empezar con un Scrum Board visible y actualizado en tiempo real. Sin visibilidad compartida no es posible inspeccionar ni adaptar el proceso.",
-    "Hay visibilidad parcial pero los impedimentos no fluyen bien. Trabajar en identificar y escalar impedimentos rápidamente, y en que la Retro genere compromisos concretos y medibles.",
-    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos."
-  ]
-};
-function getRec(dim, pct) { return RECS[dim][pct <= 33 ? 0 : pct <= 66 ? 1 : 2]; }
+// SECTIONS, LEVELS, DIMS, DIM_COLORS, RECS, RECS_ROLE, getLevel, getRec
+// → cargados desde assessment-config.js
 
 let screen = "intro"; // intro | section | results
 let currentSection = 0;
@@ -524,6 +440,8 @@ let teamName = "";
 let participantName = "";
 let submitStatus = "";   // "" | "sending" | "ok" | "error"
 let cicloNombre = "";
+let teamSize = "";   // "1-5" | "6-9" | "10+"
+let scrumTime = "";  // "<6m" | "6-18m" | ">18m"
 
 function setTeam(id, text) {
   teamId = id;
@@ -548,6 +466,12 @@ async function loadTeams() {
   } catch(e) {
     cicloNombre = '';
   }
+  // Pre-seleccionar equipo desde URL param (QR code)
+  const presetId = new URLSearchParams(window.location.search).get('teamId');
+  if (presetId) {
+    const found = teams.find(t => t.id === presetId);
+    if (found) { teamId = found.id; teamName = found.name; }
+  }
   render();
 }
 
@@ -565,28 +489,29 @@ async function submitResults() {
       const active = cSnap.docs.find(d => !!d.data().activo);
       cicloFinal = active ? (active.data().nombre || '') : '';
     }
+    const scoreFields = {};
+    DIMS.forEach(d => { scoreFields[d.storeKey] = dims[d.key] ? dims[d.key].score : 0; });
     await db.collection('respuestas').add({
       equipoId: teamId,
       equipoNombre: teamName,
       participante: participantName.trim() || 'Anónimo',
       rol: role,
       ciclo: cicloFinal,
-      scoreEventos: dims.eventos.score,
-      scoreBacklog: dims.backlog.score,
-      scoreDevTeam: dims.devteam.score,
-      scoreTransparencia: dims.transparencia.score,
+      tamanoEquipo: teamSize || '',
+      tiempoScrum: scrumTime || '',
+      ...scoreFields,
       scoreTotalPct: pct,
       nivel: level.label,
+      answers: {...answers},
       fecha: firebase.firestore.FieldValue.serverTimestamp()
     });
     submitStatus = 'ok';
+    try { localStorage.setItem('assessment_' + cicloFinal + '_' + teamId, '1'); } catch(e) {}
   } catch(e) {
     submitStatus = 'error';
   }
   render();
 }
-
-function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length-1]; }
 
 function calcResults() {
   let total=0, max=0;
@@ -621,8 +546,8 @@ function renderIntro() {
   return `
     <div class="intro">
       <div class="intro-cards">
-        <div class="intro-card"><div class="intro-card-icon">📋</div><div class="intro-card-title">14 preguntas</div><div class="intro-card-desc">4 dimensiones clave de Scrum</div></div>
-        <div class="intro-card"><div class="intro-card-icon">⏱</div><div class="intro-card-title">~8 minutos</div><div class="intro-card-desc">Sin necesidad de cuenta ni login</div></div>
+        <div class="intro-card"><div class="intro-card-icon">📋</div><div class="intro-card-title">20 preguntas</div><div class="intro-card-desc">6 dimensiones de madurez Scrum</div></div>
+        <div class="intro-card"><div class="intro-card-icon">⏱</div><div class="intro-card-title">~12 minutos</div><div class="intro-card-desc">Sin necesidad de cuenta ni login</div></div>
         <div class="intro-card"><div class="intro-card-icon">📊</div><div class="intro-card-title">Resultado inmediato</div><div class="intro-card-desc">Score por dimensión + recomendaciones</div></div>
         <div class="intro-card"><div class="intro-card-icon">☁️</div><div class="intro-card-title">Resultados guardados</div><div class="intro-card-desc">Análisis organizacional disponible</div></div>
       </div>
@@ -641,6 +566,21 @@ function renderIntro() {
           ${["Product Owner","Dev Team","Scrum Master","Otro"].map(r=>`<button class="role-btn ${role===r?'selected':''}" onclick="setRole('${r}')">${r}</button>`).join('')}
         </div>
         ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
+        ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${cicloNombre}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(e){ return ''; } })()}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Tamaño del equipo <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            ${["1–5","6–9","10+"].map(s=>`<button class="role-btn ${teamSize===s?'selected':''}" onclick="teamSize='${s}';render()" style="flex:1;min-width:48px;">${s}</button>`).join('')}
+          </div>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Tiempo usando Scrum <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            ${["<6 meses","6–18 meses",">18 meses"].map(t=>`<button class="role-btn ${scrumTime===t?'selected':''}" onclick="scrumTime='${t}';render()" style="flex:1;min-width:60px;font-size:11px;">${t}</button>`).join('')}
+          </div>
+        </div>
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
         <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
@@ -711,7 +651,7 @@ function pick(key,val) { answers[key]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen='intro'; currentSection=0; answers={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; render(); }
+function restart() { screen='intro'; currentSection=0; answers={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
