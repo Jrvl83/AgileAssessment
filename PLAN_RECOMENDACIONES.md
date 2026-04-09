@@ -116,35 +116,35 @@ Fase 4 — Comparativa global
 
 ---
 
-### Ítem 5 — Botón "Agregar al Plan de Acción" `[Media]`
+### Ítem 5 — Botón "Agregar al Plan de Acción" `[Media]` ✅
 
 **Archivos:** `admin.html`
 
 **Problema que resuelve:** Las recomendaciones y el Plan de Acción son funcionalidades desconectadas. El admin tiene que leer la recomendación, memorizarla y escribirla manualmente en el plan.
 
-**Implementación:**
-- Crear función `prefillPlan(teamId, dimKey, ciclo)` que: asigna `newPlanTeamId`, recupera el texto de `recTexts[dimKey]`, asigna `newPlanIniciativa`, cambia `activeTab = 'plan'`, llama `render()` y hace scroll a `#plan-form`.
-- Almacenar los textos de recomendación en objeto temporal `recTexts = {}` durante el render (indexado por `d.key`) para no incrustar texto con comillas en atributos `onclick`.
-- En cada `rec-item` de `renderAnalysis()` y `renderEvolution()`: añadir botón `+ Plan` con clase `no-print`.
-- Añadir `id="plan-form"` al div del formulario en `renderPlan()`.
+**Implementado:**
+- `recTexts = {}` — objeto global que se resetea al inicio de cada `renderAnalysis()`. Almacena textos indexados por clave `teamId_dimKey` (análisis) o `evol_dimKey` (evolución).
+- `prefillPlan(teamId, recKey, ciclo)` — asigna `newPlanTeamId`, `newPlanIniciativa` desde `recTexts`, `newPlanCiclo` (usa ciclo activo si el filtro es "Todos"), cambia a pestaña Plan y hace scroll a `#plan-form`.
+- Botón `+ Plan` (clase `no-print`) en cada `rec-item` de `renderAnalysis()` y `renderEvolution()`.
+- `id="plan-form"` añadido al div del formulario en `renderPlan()`.
 
-**Resultado esperado:** Un clic convierte una recomendación en una iniciativa del Plan de Acción con el equipo, dimensión y ciclo ya pre-completados.
+**Resultado:** Un clic en "+ Plan" navega directamente al formulario con equipo, iniciativa y ciclo pre-completados. El botón no aparece en PDF.
 
 ---
 
-### Ítem 7 — Comparativa vs. media global `[Alta]`
+### Ítem 7 — Comparativa vs. media global `[Alta]` ✅
 
 **Archivos:** `admin.html`
 
 **Problema que resuelve:** No hay referencia externa. El admin no sabe si un equipo con 60% en Ceremonias está bien o mal respecto a los demás equipos.
 
-**Implementación:**
-- Crear función `computeGlobalDimAverages(cycleFilter)` que calcula el promedio de cada dimensión entre todos los equipos con datos en el ciclo/filtro activo (promedio de promedios, no ponderado por número de respuestas).
-- Calcular una vez al inicio de `renderAnalysis()` y pasar como argumento al render de cada tarjeta.
-- En cada fila de dimensión: añadir badge `+X%` (verde) o `-X%` (rojo) vs. media global.
-- Ocultar el badge si hay menos de 2 equipos con datos (evitar comparar un equipo consigo mismo).
+**Implementado:**
+- `computeGlobalDimAverages(cFilter)` — calcula promedio de promedios (no ponderado) de cada dimensión entre todos los equipos con datos. Devuelve `null` si hay menos de 2 equipos.
+- Calculado una vez al inicio de `renderAnalysis()` y reutilizado en cada tarjeta.
+- En cada fila de dimensión: badge `+X% vs. media` (verde) o `-X% vs. media` (rojo) junto al porcentaje.
+- Badge oculto automáticamente cuando hay menos de 2 equipos con datos.
 
-**Resultado esperado:** El admin puede comparar de un vistazo si cada dimensión de un equipo está por encima o debajo del promedio organizacional.
+**Resultado:** Cada dimensión muestra su posición relativa respecto al promedio organizacional. Los equipos por encima de la media se destacan en verde, los que están por debajo en rojo.
 
 ---
 
@@ -183,5 +183,5 @@ Fase 4 — Comparativa global
 | 2 — Análisis cruzado | ✅ Completado | `214674c` |
 | 3 — Tendencia en Evolución | ✅ Completado | `1bf9013` |
 | 6 — Badge Crítica | ✅ Completado | `1bf9013` |
-| 5 — Botón Plan de Acción | Pendiente | — |
-| 7 — Comparativa global | Pendiente | — |
+| 5 — Botón Plan de Acción | ✅ Completado | `827ab3e` |
+| 7 — Comparativa global | ✅ Completado | `827ab3e` |
