@@ -92,9 +92,14 @@
   .dim-bar { height: 100%; border-radius: 99px; }
   .recs-section { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
   .recs-label { font-size: 11px; font-weight: 600; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .rec-role-note { font-size: 10px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
   .rec-item { display: flex; gap: 8px; margin-bottom: 7px; }
   .rec-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
   .rec-text { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+  .rec-context { font-size: 11px; color: var(--amber); margin-top: 3px; font-style: italic; }
+  .pattern-block { margin-bottom: 10px; padding: 9px 12px; border-radius: var(--radius-sm); border-left: 3px solid; }
+  .pattern-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+  .pattern-text { font-size: 11px; line-height: 1.5; }
 
   /* Role filter */
   .role-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
@@ -229,6 +234,17 @@ function calcDispersion(pctArr) {
   return { sd, min, max, align };
 }
 
+function getMajorityRole(resps) {
+  const counts = {};
+  resps.forEach(r => {
+    const rol = r.fields.Rol;
+    if (rol && rol !== 'Otro') counts[rol] = (counts[rol] || 0) + 1;
+  });
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!entries.length || entries.length > 1 && entries[0][1] === entries[1][1]) return null;
+  return entries[0][0];
+}
+
 function getTeamFilteredStats(tid, roleFilter, cFilter) {
   const cf = cFilter || 'Todos';
   const filtered = responses.filter(r =>
@@ -256,7 +272,15 @@ function getTeamFilteredStats(tid, roleFilter, cFilter) {
     dispersion[d.key] = calcDispersion(pcts);
   });
   dispersion.overall = calcDispersion(filtered.map(r => r.fields['Score Total %'] || 0));
-  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion };
+  const tamanoCount = {}, scrumTimeCount = {};
+  filtered.forEach(r => {
+    const t = r.fields['Tamaño Equipo'], s = r.fields['Tiempo Scrum'];
+    if (t) tamanoCount[t] = (tamanoCount[t] || 0) + 1;
+    if (s) scrumTimeCount[s] = (scrumTimeCount[s] || 0) + 1;
+  });
+  const tamano = Object.entries(tamanoCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  const tiempoScrum = Object.entries(scrumTimeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion, tamano, tiempoScrum };
 }
 
 function computeStats() {
@@ -679,7 +703,13 @@ function renderAnalysis() {
           </button>`).join('');
 
         const ds = getTeamFilteredStats(tid, selectedRole, cycleFilter) || s;
-        const roleForRec = selectedRole === 'Todos' ? null : selectedRole;
+
+        // Ítem 4: rol mayoritario como fallback cuando filtro es "Todos"
+        const filteredByCycle = teamResps.filter(r => cycleFilter === 'Todos' || r.fields.Ciclo === cycleFilter);
+        const majorityRole = selectedRole === 'Todos' ? getMajorityRole(filteredByCycle) : null;
+        const roleForRec = selectedRole !== 'Todos' ? selectedRole : majorityRole;
+        const recRoleNote = selectedRole === 'Todos' && majorityRole
+          ? ` <span class="rec-role-note">(rol mayoritario: ${majorityRole})</span>` : '';
 
         const below80 = DIMS
           .filter(d => ds.avgDims[d.key].pct < 80)
@@ -688,12 +718,27 @@ function renderAnalysis() {
           ? below80
           : DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct).slice(0, 4);
 
+        // Ítem 2: patrones cruzados
+        const patterns = detectPatterns(ds.avgDims);
+        const patternBlock = patterns.map(p => `
+          <div class="pattern-block" style="background:${p.color}18;border-color:${p.color};">
+            <div class="pattern-label" style="color:${p.color};">Patrón detectado · ${p.label}</div>
+            <div class="pattern-text" style="color:${p.color}cc;">${p.text}</div>
+          </div>`).join('');
+
         const recs = lowDims.length
-          ? lowDims.map(d => `
+          ? lowDims.map(d => {
+              // Ítem 1: nota contextual
+              const ctxNote = getContextNote(d.key, ds.avgDims[d.key].pct, ds.tamano, ds.tiempoScrum);
+              return `
               <div class="rec-item">
                 <div class="rec-dot" style="background:${d.color}"></div>
-                <div class="rec-text"><strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}</div>
-              </div>`).join('')
+                <div class="rec-text">
+                  <strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}
+                  ${ctxNote ? `<div class="rec-context">⚑ ${ctxNote}</div>` : ''}
+                </div>
+              </div>`;
+            }).join('')
           : `<div class="rec-item">
                <div class="rec-dot" style="background:#0d7a52"></div>
                <div class="rec-text">Buen nivel en todas las dimensiones. Explorar métricas de flujo avanzadas (cycle time, throughput).</div>
@@ -730,7 +775,8 @@ function renderAnalysis() {
               </div>`;
             }).join('')}
             <div class="recs-section">
-              <div class="recs-label">Recomendaciones${selectedRole !== 'Todos' ? ' para ' + selectedRole : ''}</div>
+              <div class="recs-label">Recomendaciones${selectedRole !== 'Todos' ? ' para ' + selectedRole : ''}${recRoleNote}</div>
+              ${patternBlock}
               ${recs}
             </div>
           </div>`;
@@ -830,7 +876,8 @@ function renderEvolution() {
 
   const latest = data[data.length - 1];
   const prevCycle = data.length > 1 ? data[data.length - 2] : null;
-  const roleForRec = evolRole === 'Todos' ? null : evolRole;
+  const evolTeamResps = responses.filter(r => (r.fields.Equipo || []).includes(evolTeamId));
+  const roleForRec = evolRole === 'Todos' ? getMajorityRole(evolTeamResps) : evolRole;
 
   const dimScores = DIMS.map(d => ({
     ...d, pct: latest.avgDims[d.key].pct,

@@ -231,6 +231,60 @@ const RECS_ROLE = {
   }
 };
 
+const CROSS_PATTERNS = [
+  {
+    dims: ['eventos', 'transparencia', 'backlog', 'devteam', 'tecnico', 'cliente'],
+    maxPct: 40,
+    label: 'Adopción inicial total',
+    color: '#c0282a',
+    text: 'Todas las dimensiones están en nivel inicial. Scrum se conoce en teoría pero no se practica consistentemente. El equipo necesita acompañamiento estructurado para establecer las bases antes de aspirar a la optimización.'
+  },
+  {
+    dims: ['eventos', 'transparencia'],
+    maxPct: 50,
+    label: 'Base Scrum débil',
+    color: '#a05c0a',
+    text: 'Ceremonias y Transparencia bajas simultáneamente indican que los pilares básicos de Scrum no están establecidos. Antes de optimizar otras dimensiones, los eventos deben ocurrir con consistencia y el progreso debe ser visible para todo el equipo.'
+  },
+  {
+    dims: ['devteam', 'tecnico'],
+    maxPct: 45,
+    label: 'Limitación técnica sistémica',
+    color: '#0891b2',
+    text: 'Dev Team y Excelencia Técnica bajas simultáneamente indican que el equipo tiene dificultades tanto para autoorganizarse como para mantener prácticas de ingeniería sólidas. Priorizar la Definition of Done y las pruebas automatizadas como punto de partida.'
+  },
+  {
+    dims: ['backlog', 'cliente'],
+    maxPct: 45,
+    label: 'Desconexión del valor',
+    color: '#7c3aed',
+    text: 'Backlog y Orientación al Cliente bajas simultáneamente sugieren que el equipo construye sin entender bien qué genera valor real. Establecer contacto directo con usuarios y ordenar el backlog por valor de negocio son los primeros pasos.'
+  }
+];
+
+function detectPatterns(dimScores) {
+  return CROSS_PATTERNS.filter(p =>
+    p.dims.every(k => dimScores[k] && dimScores[k].pct < p.maxPct)
+  );
+}
+
+function getContextNote(dim, pct, tamano, tiempoScrum) {
+  if (!tamano && !tiempoScrum) return null;
+  if (tiempoScrum === '<6 meses' && pct < 70)
+    return 'Equipo nuevo: priorizar cadencia básica y rituales antes de optimizar.';
+  if (tiempoScrum === '>18 meses' && pct < 50)
+    return 'Más de 18 meses con Scrum en este nivel sugiere impedimentos sistémicos o resistencia estructural que conviene abordar explícitamente.';
+  if (tiempoScrum === '6–18 meses' && pct < 40)
+    return 'Con 6–18 meses en Scrum, este nivel puede indicar falta de apoyo organizacional o coaching insuficiente.';
+  if (tamano === '10+' && dim === 'eventos' && pct < 70)
+    return 'Equipo grande: la coordinación a escala requiere estructura explícita en los eventos Scrum.';
+  if (tamano === '10+' && dim === 'devteam' && pct < 60)
+    return 'Equipo grande: la autoorganización es más compleja; considerar sub-equipos o acuerdos explícitos de trabajo.';
+  if (tamano === '1–5' && dim === 'devteam' && pct < 60)
+    return 'Equipo pequeño: la cross-funcionalidad es crítica para evitar que una sola persona sea cuello de botella.';
+  return null;
+}
+
 function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length - 1]; }
 
 function getRec(dim, pct, role) {
