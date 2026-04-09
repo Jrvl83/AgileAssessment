@@ -681,10 +681,12 @@ function renderAnalysis() {
         const ds = getTeamFilteredStats(tid, selectedRole, cycleFilter) || s;
         const roleForRec = selectedRole === 'Todos' ? null : selectedRole;
 
-        const lowDims = DIMS
-          .filter(d => ds.avgDims[d.key].pct < 70)
-          .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct)
-          .slice(0, 3);
+        const below80 = DIMS
+          .filter(d => ds.avgDims[d.key].pct < 80)
+          .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+        const lowDims = below80.length > 0
+          ? below80
+          : DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct).slice(0, 4);
 
         const recs = lowDims.length
           ? lowDims.map(d => `
@@ -834,15 +836,18 @@ function renderEvolution() {
     ...d, pct: latest.avgDims[d.key].pct,
     prevPct: prevCycle ? prevCycle.avgDims[d.key].pct : null
   }));
-  const toFix = [...dimScores]
-    .filter(d => d.pct < 70 || (d.prevPct !== null && d.pct < d.prevPct))
+  const evolBelow80 = [...dimScores]
+    .filter(d => d.pct < 80 || (d.prevPct !== null && d.pct < d.prevPct))
     .sort((a, b) => {
       const aR = a.prevPct !== null && a.pct < a.prevPct;
       const bR = b.prevPct !== null && b.pct < b.prevPct;
       if (aR && !bR) return -1;
       if (!aR && bR) return 1;
       return a.pct - b.pct;
-    }).slice(0, 3);
+    });
+  const toFix = evolBelow80.length > 0
+    ? evolBelow80
+    : [...dimScores].sort((a, b) => a.pct - b.pct).slice(0, 4);
 
   const recs = toFix.length
     ? toFix.map(d => {
