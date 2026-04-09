@@ -104,6 +104,11 @@
   .rec-item--improving { border-left: 3px solid #0d7a52; padding-left: 8px; border-radius: 2px; background: #d4f0e5; }
   .rec-trend { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
   .badge-critical { display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; padding:1px 7px; border-radius:99px; background:var(--red-light,#fce8e8); color:var(--red,#c0282a); border:1px solid var(--red,#c0282a); margin-right:6px; vertical-align:middle; }
+  .btn-plan { font-size:10px; font-weight:600; padding:2px 8px; border-radius:99px; border:1.5px solid var(--accent); color:var(--accent-dark); background:var(--accent-light); cursor:pointer; font-family:'DM Sans',sans-serif; white-space:nowrap; transition:opacity 0.15s; }
+  .btn-plan:hover { opacity:0.75; }
+  .dim-vs-avg { font-size:10px; font-weight:600; padding:1px 6px; border-radius:99px; margin-left:6px; }
+  .dim-vs-avg-pos { color:#0d7a52; background:#d4f0e5; }
+  .dim-vs-avg-neg { color:#c0282a; background:#fce8e8; }
 
   /* Role filter */
   .role-filter { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); }
@@ -221,6 +226,7 @@ let newPlanIniciativa = '';
 let newPlanResponsable = '';
 let newPlanFecha = '';
 let newPlanCiclo = '';
+let recTexts = {};
 let planTeamFilter = 'Todos';
 let planCycleFilter = 'Todos';
 
@@ -236,6 +242,37 @@ function calcDispersion(pctArr) {
               : sd < 25 ? { label:'Media', color:'#a05c0a', bg:'#fdefd6' }
               :            { label:'Baja',  color:'#c0282a', bg:'#fce8e8' };
   return { sd, min, max, align };
+}
+
+function computeGlobalDimAverages(cFilter) {
+  const teamsWithData = Object.values(teamStats).filter(s => s.count > 0);
+  if (teamsWithData.length < 2) return null;
+  const sums = {};
+  DIMS.forEach(d => { sums[d.key] = 0; });
+  let count = 0;
+  teamsWithData.forEach(s => {
+    const st = getTeamFilteredStats(s.id, 'Todos', cFilter);
+    if (!st) return;
+    DIMS.forEach(d => { sums[d.key] += st.avgDims[d.key].pct; });
+    count++;
+  });
+  if (count < 2) return null;
+  const result = {};
+  DIMS.forEach(d => { result[d.key] = Math.round(sums[d.key] / count); });
+  return result;
+}
+
+function prefillPlan(teamId, recKey, ciclo) {
+  newPlanTeamId = teamId;
+  newPlanIniciativa = recTexts[recKey] || '';
+  const activeCycle = (cycles.find(c => c.active) || {}).name || '';
+  newPlanCiclo = (!ciclo || ciclo === 'Todos') ? activeCycle : ciclo;
+  activeTab = 'plan';
+  render();
+  setTimeout(() => {
+    const el = document.getElementById('plan-form');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 60);
 }
 
 function getMajorityRole(resps) {
@@ -592,6 +629,8 @@ function renderShell() {
 function renderAnalysis() {
   if (loading) return `<div class="empty-state">Cargando datos…</div>`;
 
+  recTexts = {};
+  const globalAvgs = computeGlobalDimAverages(cycleFilter);
   const withData = Object.values(teamStats).filter(s => s.count > 0);
   const availOrgRoles = [...new Set(responses.map(r => r.fields.Rol).filter(Boolean))].sort();
   const filtByCycle = cycleFilter === 'Todos' ? responses : responses.filter(r => r.fields.Ciclo === cycleFilter);
@@ -738,13 +777,16 @@ function renderAnalysis() {
           ? lowDims.map(d => {
               const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, ds.tamano, ds.tiempoScrum);
               const isCrit   = criticalDim && d.key === criticalDim.key;
+              const recKey   = tid + '_' + d.key;
+              recTexts[recKey] = `${d.label}: ` + getRec(d.key, ds.avgDims[d.key].pct, roleForRec);
               return `
-              <div class="rec-item">
-                <div class="rec-dot" style="background:${d.color}"></div>
-                <div class="rec-text">
+              <div class="rec-item" style="align-items:flex-start;">
+                <div class="rec-dot" style="background:${d.color};margin-top:5px;"></div>
+                <div class="rec-text" style="flex:1;">
                   ${isCrit ? `<span class="badge-critical no-print">Crítica</span>` : ''}<strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}
                   ${ctxNote ? `<div class="rec-context">⚑ ${ctxNote}</div>` : ''}
                 </div>
+                <button class="btn-plan no-print" onclick="prefillPlan('${tid}','${recKey}','${cycleFilter}')">+ Plan</button>
               </div>`;
             }).join('')
           : `<div class="rec-item">
@@ -768,10 +810,14 @@ function renderAnalysis() {
             ${DIMS.map(d => {
               const dp = ds.avgDims[d.key];
               const disp = ds.dispersion && ds.dispersion[d.key];
+              const vsG  = globalAvgs ? dp.pct - globalAvgs[d.key] : null;
+              const vsBadge = vsG !== null
+                ? `<span class="dim-vs-avg ${vsG >= 0 ? 'dim-vs-avg-pos' : 'dim-vs-avg-neg'}">${vsG >= 0 ? '+' : ''}${vsG}% vs. media</span>`
+                : '';
               return `<div class="dim-row">
                 <div class="dim-row-header">
                   <span class="dim-label">${d.label}</span>
-                  <span class="dim-pct-label">${dp.pct}%</span>
+                  <span style="display:flex;align-items:center;gap:4px;"><span class="dim-pct-label">${dp.pct}%</span>${vsBadge}</span>
                 </div>
                 <div class="dim-bar-wrap">
                   <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
@@ -913,12 +959,15 @@ function renderEvolution() {
         let trendBadge = '';
         if (regressed) trendBadge = `<div class="rec-trend" style="color:var(--red);">▼ Retroceso −${delta}% vs. ciclo anterior</div>`;
         else if (improved) trendBadge = `<div class="rec-trend" style="color:#0d7a52;">▲ Mejora +${delta}% vs. ciclo anterior — mantener el foco</div>`;
-        return `<div class="${itemClass}">
+        const recKey = 'evol_' + d.key;
+        recTexts[recKey] = `${d.label}: ` + getRec(d.key, d.pct, roleForRec);
+        return `<div class="${itemClass}" style="align-items:flex-start;">
           <div class="rec-dot" style="background:${d.color};flex-shrink:0;margin-top:${regressed||improved?'14px':'5px'}"></div>
-          <div class="rec-text">
+          <div class="rec-text" style="flex:1;">
             ${trendBadge}
             <strong>${d.label}:</strong> ${getRec(d.key, d.pct, roleForRec)}
           </div>
+          <button class="btn-plan no-print" onclick="prefillPlan('${evolTeamId}','${recKey}','')">+ Plan</button>
         </div>`;
       }).join('')
     : `<div class="rec-item">
@@ -1196,7 +1245,7 @@ function renderPlan() {
 
   // Add form
   const addForm = `
-    <div class="section-card">
+    <div class="section-card" id="plan-form">
       <div class="section-title">Nueva acción de mejora</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="field-group" style="margin-bottom:0;">
