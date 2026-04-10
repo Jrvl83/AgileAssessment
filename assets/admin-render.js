@@ -26,6 +26,70 @@ function setTeamRole(tid, role) {
   render();
 }
 
+// ── Radar charts ─────────────────────────────────────────────────
+function initRadarCharts() {
+  if (state.activeTab !== 'analysis') return;
+  if (typeof Chart === 'undefined') return;
+
+  const labels = DIMS.map(d => d.label);
+  const colors = DIMS.map(d => d.color);
+
+  Object.keys(window._radarData || {}).forEach(tid => {
+    const canvas = document.getElementById('radar-' + tid);
+    if (!canvas) return;
+
+    // Destruir instancia previa si existe (re-renders)
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
+
+    const values = window._radarData[tid].values;
+
+    new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          data: values,
+          backgroundColor: 'rgba(26, 86, 219, 0.10)',
+          borderColor:     'rgba(26, 86, 219, 0.75)',
+          borderWidth: 2,
+          pointBackgroundColor: colors,
+          pointBorderColor:     '#fff',
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
+            grid:        { color: 'rgba(0,0,0,0.07)' },
+            angleLines:  { color: 'rgba(0,0,0,0.07)' },
+            pointLabels: {
+              font: { size: 11, family: "'DM Sans', sans-serif" },
+              color: '#374151',
+            },
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.raw}%`
+            }
+          }
+        },
+        animation: { duration: 350 },
+      }
+    });
+  });
+}
+
 // ── Render ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
@@ -36,7 +100,9 @@ function render() {
   const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
 
   if (!state.currentUser) { app.innerHTML = renderLogin(); return; }
+  window._radarData = {};
   app.innerHTML = renderShell();
+  requestAnimationFrame(initRadarCharts);
 
   // Solo animar en cambios de tab o carga inicial, no en cada tecla
   if (!isTyping) {
@@ -270,6 +336,10 @@ function renderAnalysis() {
                <div class="rec-text">Buen nivel en todas las dimensiones. Explorar métricas de flujo avanzadas (cycle time, throughput).</div>
              </div>`;
 
+        // Guardar datos del radar para inicializar Chart.js después del render
+        window._radarData = window._radarData || {};
+        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct) };
+
         return `
           <div class="tac">
             <div class="tac-header">
@@ -283,6 +353,7 @@ function renderAnalysis() {
               </div>
             </div>
             <div class="role-filter no-print">${rolePills}</div>
+            <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
             ${DIMS.map(d => {
               const dp = ds.avgDims[d.key];
               const disp = ds.dispersion && ds.dispersion[d.key];
