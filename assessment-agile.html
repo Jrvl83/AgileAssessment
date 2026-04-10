@@ -457,12 +457,22 @@ function setTeam(id, text) {
 async function loadTeams() {
   const params = new URLSearchParams(window.location.search);
   const workspaceId = params.get('workspaceId');
+
+  if (!workspaceId) {
+    document.getElementById('app').innerHTML = `
+      <div style="text-align:center;padding:64px 20px;">
+        <div style="font-size:40px;margin-bottom:20px;">🔗</div>
+        <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:12px;">Link incompleto</h2>
+        <p style="font-size:15px;color:var(--ink-muted);max-width:380px;margin:0 auto;line-height:1.7;">
+          Para completar el assessment, usa el link específico que te envió tu coach.<br>
+          <span style="font-size:13px;color:var(--ink-faint);">Ese link incluye el código de tu equipo y workspace.</span>
+        </p>
+      </div>`;
+    return;
+  }
+
   try {
-    let tQuery = db.collection('equipos');
-    if (workspaceId) {
-      tQuery = tQuery.where('ownerId', '==', workspaceId);
-    }
-    const tSnap = await tQuery.get();
+    const tSnap = await db.collection('equipos').where('ownerId', '==', workspaceId).get();
     teams = tSnap.docs
       .filter(d => d.data().activo === true)
       .map(d => ({ id: d.id, name: d.data().nombre }))
@@ -471,11 +481,7 @@ async function loadTeams() {
     teams = [];
   }
   try {
-    let cQuery = db.collection('ciclos');
-    if (workspaceId) {
-      cQuery = cQuery.where('ownerId', '==', workspaceId);
-    }
-    const cSnap = await cQuery.get();
+    const cSnap = await db.collection('ciclos').where('ownerId', '==', workspaceId).get();
     const active = cSnap.docs.find(d => !!d.data().activo);
     cicloNombre = active ? (active.data().nombre || '') : '';
   } catch(e) {
