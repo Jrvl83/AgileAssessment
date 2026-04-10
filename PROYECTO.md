@@ -97,10 +97,10 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, recomendaciones, exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, gráfico de radar por equipo, recomendaciones, exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos de medición, incluyendo detalle por pregunta con delta vs. ciclo anterior |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo |
-| **Plan de Acción** | Todos | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo |
+| **Plan de Acción** | Todos | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Exportación a PDF con agrupación por estado |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -122,8 +122,8 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 El assessment mide madurez en 6 dimensiones:
 
-| # | Dimensión | Enfoque | Rol | Preguntas | Puntaje Máx. |
-|---|-----------|---------|-----|-----------|--------------|
+| # | Dimensión | Enfoque | Perspectiva principal | Preguntas | Puntaje Máx. |
+|---|-----------|---------|----------------------|-----------|--------------|
 | 1 | **Ceremonias** | Calidad y valor de los eventos Scrum | PO + Dev Team | 4 | 12 pts |
 | 2 | **Product Backlog** | Gestión del Product Backlog por el PO | Product Owner | 3 | 9 pts |
 | 3 | **Dev Team** | Autoorganización y entrega técnica | Dev Team | 4 | 12 pts |
@@ -370,16 +370,19 @@ Desde el panel admin se puede exportar:
 
 ---
 
-## Mejoras implementadas (commit `58e5a14`)
+## Mejoras implementadas
 
 | Prioridad | Mejora | Descripción |
 |-----------|--------|-------------|
 | Alta | `assessment-config.js` | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan como script externo. |
 | Alta | Dispersión / alineación del equipo | Cada tarjeta de equipo muestra badge "Alineación Alta/Media/Baja" (basado en desviación estándar) y rango min–max por dimensión cuando hay 2+ respuestas. |
 | Alta | Plan de Acción | Nueva pestaña en admin con acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Persiste en colección Firestore `planes`. |
+| Alta | Gráfico de radar por equipo | Cada tarjeta de equipo en la pestaña Análisis muestra un spider chart con las 6 dimensiones. Usa Chart.js 4.4.3. Los puntos tienen el color de cada dimensión. |
 | Media | Nuevas dimensiones | 2 dimensiones nuevas: **Excelencia Técnica** (CI/CD, tests, deuda técnica) y **Orientación al Cliente** (contacto con usuarios, métricas de valor). 14 → **20 preguntas**, 4 → **6 dimensiones**, 42 → **60 pts máx**. |
 | Media | Contexto del equipo | Campos opcionales en el intro: tamaño del equipo (1–5 / 6–9 / 10+) y tiempo usando Scrum (<6 / 6–18 / >18 meses). Se guardan en Firestore y se incluyen en exportación CSV. |
-| Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?teamId=` para pre-seleccionar el equipo en el formulario público. |
+| Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?workspaceId=` para pre-seleccionar el workspace en el formulario público. |
+| Media | Exportación Plan de Acción PDF | Botón en la pestaña Plan de Acción que genera un PDF con acciones agrupadas por estado (En curso → Pendiente → Completado), resumen de conteos y filtros de equipo/ciclo aplicados. |
+| Media | Nota contextual por rol en el formulario | Cuando un participante entra a una sección cuya perspectiva principal no es su rol, el formulario muestra una instrucción contextual (ej: PO en sección Dev Team). Preserva el dato cruzado entre roles. |
 | Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario). |
 | Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
 
@@ -389,17 +392,17 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
-| (actual) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
-| (actual) | Tests: suite Vitest — 59 tests en scoring, analysis y evolution; CJS stubs en assessment-config.js y admin-api.js |
-| (actual) | Refactor: estado centralizado — objeto `state` + `setState(patch)`, render() solo desde setState |
-| (actual) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
-| (actual) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
-| (actual) | Feat: sistema multi-tenant — Firebase Auth, pestaña Usuarios, filtrado por ownerId, workspaceId en QR |
+| `1f1aec6` | Feat: exportar Plan de Acción a PDF con agrupación por estado |
+| `90b6b29` | Feat: gráfico de radar por equipo en pestaña Análisis (Chart.js) |
+| `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
+| `2bae8fa` | Docs: pendiente entregabilidad de correos con SendGrid |
+| (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
+| (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
+| (anterior) | Tests: suite Vitest — 59 tests en scoring, analysis y evolution |
+| (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)` |
+| (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
+| (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
+| (anterior) | Feat: sistema multi-tenant — Firebase Auth, pestaña Usuarios, filtrado por ownerId |
 | `58e5a14` | Feat: mejoras assessment — config centralizada, 6 dimensiones, contexto equipo, alineación, plan de acción, QR, evolución por pregunta |
-| `afe26c9` | Fix: fetch ciclo activo en el momento del submit |
 | `1f0c8d4` | Feat: migración a Firebase + ciclos de medición + exportación + filtros por rol |
-| `d0ae33e` | Feat: recomendaciones por nivel de madurez por dimensión |
-| `697d75e` | Fix: mostrar hasta 3 recomendaciones por equipo |
-| `b648e2d` | Feat: dashboard de análisis en panel admin |
-| `6d56865` | Feat: integración Airtable + panel admin (versión anterior) |
 | `2d0d339` | Initial commit |
