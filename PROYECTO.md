@@ -23,15 +23,16 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 
 ```
 AssessmentAgile/
-├── assessment-agile.html   # Formulario público del assessment
+├── assessment-agile.html   # Formulario público del assessment (requiere ?workspaceId en URL)
 ├── admin.html              # Panel de administración — solo HTML + script tags (34 líneas)
+├── reporte.html            # Reporte de solo lectura para stakeholders (acceso por token, sin login)
 ├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
 ├── assets/
 │   ├── admin.css           # Todos los estilos del panel admin
 │   ├── admin-state.js      # Firebase init + variables de estado globales
-│   ├── admin-api.js        # Funciones Firestore + helpers de cálculo y estadísticas
-│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR
-│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw
+│   ├── admin-api.js        # Funciones Firestore + helpers de cálculo, estadísticas y generateReport
+│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR, showReportLink
+│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF
 │   └── admin-auth.js       # login, logout, onAuthStateChanged
 ├── firebase.json           # Configuración de hosting, firestore y functions
 ├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
@@ -55,10 +56,11 @@ AssessmentAgile/
 
 ### Routing (firebase.json)
 
-| Ruta | Archivo |
-|------|---------|
-| `/` y cualquier ruta | `assessment-agile.html` |
-| `/admin` | `admin.html` |
+| Ruta | Archivo | Acceso |
+|------|---------|--------|
+| `/` y cualquier ruta | `assessment-agile.html` | Requiere `?workspaceId=X` — sin él muestra error |
+| `/admin` | `admin.html` | Requiere login (Firebase Auth) |
+| `/reporte.html?t=TOKEN` | `reporte.html` | Público, sin login — token con expiración de 30 días |
 
 ---
 
@@ -97,8 +99,8 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, gráfico de radar por equipo, comparativa multi-equipo (radar superpuesto + tabla heatmap), recomendaciones colapsables, histogramas por pregunta con comentarios cualitativos anónimos, exportación PDF/CSV |
-| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" que muestra acciones de la dimensión seleccionada |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con N de respuestas por rol), toggle "Excluir Otro" del promedio, badge de alineación, gráfico de radar por equipo, comparativa multi-equipo (radar superpuesto + tabla heatmap), recomendaciones colapsables, histogramas por pregunta con citas anónimas, botón "Compartir reporte" por equipo, exportación PDF/CSV |
+| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
@@ -358,6 +360,19 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `ciclo` | string | Ciclo en que se creó la acción |
 | `dimension` | string | Dimensión objetivo (key de DIMS, opcional) |
 
+#### `reportes`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `equipoId` | string | ID del equipo del snapshot |
+| `equipoNombre` | string | Nombre del equipo (desnormalizado) |
+| `ciclo` | string | Ciclo filtrado al generar el reporte ("Todos" si sin filtro) |
+| `ownerId` | string | UID del admin que generó el reporte |
+| `generatedAt` | timestamp | Fecha de generación |
+| `expiresAt` | timestamp | Fecha de expiración (30 días desde generación) |
+| `data` | object | Snapshot con avgTotal, level, avgDims, dims, radarValues, roleStats, dispersion, recommendations |
+
+Acceso: lectura pública (cualquiera con el token), creación autenticada, eliminación solo por owner o super_admin.
+
 ---
 
 ## Exportación de datos
@@ -366,7 +381,9 @@ Desde el panel admin se puede exportar:
 
 | Formato | Contenido |
 |---------|-----------|
-| **PDF** | Reporte de análisis completo (impresión optimizada) |
+| **PDF análisis** | Reporte de análisis completo (impresión optimizada vía `window.print()`) |
+| **PDF plan de acción** | Acciones agrupadas por estado (En curso → Pendiente → Completado) en ventana nueva |
+| **Reporte compartible** | Link `reporte.html?t=TOKEN` — snapshot público sin login, válido 30 días, con botón "↓ Descargar PDF" |
 | **CSV resumen** | Promedio por equipo y dimensión |
 | **CSV detalle** | Todas las respuestas individuales con metadatos |
 
@@ -389,8 +406,11 @@ Desde el panel admin se puede exportar:
 | Media | Preguntas abiertas por sección | Textarea opcional al final de cada sección del formulario: "¿Qué está bloqueando más a tu equipo en esta área?". Se guarda en Firestore y se muestra en el panel como citas anónimas agrupadas por dimensión. |
 | Media | Vinculación Plan ↔ Evolución | Campo Dimensión en planes. En la pestaña Evolución se muestran los planes vinculados a la dimensión seleccionada con delta y badge de estado. |
 | Media | Comparativa multi-equipo | Card "Comparativa por dimensión" en Análisis con radar superpuesto (N equipos, colores distintos) y tabla heatmap por equipo × dimensión (semáforo verde/ámbar/rojo). Visible con ≥2 equipos con datos. |
+| Media | Reporte compartible para stakeholders | Botón "↗ Compartir reporte" en cada tarjeta de equipo. Genera snapshot en `reportes/{token}` (válido 30 días) y muestra el link. `reporte.html` sirve la vista pública: radar, barras, roles, recomendaciones y botón PDF. |
+| Media | Manejo diferenciado del rol "Otro" | Toggle "Excluir Otro" en la pestaña Análisis (visible solo si hay respuestas con ese rol). Excluye esas respuestas de los promedios globales y de tarjetas de equipo al ver "Todos". N de respuestas visible en cada pill de rol. |
 | Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario). |
 | Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
+| Fix | Acceso sin workspaceId bloqueado | El formulario público sin `?workspaceId=X` en la URL muestra un mensaje de error en lugar de listar equipos de todos los workspaces. Previene leak de privacidad entre workspaces. |
 
 ---
 
@@ -398,6 +418,11 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `8a7c607` | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos |
+| `4d33ea7` | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10) |
+| `0770bc7` | Feat: botón "↓ Descargar PDF" en reporte compartible |
+| `5a5d325` | Feat: reporte compartible para stakeholders — `reporte.html`, `reportes/{token}`, botón en tarjetas (#5) |
+| `4ce2d8f` | Docs: actualizar MDs con mejoras #4 y #6 completadas |
 | `1c7c6c6` | Feat: preguntas abiertas por sección y citas anónimas en panel admin |
 | `871c0e1` | Feat: comparativa multi-equipo — radar superpuesto + tabla heatmap |
 | `d0bd0cd` | Feat: vinculación Plan de Acción ↔ dimensiones en pestaña Evolución |
@@ -405,7 +430,6 @@ Desde el panel admin se puede exportar:
 | `1f1aec6` | Feat: exportar Plan de Acción a PDF con agrupación por estado |
 | `90b6b29` | Feat: gráfico de radar por equipo en pestaña Análisis (Chart.js) |
 | `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
-| `2bae8fa` | Docs: pendiente entregabilidad de correos con SendGrid |
 | (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
 | (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
 | (anterior) | Tests: suite Vitest — 59 tests en scoring, analysis y evolution |
