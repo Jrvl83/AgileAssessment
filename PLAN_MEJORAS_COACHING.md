@@ -178,6 +178,6 @@ Las respuestas de participantes con rol "Otro" se mezclan en el promedio general
 | 5 | Link de solo lectura para stakeholders | Media | Alta | ✅ Completado |
 | 6 | Comparativa visual entre equipos | Media | Media | ✅ Completado |
 | 7 | Exportación del Plan de Acción en PDF | Media | Baja | ✅ Completado |
-| 8 | Benchmark externo | Baja | Muy alta | Pendiente |
-| 9 | Notificación al equipo al abrir ciclo | Baja | Media | Pendiente |
-| 10 | Manejo diferenciado del rol "Otro" | Baja | Baja | Pendiente |
+| 8 | Benchmark externo | Baja | Muy alta | Descartado — requiere volumen |
+| 9 | Notificación al equipo al abrir ciclo | Baja | Media | Descartado — requiere SendGrid |
+| 10 | Manejo diferenciado del rol "Otro" | Baja | Baja | ✅ Completado |
