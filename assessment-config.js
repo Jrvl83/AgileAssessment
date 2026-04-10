@@ -292,3 +292,8 @@ function getRec(dim, pct, role) {
   if (role && RECS_ROLE[role] && RECS_ROLE[role][dim]) return RECS_ROLE[role][dim][idx];
   return RECS[dim][idx];
 }
+
+// CommonJS exports para tests (no-op en el browser)
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { SECTIONS, LEVELS, DIMS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, detectPatterns, getContextNote, getLevel, getRec };
+}

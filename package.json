@@ -1,0 +1,15 @@
+{
+  "name": "assessment-agile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "eslint assets/ assessment-config.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "firebase-tools": "^13.0.0",
+    "vitest": "^2.0.0"
+  }
+}

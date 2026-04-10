@@ -148,10 +148,10 @@ Los datos actuales (equipos, respuestas, ciclos) son de prueba y **se eliminará
 
 | Ítem | Estado |
 |------|--------|
-| Configuración Firebase Console (manual) | Pendiente |
-| Reemplazar login con Firebase Auth | Pendiente |
-| Pestaña "Usuarios" con crear / suspender / reactivar / eliminar | Pendiente |
-| Filtrado de datos por ownerId | Pendiente |
-| ownerId en equipos y ciclos al crearlos | Pendiente |
-| Filtro por workspaceId en assessment-agile.html | Pendiente |
-| QR con workspaceId incluido | Pendiente |
+| Configuración Firebase Console (manual) | ✅ Completado |
+| Reemplazar login con Firebase Auth | ✅ Completado |
+| Pestaña "Usuarios" con crear / suspender / reactivar / eliminar | ✅ Completado |
+| Filtrado de datos por ownerId | ✅ Completado |
+| ownerId en equipos y ciclos al crearlos | ✅ Completado |
+| Filtro por workspaceId en assessment-agile.html | ✅ Completado |
+| QR con workspaceId incluido | ✅ Completado |

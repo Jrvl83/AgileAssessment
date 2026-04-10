@@ -1,11 +1,21 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": {
+    "source": "functions"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
       "firebase.json",
+      "firestore.rules",
       ".firebaserc",
       ".git/**",
-      ".claude/**"
+      ".claude/**",
+      "PLAN_*.md",
+      "PROYECTO.md",
+      "*.py"
     ],
     "rewrites": [
       {

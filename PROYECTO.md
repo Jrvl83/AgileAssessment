@@ -10,10 +10,12 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 |------|-----------|
 | Frontend | HTML / CSS / JavaScript (Vanilla SPA) |
 | Base de datos | Firebase Firestore |
+| Auth | Firebase Authentication (email + contraseña) |
+| Backend | Firebase Cloud Functions (Node.js 20) |
 | Hosting | Firebase Hosting |
 | Idioma | Español |
 
-**Proyecto Firebase:** `agile-assessment-5a117`
+**Proyecto Firebase:** `agile-assessment-5a117` — Plan **Blaze**
 
 ---
 
@@ -22,9 +24,32 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 ```
 AssessmentAgile/
 ├── assessment-agile.html   # Formulario público del assessment
-├── admin.html              # Panel de administración (protegido)
+├── admin.html              # Panel de administración — solo HTML + script tags (34 líneas)
 ├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
-├── firebase.json           # Configuración de hosting y rewrites
+├── assets/
+│   ├── admin.css           # Todos los estilos del panel admin
+│   ├── admin-state.js      # Firebase init + variables de estado globales
+│   ├── admin-api.js        # Funciones Firestore + helpers de cálculo y estadísticas
+│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR
+│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw
+│   └── admin-auth.js       # login, logout, onAuthStateChanged
+├── firebase.json           # Configuración de hosting, firestore y functions
+├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
+├── package.json            # devDependencies: vitest, eslint, firebase-tools
+├── vitest.config.js        # Configuración de tests
+├── .eslintrc.json          # ESLint: eslint:recommended, browser env, sintaxis JS
+├── .gitignore              # Ignora node_modules/, .firebase/, *.docx
+├── .github/
+│   └── workflows/
+│       └── deploy.yml      # CI/CD: lint+tests en PRs, deploy en main
+├── tests/
+│   ├── setup.js            # Globals: DIMS, getLevel, state, render stubs
+│   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (25 tests)
+│   ├── analysis.test.js    # Tests: calcDispersion, getMajorityRole, getTeamFilteredStats, computeStats (24 tests)
+│   └── evolution.test.js   # Tests: getEvolutionData (10 tests)
+├── functions/
+│   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin
+│   └── package.json        # Dependencias: firebase-admin, firebase-functions
 └── .firebaserc             # Proyecto Firebase activo
 ```
 
@@ -57,17 +82,37 @@ Pantalla de resultados
   → Resultados guardados en Firebase
 ```
 
-### Administrador (contraseña: `AgileAdmin`)
+### Administrador (Firebase Auth — email + contraseña)
 
-Acceso en `/admin`. Panel con 4 pestañas:
+Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
-| Pestaña | Función |
-|---------|---------|
-| **Análisis** | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, recomendaciones, exportación PDF/CSV |
-| **Evolución** | Progreso de equipos a lo largo de ciclos de medición, incluyendo detalle por pregunta con delta vs. ciclo anterior |
-| **Equipos** | Alta, baja y activación de equipos; botón QR por equipo |
-| **Ciclos** | Creación y activación de ciclos de medición |
-| **Plan de Acción** | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo |
+#### Roles
+
+| Rol | Acceso |
+|-----|--------|
+| **super_admin** | Ve todos los workspaces, gestiona usuarios (crear / suspender / reactivar / eliminar) |
+| **admin** (workspace admin) | Ve solo sus propios equipos, respuestas, ciclos y planes |
+
+#### Pestañas del panel
+
+| Pestaña | Disponible para | Función |
+|---------|----------------|---------|
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, recomendaciones, exportación PDF/CSV |
+| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos de medición, incluyendo detalle por pregunta con delta vs. ciclo anterior |
+| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo |
+| **Plan de Acción** | Todos | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo |
+| **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
+
+#### Flujo para dar acceso a un cliente
+
+```
+1. Super admin entra al panel → pestaña "Usuarios"
+2. Ingresa nombre + email del cliente → "Crear usuario y enviar invitación"
+3. Cloud Function crea la cuenta en Firebase Auth + documento en Firestore
+4. Firebase envía al cliente un correo con link para definir su contraseña
+5. Cliente abre el link, define su contraseña y entra a /admin
+6. Ve su panel vacío, crea sus equipos y comienza a usar la herramienta
+```
 
 ---
 
@@ -256,17 +301,28 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 
 ### Colecciones
 
+#### `usuarios`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `nombre` | string | Nombre del workspace admin |
+| `email` | string | Email de acceso |
+| `role` | string | `'super_admin'` o `'admin'` |
+| `activo` | boolean | `true` = acceso permitido, `false` = suspendido |
+| `creadoEn` | timestamp | Fecha de creación de la cuenta |
+
 #### `equipos`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `nombre` | string | Nombre del equipo |
 | `activo` | boolean | Si el equipo está disponible en el formulario |
+| `ownerId` | string | UID del workspace admin que creó el equipo |
 
 #### `ciclos`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `nombre` | string | Nombre del ciclo (ej: "Q1 2025") |
 | `activo` | boolean | Ciclo actualmente activo |
+| `ownerId` | string | UID del workspace admin que creó el ciclo |
 
 #### `respuestas`
 | Campo | Tipo | Descripción |
@@ -333,6 +389,12 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| (actual) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
+| (actual) | Tests: suite Vitest — 59 tests en scoring, analysis y evolution; CJS stubs en assessment-config.js y admin-api.js |
+| (actual) | Refactor: estado centralizado — objeto `state` + `setState(patch)`, render() solo desde setState |
+| (actual) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
+| (actual) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
+| (actual) | Feat: sistema multi-tenant — Firebase Auth, pestaña Usuarios, filtrado por ownerId, workspaceId en QR |
 | `58e5a14` | Feat: mejoras assessment — config centralizada, 6 dimensiones, contexto equipo, alineación, plan de acción, QR, evolución por pregunta |
 | `afe26c9` | Fix: fetch ciclo activo en el momento del submit |
 | `1f0c8d4` | Feat: migración a Firebase + ciclos de medición + exportación + filtros por rol |

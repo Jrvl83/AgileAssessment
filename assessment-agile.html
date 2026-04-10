@@ -450,8 +450,14 @@ function setTeam(id, text) {
 }
 
 async function loadTeams() {
+  const params = new URLSearchParams(window.location.search);
+  const workspaceId = params.get('workspaceId');
   try {
-    const tSnap = await db.collection('equipos').get();
+    let tQuery = db.collection('equipos');
+    if (workspaceId) {
+      tQuery = tQuery.where('ownerId', '==', workspaceId);
+    }
+    const tSnap = await tQuery.get();
     teams = tSnap.docs
       .filter(d => d.data().activo === true)
       .map(d => ({ id: d.id, name: d.data().nombre }))
@@ -460,14 +466,18 @@ async function loadTeams() {
     teams = [];
   }
   try {
-    const cSnap = await db.collection('ciclos').get();
+    let cQuery = db.collection('ciclos');
+    if (workspaceId) {
+      cQuery = cQuery.where('ownerId', '==', workspaceId);
+    }
+    const cSnap = await cQuery.get();
     const active = cSnap.docs.find(d => !!d.data().activo);
     cicloNombre = active ? (active.data().nombre || '') : '';
   } catch(e) {
     cicloNombre = '';
   }
   // Pre-seleccionar equipo desde URL param (QR code)
-  const presetId = new URLSearchParams(window.location.search).get('teamId');
+  const presetId = params.get('teamId');
   if (presetId) {
     const found = teams.find(t => t.id === presetId);
     if (found) { teamId = found.id; teamName = found.name; }
