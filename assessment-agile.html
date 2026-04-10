@@ -598,6 +598,30 @@ function renderIntro() {
     </div>`;
 }
 
+function getSectionNote(secRole, userRole) {
+  const notes = {
+    "Product Owner": {
+      "Dev Team":      "Responde desde lo que has observado sobre cómo se gestiona el backlog y la relación con el PO.",
+      "Scrum Master":  "Responde desde tu perspectiva como facilitador de la relación entre el PO y el equipo.",
+      "Otro":          "Responde desde lo que has podido observar en el equipo.",
+    },
+    "Dev Team": {
+      "Product Owner": "Responde desde lo que has podido observar sobre las prácticas del equipo de desarrollo.",
+      "Scrum Master":  "Responde desde tu perspectiva como facilitador del equipo.",
+      "Otro":          "Responde desde lo que has podido observar en el equipo.",
+    },
+    "PO + Dev Team": {
+      "Scrum Master":  "Responde desde tu perspectiva como facilitador: observas estas prácticas de cerca y tu percepción es valiosa.",
+      "Otro":          "Responde desde lo que has podido observar en el equipo.",
+    },
+  };
+  const note = notes[secRole]?.[userRole];
+  if (!note) return '';
+  return `<p style="margin:0 0 20px;font-size:13px;color:var(--accent-dark);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">
+    <strong>Nota:</strong> ${note}
+  </p>`;
+}
+
 function renderSection() {
   const sec = SECTIONS[currentSection];
   const totalQ = SECTIONS.reduce((a,s)=>a+s.questions.length,0);
@@ -632,6 +656,7 @@ function renderSection() {
     <div class="section-chip">${sec.tag}<span class="role-tag">${sec.role}</span></div>
     <div class="section-title">${sec.title}</div>
     <div class="section-desc">${sec.desc}</div>
+    ${getSectionNote(sec.role, role)}
     ${qs}
     <div class="nav">
       ${currentSection>0?`<button class="btn" onclick="prev()">← Anterior</button>`:''}
