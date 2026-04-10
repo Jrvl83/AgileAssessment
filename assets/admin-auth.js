@@ -35,6 +35,7 @@ auth.onAuthStateChanged(async (firebaseUser) => {
   // Leer documento de usuario en Firestore
   try {
     const doc = await db.collection('usuarios').doc(firebaseUser.uid).get();
+    console.log('DEBUG uid:', firebaseUser.uid, '| doc.exists:', doc.exists);
     if (!doc.exists) {
       state.loginMessage = 'No se encontró tu cuenta. Contacta al administrador.';
       await auth.signOut();
