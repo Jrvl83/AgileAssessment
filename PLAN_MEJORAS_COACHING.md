@@ -74,23 +74,22 @@ Textarea opcional al final de cada una de las 6 secciones del formulario públic
 
 ---
 
-### 5. Link de solo lectura para stakeholders
+### 5. Link de solo lectura para stakeholders ✅ Completado — commit `5a5d325`
 
 **Problema:**
 Para mostrarle los resultados a un director, gerente de producto u otro stakeholder, el coach tiene que darle acceso al panel (con todas las funciones de admin) o exportar el PDF. No hay un punto intermedio: una vista limpia y de solo lectura de los resultados de un ciclo específico, sin login ni controles.
 
-**Solución:**
-Generar un link único (con token) que muestre el reporte de análisis de un ciclo en modo solo lectura. Sin botones de edición, sin pestañas de gestión, sin datos de otros equipos.
+**Solución implementada:**
+- Botón "↗ Compartir reporte" en cada tarjeta de equipo (pestaña Análisis), respeta el filtro de ciclo activo.
+- `generateReport()` en `admin-api.js`: computa snapshot con stats, dims, radar, madurez por rol y recomendaciones ya procesadas; guarda en `reportes/{auto-id}` con expiración a 30 días.
+- Modal con URL lista para copiar (reutiliza `qr-modal`).
+- `reporte.html`: página pública independiente — lee el token de `?t=TOKEN`, verifica expiración, renderiza radar (Chart.js), barras por dimensión, madurez por rol y recomendaciones. Sin login, sin controles de edición.
+- `firestore.rules`: lectura pública de `reportes/{token}`, creación autenticada, eliminación solo por owner o super_admin.
 
 **Impacto para el coach:**
 - Permite compartir resultados con stakeholders de forma profesional y sin fricción.
 - El coach mantiene el control: puede generar o revocar el link.
 - Ideal para enviar por email antes de una reunión ejecutiva.
-
-**Implementación sugerida:**
-- Generar un documento en Firestore `reportes/{token}` con snapshot de los datos del ciclo.
-- Crear una ruta `/reporte/:token` que sirva la vista de solo lectura.
-- El token expira en 30 días o puede ser revocado manualmente.
 
 ---
 
@@ -176,7 +175,7 @@ Las respuestas de participantes con rol "Otro" se mezclan en el promedio general
 | 2 | Distribución de respuestas por pregunta | Alta | Media | ✅ Completado |
 | 3 | Vinculación Plan de Acción ↔ Evolución | Alta | Alta | ✅ Completado |
 | 4 | Preguntas abiertas por sección | Media | Media | ✅ Completado |
-| 5 | Link de solo lectura para stakeholders | Media | Alta | Pendiente |
+| 5 | Link de solo lectura para stakeholders | Media | Alta | ✅ Completado |
 | 6 | Comparativa visual entre equipos | Media | Media | ✅ Completado |
 | 7 | Exportación del Plan de Acción en PDF | Media | Baja | ✅ Completado |
 | 8 | Benchmark externo | Baja | Muy alta | Pendiente |
