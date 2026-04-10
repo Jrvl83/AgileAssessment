@@ -304,6 +304,23 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 
 ---
 
+## Pendientes fuera del plan original
+
+### Entregabilidad de correos de invitación
+
+**Problema:** Los correos de invitación (password reset) llegan a la bandeja de spam porque se envían desde `noreply@agile-assessment-5a117.firebaseapp.com`, dominio compartido de Firebase sin SPF/DKIM propios.
+
+**Solución recomendada: SMTP personalizado con SendGrid**
+1. Crear cuenta en SendGrid (free tier: 100 correos/día)
+2. Verificar dominio propio y configurar SPF + DKIM
+3. Firebase Console → Authentication → Templates → Configure action email → SMTP settings → pegar credenciales de SendGrid
+
+**Alternativa rápida:** Cambiar el nombre del remitente en Firebase Console → Authentication → Templates → Password reset → nombre visible más reconocible (no elimina el problema, solo lo atenúa).
+
+**Prioridad:** 🟢 Baja — workaround inmediato: pedir al usuario que marque el correo como "No es spam".
+
+---
+
 ## Estado
 
 | Ítem | Estado | Notas |
