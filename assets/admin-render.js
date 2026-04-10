@@ -47,7 +47,7 @@ function render() {
     if (el) {
       el.focus();
       if (selStart !== null) {
-        try { el.setSelectionRange(selStart, selEnd); } catch(e) {}
+        try { el.setSelectionRange(selStart, selEnd); } catch(e) { /* no soportado en inputs tipo number/date */ }
       }
     }
   }
