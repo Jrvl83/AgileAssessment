@@ -186,7 +186,8 @@ async function fetchAllData() {
             Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
             'Tamaño Equipo': r.tamanoEquipo || '',
             'Tiempo Scrum': r.tiempoScrum || '',
-            Answers: r.answers || {}
+            Answers: r.answers || {},
+            Comments: r.comments || {}
           }
         };
       })

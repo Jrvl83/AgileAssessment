@@ -83,6 +83,22 @@ function renderQuestionDetail(tid, selectedRole) {
         </div>`;
     }).join('');
 
+    const secComments = teamResps
+      .map(r => ((r.fields.Comments || {})[sec.id] || '').trim())
+      .filter(c => c.length > 0);
+
+    const commentsHtml = secComments.length > 0 ? `
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${color}20;">
+        <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
+          Comentarios (${secComments.length})
+        </div>
+        ${secComments.map(c => `
+          <div style="background:${color}0d;border-left:3px solid ${color}55;border-radius:0 6px 6px 0;
+            padding:8px 12px;margin-bottom:6px;font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">
+            "${c.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"
+          </div>`).join('')}
+      </div>` : '';
+
     return `
       <div style="margin-bottom:18px;">
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;
@@ -91,6 +107,7 @@ function renderQuestionDetail(tid, selectedRole) {
           ${sec.title}
         </div>
         ${questions}
+        ${commentsHtml}
       </div>`;
   }).join('');
 }
@@ -464,6 +481,8 @@ function renderAnalysis() {
         const recsExpanded   = !!state.teamRecsExpanded[tid];
         const detailExpanded = !!state.teamDetailExpanded[tid];
         const recCount = lowDims.length;
+        const commentCount = teamResps.reduce((n, r) =>
+          n + SECTIONS.filter(sec => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length, 0);
 
         return `
           <div class="tac">
@@ -512,7 +531,10 @@ function renderAnalysis() {
             </div>
             <div class="collapse-section">
               <button class="collapse-toggle" onclick="toggleTeamDetail('${tid}')">
-                <span class="collapse-toggle-label">Detalle por pregunta</span>
+                <span class="collapse-toggle-label">
+                  Detalle por pregunta
+                  ${commentCount > 0 ? `<span class="collapse-count">${commentCount} comentario${commentCount !== 1 ? 's' : ''}</span>` : ''}
+                </span>
                 <span class="collapse-chevron">${detailExpanded ? '▲' : '▼'}</span>
               </button>
               ${detailExpanded ? `<div class="collapse-body">${renderQuestionDetail(tid, selectedRole)}</div>` : ''}
