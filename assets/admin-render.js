@@ -29,17 +29,21 @@ function setTeamRole(tid, role) {
 // ── Render ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
-
-  // Guardar foco y posición del cursor antes de reemplazar el DOM
-  const focusId  = document.activeElement ? document.activeElement.id : null;
-  const selStart = document.activeElement ? document.activeElement.selectionStart : null;
-  const selEnd   = document.activeElement ? document.activeElement.selectionEnd   : null;
+  const active = document.activeElement;
+  const focusId  = active ? active.id : null;
+  const selStart = active ? active.selectionStart : null;
+  const selEnd   = active ? active.selectionEnd   : null;
+  const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
 
   if (!state.currentUser) { app.innerHTML = renderLogin(); return; }
   app.innerHTML = renderShell();
-  app.classList.remove('fade-in');
-  void app.offsetWidth;
-  app.classList.add('fade-in');
+
+  // Solo animar en cambios de tab o carga inicial, no en cada tecla
+  if (!isTyping) {
+    app.classList.remove('fade-in');
+    void app.offsetWidth;
+    app.classList.add('fade-in');
+  }
 
   // Restaurar foco y cursor después del render
   if (focusId) {
