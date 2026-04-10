@@ -497,6 +497,9 @@ function renderAnalysis() {
               </div>
             </div>
             <div class="role-filter no-print">${rolePills}</div>
+            <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+              <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
+            </div>
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
             ${DIMS.map(d => {
               const dp = ds.avgDims[d.key];
@@ -921,6 +924,31 @@ function renderTeams() {
       </div>
       ${list}
     </div>`;
+}
+
+// ── Reporte compartible ───────────────────────────────────────────
+function showReportLink(url, teamName, ciclo) {
+  const modal = document.getElementById('qr-modal');
+  modal.style.display = 'flex';
+  const cicloLabel = ciclo && ciclo !== 'Todos' ? ` · ${ciclo}` : '';
+  const escapedUrl = url.replace(/'/g, "\\'");
+  modal.innerHTML = `
+    <div style="background:white;border-radius:var(--radius);padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:600;color:var(--ink);">Reporte para stakeholders</div>
+        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+      </div>
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
+        Link de <strong>solo lectura</strong> para <strong>${teamName}${cicloLabel}</strong>.
+        Sin login ni controles de edición. Válido 30 días.
+      </div>
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" onclick="copyQRUrl('${escapedUrl}')" style="flex:1;">Copiar link</button>
+        <button class="btn" onclick="closeQR()">Cerrar</button>
+      </div>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) closeQR(); };
 }
 
 // ── QR Code ──────────────────────────────────────────────────────

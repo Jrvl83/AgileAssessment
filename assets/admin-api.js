@@ -389,6 +389,73 @@ async function resendInvite(email, nombre) {
   } catch(e) { toast('Error al enviar correo'); }
 }
 
+// ── Reportes compartibles ─────────────────────────────────────────
+async function generateReport(teamId, cycleFilter) {
+  const team = state.teams.find(t => t.id === teamId);
+  if (!team) return;
+
+  const cf = cycleFilter || 'Todos';
+  const ds = getTeamFilteredStats(teamId, 'Todos', cf);
+  if (!ds) { toast('Sin respuestas para generar el reporte'); return; }
+
+  const teamResps = state.responses
+    .filter(r => (r.fields.Equipo || []).includes(teamId))
+    .filter(r => cf === 'Todos' || r.fields.Ciclo === cf);
+
+  const availRoles = [...new Set(teamResps.map(r => r.fields.Rol).filter(Boolean))].sort();
+  const roleStats = availRoles.map(role => {
+    const rr = teamResps.filter(r => r.fields.Rol === role);
+    const avg = Math.round(rr.reduce((sum, r) => sum + (r.fields['Score Total %'] || 0), 0) / rr.length);
+    return { role, count: rr.length, avg, level: getLevel(avg) };
+  }).sort((a, b) => b.avg - a.avg);
+
+  const majorityRole = getMajorityRole(teamResps);
+  const below80 = DIMS.filter(d => ds.avgDims[d.key].pct < 80)
+    .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+  const recDims = below80.length > 0
+    ? below80
+    : DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct).slice(0, 4);
+  const recommendations = recDims.map(d => ({
+    dimKey: d.key,
+    dimLabel: d.label,
+    dimColor: d.color,
+    pct: ds.avgDims[d.key].pct,
+    text: getRec(d.key, ds.avgDims[d.key].pct, majorityRole)
+  }));
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 30);
+
+  const snapshot = {
+    equipoId: teamId,
+    equipoNombre: team.name,
+    ciclo: cf,
+    ownerId: state.currentUser.uid,
+    generatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    data: {
+      avgTotal: ds.avgTotal,
+      count: ds.count,
+      level: ds.level,
+      avgDims: ds.avgDims,
+      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
+      radarValues: DIMS.map(d => ds.avgDims[d.key].pct),
+      radarLabels: DIMS.map(d => d.label),
+      radarColors: DIMS.map(d => d.color),
+      roleStats,
+      dispersion: ds.dispersion || {},
+      recommendations
+    }
+  };
+
+  try {
+    const ref = await db.collection('reportes').add(snapshot);
+    const url = window.location.origin + '/reporte.html?t=' + ref.id;
+    showReportLink(url, team.name, cf);
+    toast('Reporte generado');
+  } catch(e) { toast('Error al generar el reporte'); }
+}
+
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { calcDispersion, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };

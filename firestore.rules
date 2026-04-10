@@ -59,5 +59,17 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if isSuperAdmin();
     }
+
+    // ── Reportes compartibles ─────────────────────────────────────
+    // Lectura pública: stakeholders acceden sin login con el token.
+    // Creación: cualquier admin autenticado.
+    // Eliminación: solo el owner o super_admin (para revocar).
+    match /reportes/{token} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null
+        && (resource.data.ownerId == request.auth.uid || isSuperAdmin());
+      allow update: if false;
+    }
   }
 }

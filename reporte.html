@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reporte de Madurez — Assessment Agile</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117; --ink-muted: #5a5f72; --ink-faint: #9198aa;
+    --surface: #fafaf8; --surface-2: #f2f1ed;
+    --accent: #1a4fd6; --accent-light: #dce6ff;
+    --border: #dddbd4; --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+  .shell { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .header-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(22px, 4vw, 32px); line-height: 1.1; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: var(--ink-muted); }
+
+  .section-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+
+  .score-hero { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+  .score-big { font-size: 52px; font-weight: 600; line-height: 1; }
+  .level-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; display: inline-block; }
+
+  .dim-row { margin-bottom: 12px; }
+  .dim-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .dim-label { font-size: 13px; font-weight: 500; }
+  .dim-pct { font-size: 13px; font-weight: 600; color: var(--ink); }
+  .dim-bar-wrap { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .dim-bar { height: 100%; border-radius: 99px; }
+
+  .role-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .role-row:last-child { border-bottom: none; }
+  .org-bar-wrap { flex: 1; height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .org-bar { height: 100%; border-radius: 99px; }
+
+  .rec-item { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0; border-bottom: 1px solid #f3f4f6; }
+  .rec-item:last-child { border-bottom: none; }
+  .rec-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+
+  .footer { text-align: center; font-size: 12px; color: var(--ink-faint); padding: 24px 0; border-top: 1px solid var(--border); margin-top: 20px; line-height: 1.8; }
+  .error-state { text-align: center; padding: 80px 20px; font-size: 15px; color: var(--ink-muted); }
+  .loading-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="header-eyebrow">Reporte de Madurez Ágil</div>
+    <h1 id="report-title">Cargando…</h1>
+    <p id="report-subtitle"></p>
+  </div>
+  <div id="app">
+    <div class="loading-state">Cargando reporte…</div>
+  </div>
+  <div class="footer" id="report-footer"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
+  authDomain: "agile-assessment-5a117.firebaseapp.com",
+  projectId: "agile-assessment-5a117",
+  storageBucket: "agile-assessment-5a117.firebasestorage.app",
+  messagingSenderId: "41571782884",
+  appId: "1:41571782884:web:e8b96178aeffc4649edcf1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+async function loadReport() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('t');
+  if (!token) { showError('Link inválido. Solicita un nuevo link al coach.'); return; }
+
+  try {
+    const doc = await db.collection('reportes').doc(token).get();
+    if (!doc.exists) { showError('Este reporte no existe o ha sido revocado.'); return; }
+
+    const r = doc.data();
+    if (r.expiresAt && r.expiresAt.toDate() < new Date()) {
+      showError('Este reporte ha expirado. Solicita un nuevo link al coach.');
+      return;
+    }
+
+    renderReport(r);
+  } catch(e) {
+    showError('Error al cargar el reporte. Intenta nuevamente más tarde.');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('report-title').textContent = 'Reporte no disponible';
+  document.getElementById('app').innerHTML = `<div class="error-state">${msg}</div>`;
+}
+
+function renderReport(r) {
+  const d = r.data;
+  const cicloLabel = r.ciclo && r.ciclo !== 'Todos' ? r.ciclo : 'Todos los ciclos';
+
+  document.getElementById('report-title').textContent = r.equipoNombre;
+  document.getElementById('report-subtitle').textContent = 'Ciclo: ' + cicloLabel;
+
+  const genDate = r.generatedAt
+    ? r.generatedAt.toDate().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+  const expDate = r.expiresAt
+    ? r.expiresAt.toDate().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
+    : '';
+
+  const dispOverall = d.dispersion && d.dispersion.overall;
+  const alignBadge = dispOverall
+    ? `<span style="font-size:11px;font-weight:600;padding:2px 10px;border-radius:99px;
+        background:${dispOverall.align.bg};color:${dispOverall.align.color};">
+        Alineación ${dispOverall.align.label}
+       </span>`
+    : '';
+
+  // ── Score + Radar ────────────────────────────────────────────────
+  const scoreSection = `
+    <div class="section-card">
+      <div class="score-hero">
+        <div style="flex:1;min-width:160px;">
+          <div class="score-big" style="color:${d.level.color}">${d.avgTotal}%</div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <span class="level-badge" style="background:${d.level.bg};color:${d.level.color}">${d.level.label}</span>
+            ${alignBadge}
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--ink-faint);">${d.count} respuesta${d.count !== 1 ? 's' : ''}</div>
+          ${d.level.desc ? `<div style="margin-top:12px;font-size:13px;color:var(--ink-muted);line-height:1.5;">${d.level.desc}</div>` : ''}
+        </div>
+        <div style="flex:0 0 auto;width:220px;">
+          <canvas id="radar-main" style="display:block;width:100%;max-height:220px;"></canvas>
+        </div>
+      </div>
+    </div>`;
+
+  // ── Dimension bars ───────────────────────────────────────────────
+  const dimsSection = `
+    <div class="section-card">
+      <div class="section-title">Resultados por dimensión</div>
+      ${(d.dims || []).map(dim => {
+        const dp = (d.avgDims || {})[dim.key] || { pct: 0 };
+        const disp = d.dispersion && d.dispersion[dim.key];
+        return `
+          <div class="dim-row">
+            <div class="dim-row-header">
+              <span class="dim-label" style="color:${dim.color}">${dim.label}</span>
+              <span class="dim-pct">${dp.pct}%</span>
+            </div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar" style="width:${dp.pct}%;background:${dim.color}"></div>
+            </div>
+            ${disp ? `<div style="font-size:10px;color:var(--ink-faint);margin-top:2px;">Rango: ${disp.min}%–${disp.max}% · dispersión ±${disp.sd}%</div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  // ── Role breakdown ───────────────────────────────────────────────
+  const rolesSection = d.roleStats && d.roleStats.length > 1 ? `
+    <div class="section-card">
+      <div class="section-title">Madurez por rol</div>
+      ${d.roleStats.map(rs => `
+        <div class="role-row">
+          <div style="width:140px;font-size:13px;font-weight:500;flex-shrink:0;">${rs.role}</div>
+          <div class="org-bar-wrap">
+            <div class="org-bar" style="width:${rs.avg}%;background:${rs.level.color}"></div>
+          </div>
+          <div style="font-size:13px;font-weight:600;width:42px;text-align:right;flex-shrink:0;">${rs.avg}%</div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;
+            background:${rs.level.bg};color:${rs.level.color};flex-shrink:0;">${rs.level.label}</span>
+          <span style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${rs.count} resp.</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  // ── Recommendations ──────────────────────────────────────────────
+  const recsSection = d.recommendations && d.recommendations.length ? `
+    <div class="section-card">
+      <div class="section-title">Recomendaciones prioritarias</div>
+      ${d.recommendations.map(rec => `
+        <div class="rec-item">
+          <div class="rec-dot" style="background:${rec.dimColor};margin-top:5px;"></div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:${rec.dimColor};margin-bottom:4px;">
+              ${rec.dimLabel} · ${rec.pct}%
+            </div>
+            <div style="font-size:13px;color:var(--ink-muted);line-height:1.5;">${rec.text}</div>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('app').innerHTML = scoreSection + dimsSection + rolesSection + recsSection;
+
+  document.getElementById('report-footer').innerHTML =
+    `Generado el ${genDate} · Válido hasta el ${expDate}<br>
+     Este reporte es de solo lectura · Assessment Agile`;
+
+  // ── Radar chart ──────────────────────────────────────────────────
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('radar-main');
+    if (!canvas || typeof Chart === 'undefined') return;
+    new Chart(canvas, {
+      type: 'radar',
+      data: {
+        labels: d.radarLabels,
+        datasets: [{
+          data: d.radarValues,
+          backgroundColor: 'rgba(26, 86, 219, 0.10)',
+          borderColor: 'rgba(26, 86, 219, 0.75)',
+          borderWidth: 2,
+          pointBackgroundColor: d.radarColors,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
+            grid: { color: 'rgba(0,0,0,0.07)' },
+            angleLines: { color: 'rgba(0,0,0,0.07)' },
+            pointLabels: {
+              font: { size: 10, family: "'DM Sans', sans-serif" },
+              color: '#374151'
+            }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + '%' } }
+        },
+        animation: { duration: 350 }
+      }
+    });
+  });
+}
+
+loadReport();
+</script>
+</body>
+</html>
