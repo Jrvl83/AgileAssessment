@@ -51,7 +51,10 @@ function render() {
     if (el) {
       el.focus();
       if (selStart !== null) {
-        try { el.setSelectionRange(selStart, selEnd); } catch(e) { /* no soportado en inputs tipo number/date */ }
+        try { el.setSelectionRange(selStart, selEnd); } catch(e) {
+          // email/number/date no soportan setSelectionRange — forzar cursor al final
+          const v = el.value; el.value = ''; el.value = v;
+        }
       }
     }
   }
