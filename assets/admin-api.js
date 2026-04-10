@@ -294,9 +294,11 @@ async function addPlan() {
       fechaObjetivo: state.newPlanFecha,
       estado: 'pendiente',
       ciclo: cicloFinal,
+      dimension: state.newPlanDimension || '',
       fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
     });
     state.newPlanIniciativa = ''; state.newPlanResponsable = ''; state.newPlanFecha = '';
+    state.newPlanDimension = '';
     toast('Acción agregada');
     await fetchPlans();
     setState({});

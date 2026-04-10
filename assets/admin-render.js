@@ -6,12 +6,13 @@ function toast(msg) {
 }
 
 // ── Helpers de UI ────────────────────────────────────────────────
-function prefillPlan(teamId, recKey, ciclo) {
+function prefillPlan(teamId, recKey, ciclo, dimension) {
   const activeCycle = (state.cycles.find(c => c.active) || {}).name || '';
   setState({
     newPlanTeamId:     teamId,
     newPlanIniciativa: state.recTexts[recKey] || '',
     newPlanCiclo:      (!ciclo || ciclo === 'Todos') ? activeCycle : ciclo,
+    newPlanDimension:  dimension || '',
     activeTab:         'plan'
   });
   setTimeout(() => {
@@ -396,7 +397,7 @@ function renderAnalysis() {
                   ${isCrit ? `<span class="badge-critical no-print">Crítica</span>` : ''}<strong>${d.label}:</strong> ${getRec(d.key, ds.avgDims[d.key].pct, roleForRec)}
                   ${ctxNote ? `<div class="rec-context">⚑ ${ctxNote}</div>` : ''}
                 </div>
-                <button class="btn-plan no-print" onclick="prefillPlan('${tid}','${recKey}','${state.cycleFilter}')">+ Plan</button>
+                <button class="btn-plan no-print" onclick="prefillPlan('${tid}','${recKey}','${state.cycleFilter}','${d.key}')">+ Plan</button>
               </div>`;
             }).join('')
           : `<div class="rec-item">
@@ -646,6 +647,52 @@ function renderEvolution() {
       </div>`;
   }
 
+  // Acciones del Plan de Acción vinculadas a dimensiones para este equipo
+  const STATUS_MAP = {
+    'pendiente':  { label:'Pendiente',  color:'#a05c0a', bg:'#fdefd6' },
+    'en-curso':   { label:'En curso',   color:'#1a4fd6', bg:'#dce6ff' },
+    'completado': { label:'Completado', color:'#0d7a52', bg:'#d4f0e5' },
+  };
+  const teamPlans = state.plans.filter(p => p.equipoId === state.evolTeamId && p.dimension);
+  const linkedPlansSection = teamPlans.length && data.length > 1 ? `
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;">
+        Acciones vinculadas a dimensiones
+      </div>
+      ${DIMS.map(dim => {
+        const dimPlans = teamPlans.filter(p => p.dimension === dim.key);
+        if (!dimPlans.length) return '';
+        const latestPct = latest.avgDims[dim.key].pct;
+        const prevPct   = prevCycle ? prevCycle.avgDims[dim.key].pct : null;
+        const diff = prevPct !== null ? latestPct - prevPct : null;
+        const deltaChip = diff !== null
+          ? (diff > 0 ? `<span class="delta-up">▲ +${diff}%</span>`
+            : diff < 0 ? `<span class="delta-dn">▼ ${diff}%</span>`
+            : `<span class="delta-eq">→ 0%</span>`)
+          : '';
+        return `
+          <div style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${dim.color};flex-shrink:0;display:inline-block;"></span>
+              <span style="font-size:12px;font-weight:600;color:${dim.color};">${dim.label}</span>
+              ${deltaChip}
+            </div>
+            ${dimPlans.map(p => {
+              const st = STATUS_MAP[p.estado] || { label: p.estado, color:'#374151', bg:'#f3f4f6' };
+              return `
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
+                  background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius-sm);margin-bottom:6px;">
+                  <div style="flex:1;font-size:12px;color:var(--ink);min-width:0;">${p.iniciativa}</div>
+                  ${p.responsable ? `<span style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${p.responsable}</span>` : ''}
+                  <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
+                    background:${st.bg};color:${st.color};flex-shrink:0;">${st.label}</span>
+                </div>`;
+            }).join('')}
+          </div>`;
+      }).filter(Boolean).join('')}
+    </div>` : '';
+
   return `
     <div class="section-card">
       <div class="section-title">Evolución · ${teamName}${state.evolRole !== 'Todos' ? ' · ' + state.evolRole : ''}</div>
@@ -653,6 +700,7 @@ function renderEvolution() {
       ${data.length === 1 ? `<p style="font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;">Solo hay un ciclo con datos. La comparación aparecerá cuando haya más de un ciclo completado.</p>` : ''}
       ${timeline}
       ${data.length > 1 ? dimTable : ''}
+      ${linkedPlansSection}
       <div class="recs-section" style="margin-top:16px;">
         <div class="recs-label">Recomendaciones · ${data[data.length-1].cycleName}${state.evolRole !== 'Todos' ? ' · ' + state.evolRole : ''}</div>
         ${recs}
@@ -858,7 +906,7 @@ function renderPlan() {
           value="${state.newPlanIniciativa.replace(/"/g,'&quot;')}" oninput="setState({newPlanIniciativa:this.value})"
           onkeydown="if(event.key==='Enter')addPlan()"/>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
         <div class="field-group" style="margin-bottom:0;">
           <label>Responsable</label>
           <input class="field-input" type="text" id="inputNewPlanResponsable" placeholder="Ej. Scrum Master"
@@ -867,6 +915,13 @@ function renderPlan() {
         <div class="field-group" style="margin-bottom:0;">
           <label>Fecha objetivo</label>
           <input class="field-input" type="date" id="inputNewPlanFecha" value="${state.newPlanFecha}" oninput="setState({newPlanFecha:this.value})"/>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Dimensión <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+          <select class="field-input" onchange="setState({newPlanDimension:this.value})">
+            <option value="">— General —</option>
+            ${DIMS.map(d => `<option value="${d.key}" ${state.newPlanDimension===d.key?'selected':''}>${d.label}</option>`).join('')}
+          </select>
         </div>
       </div>
       <button class="btn primary" onclick="addPlan()" ${(!state.newPlanTeamId||!state.newPlanIniciativa.trim())?'disabled':''}>+ Agregar acción</button>
@@ -897,6 +952,7 @@ function renderPlan() {
                     ${p.responsable ? `<span style="font-size:11px;color:var(--ink-faint);">· ${p.responsable}</span>` : ''}
                     ${p.ciclo ? `<span style="font-size:11px;color:var(--ink-faint);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:99px;">${p.ciclo}</span>` : ''}
                     ${p.fechaObjetivo ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${p.fechaObjetivo}</span>` : ''}
+                    ${(()=>{ const dim = p.dimension ? DIMS.find(d=>d.key===p.dimension) : null; return dim ? `<span class="plan-dim-badge" style="border-color:${dim.color};color:${dim.color};">${dim.label}</span>` : ''; })()}
                   </div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
