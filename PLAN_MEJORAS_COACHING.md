@@ -59,25 +59,18 @@ El Plan de Acción y la pestaña Evolución viven separados. El coach no puede m
 
 ---
 
-### 4. Preguntas abiertas al final de cada sección
+### 4. Preguntas abiertas al final de cada sección ✅ Completado — commit `1c7c6c6`
 
 **Problema:**
 Todo el assessment es cuantitativo. El número dice *qué* está mal; el texto libre dice *por qué*. El coach hoy tiene que ir a buscar el "por qué" en conversaciones separadas, perdiendo el momento en que el participante tiene el contexto fresco.
 
-**Solución:**
-Agregar una pregunta abierta opcional al final de cada sección:
-> *"¿Qué está bloqueando más a tu equipo en esta área? (opcional)"*
-
-Las respuestas se guardan en Firestore y se muestran en el panel como citas textuales agrupadas por dimensión.
+**Solución implementada:**
+Textarea opcional al final de cada una de las 6 secciones del formulario público con el texto: *"¿Qué está bloqueando más a tu equipo en esta área? (opcional)"*. No bloquea la navegación ni el envío. Los comentarios se guardan en Firestore bajo el campo `comments` por sección. En el panel admin, la sección colapsable "Detalle por pregunta" muestra las citas anónimas agrupadas por dimensión con borde del color correspondiente. El toggle del detalle muestra el conteo de comentarios cuando hay al menos uno.
 
 **Impacto para el coach:**
 - Da contexto cualitativo que enriquece enormemente el análisis.
 - Permite preparar preguntas específicas para la sesión de debriefing.
 - Los participantes suelen escribir lo que no dirían en voz alta — es información muy honesta.
-
-**Consideraciones:**
-- Debe ser completamente opcional para no alargar el assessment.
-- En el panel mostrar las respuestas como citas anónimas (sin vincular al nombre del participante).
 
 ---
 
@@ -101,16 +94,16 @@ Generar un link único (con token) que muestre el reporte de análisis de un cic
 
 ---
 
-### 6. Comparativa visual entre equipos del mismo workspace
+### 6. Comparativa visual entre equipos del mismo workspace ✅ Completado — commit `871c0e1`
 
 **Problema:**
 Si el workspace tiene varios equipos, no hay una vista que los compare lado a lado. El coach tiene que ir tarjeta por tarjeta y hacer la comparación mentalmente. En presentaciones ejecutivas esto es un gap importante.
 
-**Solución:**
-Una vista comparativa en la pestaña Análisis con:
-- Tabla con una fila por equipo y una columna por dimensión.
-- Radar superpuesto con los N equipos en distintos colores.
-- Ordenable por puntaje total o por dimensión específica.
+**Solución implementada:**
+Nuevo card "Comparativa por dimensión" en la pestaña Análisis, visible cuando hay ≥2 equipos con datos. Incluye:
+- Radar superpuesto con un dataset por equipo en colores distintos (paleta de 8 colores), con leyenda debajo.
+- Tabla heatmap: filas = equipos, columnas = 6 dimensiones + total. Celdas con semáforo de color (verde ≥80%, ámbar ≥60%, rojo <60%).
+- Respeta los filtros de ciclo y rol activos.
 
 **Impacto para el coach:**
 - Esencial cuando trabaja con múltiples equipos en la misma organización.
@@ -182,9 +175,9 @@ Las respuestas de participantes con rol "Otro" se mezclan en el promedio general
 | 1 | Gráfico de radar por equipo | Alta | Media | ✅ Completado |
 | 2 | Distribución de respuestas por pregunta | Alta | Media | ✅ Completado |
 | 3 | Vinculación Plan de Acción ↔ Evolución | Alta | Alta | ✅ Completado |
-| 4 | Preguntas abiertas por sección | Media | Media | Pendiente |
+| 4 | Preguntas abiertas por sección | Media | Media | ✅ Completado |
 | 5 | Link de solo lectura para stakeholders | Media | Alta | Pendiente |
-| 6 | Comparativa visual entre equipos | Media | Media | Pendiente |
+| 6 | Comparativa visual entre equipos | Media | Media | ✅ Completado |
 | 7 | Exportación del Plan de Acción en PDF | Media | Baja | ✅ Completado |
 | 8 | Benchmark externo | Baja | Muy alta | Pendiente |
 | 9 | Notificación al equipo al abrir ciclo | Baja | Media | Pendiente |

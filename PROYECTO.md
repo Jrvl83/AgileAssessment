@@ -97,10 +97,10 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, gráfico de radar por equipo, recomendaciones, exportación PDF/CSV |
-| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos de medición, incluyendo detalle por pregunta con delta vs. ciclo anterior |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol, badge de alineación, gráfico de radar por equipo, comparativa multi-equipo (radar superpuesto + tabla heatmap), recomendaciones colapsables, histogramas por pregunta con comentarios cualitativos anónimos, exportación PDF/CSV |
+| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" que muestra acciones de la dimensión seleccionada |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo |
-| **Plan de Acción** | Todos | Acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Exportación a PDF con agrupación por estado |
+| **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -343,6 +343,7 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `scoreTotalPct` | number | Porcentaje total (0–100) |
 | `nivel` | string | Etiqueta del nivel de madurez |
 | `answers` | object | Respuestas individuales por pregunta (índice → valor 0–3) |
+| `comments` | object | Comentarios abiertos por sección (sectionId → string, opcional) |
 | `fecha` | timestamp | Timestamp del servidor al momento del envío |
 
 #### `planes`
@@ -355,6 +356,7 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `fecha` | string | Fecha objetivo (formato YYYY-MM-DD) |
 | `estado` | string | Estado: "Pendiente" / "En progreso" / "Completado" |
 | `ciclo` | string | Ciclo en que se creó la acción |
+| `dimension` | string | Dimensión objetivo (key de DIMS, opcional) |
 
 ---
 
@@ -383,6 +385,10 @@ Desde el panel admin se puede exportar:
 | Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?workspaceId=` para pre-seleccionar el workspace en el formulario público. |
 | Media | Exportación Plan de Acción PDF | Botón en la pestaña Plan de Acción que genera un PDF con acciones agrupadas por estado (En curso → Pendiente → Completado), resumen de conteos y filtros de equipo/ciclo aplicados. |
 | Media | Nota contextual por rol en el formulario | Cuando un participante entra a una sección cuya perspectiva principal no es su rol, el formulario muestra una instrucción contextual (ej: PO en sección Dev Team). Preserva el dato cruzado entre roles. |
+| Media | Secciones colapsables + histogramas por pregunta | Las recomendaciones y el detalle por pregunta son colapsables por equipo. El detalle muestra mini histogramas de 4 barras (distribución de respuestas 0–3) por pregunta, agrupados por dimensión. |
+| Media | Preguntas abiertas por sección | Textarea opcional al final de cada sección del formulario: "¿Qué está bloqueando más a tu equipo en esta área?". Se guarda en Firestore y se muestra en el panel como citas anónimas agrupadas por dimensión. |
+| Media | Vinculación Plan ↔ Evolución | Campo Dimensión en planes. En la pestaña Evolución se muestran los planes vinculados a la dimensión seleccionada con delta y badge de estado. |
+| Media | Comparativa multi-equipo | Card "Comparativa por dimensión" en Análisis con radar superpuesto (N equipos, colores distintos) y tabla heatmap por equipo × dimensión (semáforo verde/ámbar/rojo). Visible con ≥2 equipos con datos. |
 | Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario). |
 | Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
 
@@ -392,6 +398,10 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `1c7c6c6` | Feat: preguntas abiertas por sección y citas anónimas en panel admin |
+| `871c0e1` | Feat: comparativa multi-equipo — radar superpuesto + tabla heatmap |
+| `d0bd0cd` | Feat: vinculación Plan de Acción ↔ dimensiones en pestaña Evolución |
+| `2550209` | Feat: secciones colapsables y detalle por pregunta con histogramas |
 | `1f1aec6` | Feat: exportar Plan de Acción a PDF con agrupación por estado |
 | `90b6b29` | Feat: gráfico de radar por equipo en pestaña Análisis (Chart.js) |
 | `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
