@@ -44,7 +44,9 @@ const state = {
   planCycleFilter:    'Todos',
   users:              [],
   newUserNombre:      '',
-  newUserEmail:       ''
+  newUserEmail:       '',
+  teamRecsExpanded:   {},
+  teamDetailExpanded: {}
 };
 
 // setState actualiza el estado y dispara un re-render.

@@ -26,6 +26,74 @@ function setTeamRole(tid, role) {
   render();
 }
 
+function toggleTeamRecs(tid) {
+  state.teamRecsExpanded[tid] = !state.teamRecsExpanded[tid];
+  render();
+}
+
+function toggleTeamDetail(tid) {
+  state.teamDetailExpanded[tid] = !state.teamDetailExpanded[tid];
+  render();
+}
+
+// ── Detalle por pregunta con histogramas ─────────────────────────
+function renderQuestionDetail(tid, selectedRole) {
+  const teamResps = state.responses
+    .filter(r => (r.fields.Equipo || []).includes(tid))
+    .filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter)
+    .filter(r => selectedRole === 'Todos' || r.fields.Rol === selectedRole);
+
+  if (!teamResps.length) {
+    return `<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin respuestas para este filtro.</div>`;
+  }
+
+  return SECTIONS.map(sec => {
+    const dim = DIMS.find(d => d.key === sec.id);
+    const color = dim ? dim.color : '#374151';
+
+    const questions = sec.questions.map((q, qi) => {
+      const key = `${sec.id}_${qi}`;
+      const counts = [0, 0, 0, 0];
+      teamResps.forEach(r => {
+        const val = (r.fields.Answers || {})[key];
+        if (val !== undefined && val >= 0 && val <= 3) counts[val]++;
+      });
+      const maxCount = Math.max(...counts, 1);
+
+      const bars = counts.map((c, i) => {
+        const widthPct = Math.round(c / maxCount * 100);
+        const isTop = c > 0 && c === Math.max(...counts);
+        return `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span style="font-size:10px;color:var(--ink-faint);width:12px;flex-shrink:0;text-align:right;">${i + 1}</span>
+            <div style="flex:1;background:#f3f4f6;border-radius:3px;height:9px;overflow:hidden;">
+              <div style="width:${widthPct}%;height:100%;background:${isTop ? color : color + '55'};border-radius:3px;"></div>
+            </div>
+            <span style="font-size:10px;color:var(--ink-faint);width:20px;flex-shrink:0;">${c}</span>
+          </div>`;
+      }).join('');
+
+      return `
+        <div style="margin-bottom:14px;">
+          <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:6px;line-height:1.45;">
+            P${qi + 1}. ${q.text}
+          </div>
+          ${bars}
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="margin-bottom:18px;">
+        <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;
+          letter-spacing:0.06em;margin-bottom:10px;padding-bottom:5px;
+          border-bottom:2px solid ${color}25;">
+          ${sec.title}
+        </div>
+        ${questions}
+      </div>`;
+  }).join('');
+}
+
 // ── Radar charts ─────────────────────────────────────────────────
 function initRadarCharts() {
   if (state.activeTab !== 'analysis') return;
@@ -340,6 +408,10 @@ function renderAnalysis() {
         window._radarData = window._radarData || {};
         window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct) };
 
+        const recsExpanded   = !!state.teamRecsExpanded[tid];
+        const detailExpanded = !!state.teamDetailExpanded[tid];
+        const recCount = lowDims.length;
+
         return `
           <div class="tac">
             <div class="tac-header">
@@ -375,10 +447,22 @@ function renderAnalysis() {
                 </div>` : ''}
               </div>`;
             }).join('')}
-            <div class="recs-section">
-              <div class="recs-label">Recomendaciones${selectedRole !== 'Todos' ? ' para ' + selectedRole : ''}${recRoleNote}</div>
-              ${patternBlock}
-              ${recs}
+            <div class="collapse-section">
+              <button class="collapse-toggle" onclick="toggleTeamRecs('${tid}')">
+                <span class="collapse-toggle-label">
+                  Recomendaciones${selectedRole !== 'Todos' ? ' para ' + selectedRole : ''}${recRoleNote}
+                  ${recCount ? `<span class="collapse-count">${recCount}</span>` : ''}
+                </span>
+                <span class="collapse-chevron">${recsExpanded ? '▲' : '▼'}</span>
+              </button>
+              ${recsExpanded ? `<div class="collapse-body">${patternBlock}${recs}</div>` : ''}
+            </div>
+            <div class="collapse-section">
+              <button class="collapse-toggle" onclick="toggleTeamDetail('${tid}')">
+                <span class="collapse-toggle-label">Detalle por pregunta</span>
+                <span class="collapse-chevron">${detailExpanded ? '▲' : '▼'}</span>
+              </button>
+              ${detailExpanded ? `<div class="collapse-body">${renderQuestionDetail(tid, selectedRole)}</div>` : ''}
             </div>
           </div>`;
       }).join('')}

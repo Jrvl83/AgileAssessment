@@ -143,6 +143,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: va
 .delta-eq { color:var(--ink-faint); font-size:11px; }
 .no-print {}
 
+/* Collapsible sections */
+.collapse-section { border-top:1px solid var(--border); margin-top:12px; padding-top:4px; }
+.collapse-toggle { width:100%; display:flex; align-items:center; justify-content:space-between;
+  background:none; border:none; padding:8px 0; cursor:pointer; text-align:left; gap:8px; }
+.collapse-toggle:hover .collapse-toggle-label { color:var(--accent); }
+.collapse-toggle-label { font-size:12px; font-weight:600; color:var(--ink-muted);
+  text-transform:uppercase; letter-spacing:0.04em; display:flex; align-items:center; gap:6px; flex:1; }
+.collapse-chevron { font-size:10px; color:var(--ink-faint); flex-shrink:0; }
+.collapse-count { font-size:10px; font-weight:700; background:var(--accent-light);
+  color:var(--accent-dark); border-radius:99px; padding:1px 7px; }
+.collapse-body { padding-top:10px; }
+
 /* Cycles management */
 .cycle-row { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); }
 .cycle-row-name { flex:1; font-size:14px; font-weight:500; color:var(--ink); }
