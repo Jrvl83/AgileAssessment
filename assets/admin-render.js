@@ -511,7 +511,7 @@ function renderTeams() {
       <div class="add-row" style="margin-bottom:16px;">
         <div class="field-group" style="flex:1;margin-bottom:0;">
           <label>Nombre del ciclo</label>
-          <input class="field-input" type="text" placeholder="Ej. Q1 2026"
+          <input class="field-input" type="text" id="inputNewCycleName" placeholder="Ej. Q1 2026"
             value="${state.newCycleName}" oninput="setState({newCycleName:this.value})"
             onkeydown="if(event.key==='Enter')addCycle()"/>
         </div>
@@ -543,7 +543,7 @@ function renderTeams() {
       <div class="add-row">
         <div class="field-group">
           <label>Nombre del equipo</label>
-          <input class="field-input" type="text" placeholder="Ej. Equipo Phoenix"
+          <input class="field-input" type="text" id="inputNewTeamName" placeholder="Ej. Equipo Phoenix"
             value="${state.newTeamName}" oninput="setState({newTeamName:this.value})"
             onkeydown="if(event.key==='Enter')addTeam()"/>
         </div>
@@ -691,19 +691,19 @@ function renderPlan() {
       </div>
       <div class="field-group">
         <label>Iniciativa / Acción</label>
-        <input class="field-input" type="text" placeholder="Ej. Definir Definition of Done con el equipo"
+        <input class="field-input" type="text" id="inputNewPlanIniciativa" placeholder="Ej. Definir Definition of Done con el equipo"
           value="${state.newPlanIniciativa.replace(/"/g,'&quot;')}" oninput="setState({newPlanIniciativa:this.value})"
           onkeydown="if(event.key==='Enter')addPlan()"/>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
         <div class="field-group" style="margin-bottom:0;">
           <label>Responsable</label>
-          <input class="field-input" type="text" placeholder="Ej. Scrum Master"
+          <input class="field-input" type="text" id="inputNewPlanResponsable" placeholder="Ej. Scrum Master"
             value="${state.newPlanResponsable.replace(/"/g,'&quot;')}" oninput="setState({newPlanResponsable:this.value})"/>
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Fecha objetivo</label>
-          <input class="field-input" type="date" value="${state.newPlanFecha}" oninput="setState({newPlanFecha:this.value})"/>
+          <input class="field-input" type="date" id="inputNewPlanFecha" value="${state.newPlanFecha}" oninput="setState({newPlanFecha:this.value})"/>
         </div>
       </div>
       <button class="btn primary" onclick="addPlan()" ${(!state.newPlanTeamId||!state.newPlanIniciativa.trim())?'disabled':''}>+ Agregar acción</button>
@@ -767,12 +767,12 @@ function renderUsuarios() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="field-group" style="margin-bottom:0;">
           <label>Nombre</label>
-          <input class="field-input" type="text" placeholder="Nombre del cliente"
+          <input class="field-input" type="text" id="inputNewUserNombre" placeholder="Nombre del cliente"
             value="${state.newUserNombre.replace(/"/g,'&quot;')}" oninput="setState({newUserNombre:this.value})"/>
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Email</label>
-          <input class="field-input" type="email" placeholder="cliente@empresa.com"
+          <input class="field-input" type="email" id="inputNewUserEmail" placeholder="cliente@empresa.com"
             value="${state.newUserEmail.replace(/"/g,'&quot;')}" oninput="setState({newUserEmail:this.value})"
             onkeydown="if(event.key==='Enter')createUser()"/>
         </div>
