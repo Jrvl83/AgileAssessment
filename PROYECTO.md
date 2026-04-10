@@ -52,6 +52,8 @@ AssessmentAgile/
 │   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin
 │   └── package.json        # Dependencias: firebase-admin, firebase-functions
 └── .firebaserc             # Proyecto Firebase activo
+PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
+PLAN_MEJORAS_V2.md          # 20 nuevas mejoras en 4 fases — roadmap Q2 2026 – Q1 2027
 ```
 
 ### Routing (firebase.json)
@@ -418,6 +420,7 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
 | `8a7c607` | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos |
 | `4d33ea7` | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10) |
 | `0770bc7` | Feat: botón "↓ Descargar PDF" en reporte compartible |
