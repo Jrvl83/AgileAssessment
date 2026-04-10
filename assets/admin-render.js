@@ -744,6 +744,11 @@ function renderPlan() {
       ${['Todos', ...availCycles].map(c => `<button class="role-pill ${c===state.planCycleFilter?'active':''}" onclick="setState({planCycleFilter:'${c.replace(/'/g,"\\'")}'})">${c}</button>`).join('')}
     </div>` : '';
 
+  const exportBtn = filtered.length ? `
+    <div class="no-print" style="margin-bottom:16px;">
+      <button class="btn sm" onclick="exportPlanPDF()">↓ Exportar Plan PDF</button>
+    </div>` : '';
+
   const addForm = `
     <div class="section-card" id="plan-form">
       <div class="section-title">Nueva acción de mejora</div>
@@ -822,7 +827,7 @@ function renderPlan() {
         }).join('')}
       </div>`;
 
-  return addForm + `
+  return addForm + exportBtn + `
     <div class="section-card">
       <div class="section-title">Acciones en seguimiento</div>
       <div class="no-print">${teamPills}${cyclePills}</div>
