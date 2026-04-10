@@ -775,7 +775,7 @@ function renderUsuarios() {
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Email</label>
-          <input class="field-input" type="email" id="inputNewUserEmail" placeholder="cliente@empresa.com"
+          <input class="field-input" type="text" id="inputNewUserEmail" placeholder="cliente@empresa.com"
             value="${state.newUserEmail.replace(/"/g,'&quot;')}" oninput="setState({newUserEmail:this.value})"
             onkeydown="if(event.key==='Enter')createUser()"/>
         </div>
