@@ -157,6 +157,57 @@ function initRadarCharts() {
       }
     });
   });
+
+  // Radar de comparación multi-equipo
+  const compareCanvas = document.getElementById('radar-compare');
+  if (compareCanvas && window._compareData && window._compareData.teams.length >= 2) {
+    const existingCompare = Chart.getChart(compareCanvas);
+    if (existingCompare) existingCompare.destroy();
+    new Chart(compareCanvas, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: window._compareData.teams.map(t => ({
+          label: t.name,
+          data:  t.values,
+          backgroundColor: t.color + '18',
+          borderColor:     t.color,
+          borderWidth: 2,
+          pointBackgroundColor: t.color,
+          pointBorderColor:     '#fff',
+          pointBorderWidth: 1.5,
+          pointRadius: 3,
+          pointHoverRadius: 4,
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
+            grid:        { color: 'rgba(0,0,0,0.07)' },
+            angleLines:  { color: 'rgba(0,0,0,0.07)' },
+            pointLabels: {
+              font: { size: 10, family: "'DM Sans', sans-serif" },
+              color: '#374151',
+            },
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
+            }
+          }
+        },
+        animation: { duration: 350 },
+      }
+    });
+  }
 }
 
 // ── Render ───────────────────────────────────────────────────────
@@ -170,6 +221,7 @@ function render() {
 
   if (!state.currentUser) { app.innerHTML = renderLogin(); return; }
   window._radarData = {};
+  window._compareData = null;
   app.innerHTML = renderShell();
   requestAnimationFrame(initRadarCharts);
 
@@ -469,7 +521,61 @@ function renderAnalysis() {
       }).join('')}
     </div>`;
 
-  return stats + exportRow + cyclePills + roleCard + comparison + cards;
+  const TEAM_PALETTE = ['#1a4fd6','#0d7a52','#a05c0a','#7c3aed','#c0282a','#0891b2','#d97706','#65a30d'];
+  const cellBg   = p => p >= 80 ? '#d4f0e5' : p >= 60 ? '#fdefd6' : '#fce8e8';
+  const cellClr  = p => p >= 80 ? '#0d7a52' : p >= 60 ? '#a05c0a' : '#c0282a';
+
+  const compareByDim = compData.length >= 2 ? (() => {
+    window._compareData = {
+      teams: compSorted.map((s, i) => ({
+        name:   s.name,
+        values: DIMS.map(d => s.avgDims[d.key].pct),
+        color:  TEAM_PALETTE[i % TEAM_PALETTE.length]
+      }))
+    };
+    return `
+    <div class="section-card">
+      <div class="section-title">Comparativa por dimensión${state.cycleFilter !== 'Todos' ? ' · ' + state.cycleFilter : ''}</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
+        <div class="no-print" style="flex:0 0 auto;width:240px;">
+          <canvas id="radar-compare" style="display:block;width:100%;max-height:240px;"></canvas>
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px;">
+            ${compSorted.map((s, i) => `
+              <span style="font-size:11px;display:flex;align-items:center;gap:5px;">
+                <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${TEAM_PALETTE[i % TEAM_PALETTE.length]};flex-shrink:0;"></span>
+                ${s.name}
+              </span>`).join('')}
+          </div>
+        </div>
+        <div style="flex:1;min-width:280px;overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;padding:6px 8px 6px 0;font-size:11px;font-weight:600;color:var(--ink-faint);border-bottom:1.5px solid var(--border);white-space:nowrap;">Equipo</th>
+                ${DIMS.map((d, i) => `<th style="text-align:center;padding:6px 4px;font-size:11px;font-weight:600;color:${d.color};border-bottom:1.5px solid var(--border);min-width:58px;">${d.label}</th>`).join('')}
+                <th style="text-align:center;padding:6px 4px;font-size:11px;font-weight:600;color:var(--ink-faint);border-bottom:1.5px solid var(--border);min-width:52px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${compSorted.map((s, i) => `
+                <tr>
+                  <td style="padding:5px 8px 5px 0;font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TEAM_PALETTE[i % TEAM_PALETTE.length]};margin-right:5px;vertical-align:middle;"></span>${s.name}
+                  </td>
+                  ${DIMS.map(d => {
+                    const p = s.avgDims[d.key].pct;
+                    return `<td style="text-align:center;padding:3px 2px;"><span style="display:inline-block;background:${cellBg(p)};color:${cellClr(p)};font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;min-width:38px;">${p}%</span></td>`;
+                  }).join('')}
+                  <td style="text-align:center;padding:3px 2px;"><span style="display:inline-block;background:${cellBg(s.avgTotal)};color:${cellClr(s.avgTotal)};font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;min-width:38px;">${s.avgTotal}%</span></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  })() : '';
+
+  return stats + exportRow + cyclePills + roleCard + comparison + compareByDim + cards;
 }
 
 // ── Evolution tab ─────────────────────────────────────────────────
