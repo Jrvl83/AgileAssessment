@@ -316,15 +316,17 @@ function renderAnalysis() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
   state.recTexts = {};
-  const globalAvgs = computeGlobalDimAverages(state.cycleFilter);
+  const globalAvgs = computeGlobalDimAverages(state.cycleFilter, state.excludeOtro);
   const withData = Object.values(state.teamStats).filter(s => s.count > 0);
   const availOrgRoles = [...new Set(state.responses.map(r => r.fields.Rol).filter(Boolean))].sort();
   const filtByCycle = state.cycleFilter === 'Todos'
     ? state.responses
     : state.responses.filter(r => r.fields.Ciclo === state.cycleFilter);
+  const otroCount = filtByCycle.filter(r => r.fields.Rol === 'Otro').length;
 
+  const exOtro = state.excludeOtro && state.orgRoleFilter === 'Todos';
   const compData = withData.map(s => {
-    const fs = getTeamFilteredStats(s.id, state.orgRoleFilter, state.cycleFilter);
+    const fs = getTeamFilteredStats(s.id, state.orgRoleFilter, state.cycleFilter, exOtro);
     return fs ? { id: s.id, name: s.name, ...fs } : null;
   }).filter(Boolean);
   const compSorted = [...compData].sort((a, b) => b.avgTotal - a.avgTotal);
@@ -389,9 +391,25 @@ function renderAnalysis() {
         </div>`).join('')}
     </div>` : '';
 
+  const orgRoleCounts = { 'Todos': filtByCycle.length };
+  availOrgRoles.forEach(r => { orgRoleCounts[r] = filtByCycle.filter(x => x.fields.Rol === r).length; });
+
   const orgRolePills = ['Todos', ...availOrgRoles].map(r => `
-    <button class="role-pill ${r === state.orgRoleFilter ? 'active' : ''}" onclick="setState({orgRoleFilter:'${r}'})">${r}</button>`
+    <button class="role-pill ${r === state.orgRoleFilter ? 'active' : ''}" onclick="setState({orgRoleFilter:'${r}'})">
+      ${r} <span style="font-size:10px;opacity:0.65;">(${orgRoleCounts[r]})</span>
+    </button>`
   ).join('');
+
+  const otroToggle = otroCount > 0 ? `
+    <div class="no-print" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;">Otro</span>
+      <button class="role-pill ${state.excludeOtro ? 'active' : ''}"
+        style="${state.excludeOtro ? 'background:#fce8e8;color:#c0282a;border-color:#c0282a40;' : ''}"
+        onclick="setState({excludeOtro:${!state.excludeOtro}})">
+        ${state.excludeOtro ? '✓ ' : ''}Excluir "Otro" <span style="font-size:10px;opacity:0.65;">(${otroCount})</span>
+      </button>
+      ${state.excludeOtro ? `<span style="font-size:12px;color:var(--ink-faint);">Promedios calculados sin respuestas "Otro"</span>` : ''}
+    </div>` : '';
 
   const comparison = `
     <div class="section-card">
@@ -420,7 +438,11 @@ function renderAnalysis() {
         const selectedRole = state.teamRoleFilter[tid] || 'Todos';
         const teamResps = state.responses.filter(r => (r.fields.Equipo || []).includes(tid));
         const teamAvailRoles = [...new Set(teamResps.map(r => r.fields.Rol).filter(Boolean))].sort();
-        const roleCounts = { 'Todos': teamResps.length };
+        const roleCounts = {
+          'Todos': state.excludeOtro
+            ? teamResps.filter(r => r.fields.Rol !== 'Otro').length
+            : teamResps.length
+        };
         teamAvailRoles.forEach(r => { roleCounts[r] = teamResps.filter(x => x.fields.Rol === r).length; });
         const rolePills = ['Todos', ...teamAvailRoles].map(r => `
           <button class="role-pill ${r === selectedRole ? 'active' : ''}"
@@ -428,7 +450,8 @@ function renderAnalysis() {
             ${r} (${roleCounts[r]})
           </button>`).join('');
 
-        const ds = getTeamFilteredStats(tid, selectedRole, state.cycleFilter) || s;
+        const exOtroTeam = state.excludeOtro && selectedRole === 'Todos';
+        const ds = getTeamFilteredStats(tid, selectedRole, state.cycleFilter, exOtroTeam) || s;
 
         const filteredByCycle = teamResps.filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter);
         const majorityRole = selectedRole === 'Todos' ? getMajorityRole(filteredByCycle) : null;
@@ -600,7 +623,7 @@ function renderAnalysis() {
     </div>`;
   })() : '';
 
-  return stats + exportRow + cyclePills + roleCard + comparison + compareByDim + cards;
+  return stats + exportRow + cyclePills + otroToggle + roleCard + comparison + compareByDim + cards;
 }
 
 // ── Evolution tab ─────────────────────────────────────────────────

@@ -47,7 +47,8 @@ const state = {
   newUserEmail:       '',
   teamRecsExpanded:   {},
   teamDetailExpanded: {},
-  newPlanDimension:   ''
+  newPlanDimension:   '',
+  excludeOtro:        false
 };
 
 // setState actualiza el estado y dispara un re-render.

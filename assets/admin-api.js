@@ -12,14 +12,14 @@ function calcDispersion(pctArr) {
   return { sd, min, max, align };
 }
 
-function computeGlobalDimAverages(cFilter) {
+function computeGlobalDimAverages(cFilter, excludeOtro) {
   const teamsWithData = Object.values(state.teamStats).filter(s => s.count > 0);
   if (teamsWithData.length < 2) return null;
   const sums = {};
   DIMS.forEach(d => { sums[d.key] = 0; });
   let count = 0;
   teamsWithData.forEach(s => {
-    const st = getTeamFilteredStats(s.id, 'Todos', cFilter);
+    const st = getTeamFilteredStats(s.id, 'Todos', cFilter, excludeOtro);
     if (!st) return;
     DIMS.forEach(d => { sums[d.key] += st.avgDims[d.key].pct; });
     count++;
@@ -41,11 +41,12 @@ function getMajorityRole(resps) {
   return entries[0][0];
 }
 
-function getTeamFilteredStats(tid, roleFilter, cFilter) {
+function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   const cf = cFilter || 'Todos';
   const filtered = state.responses.filter(r =>
     (r.fields.Equipo || []).includes(tid) &&
     (roleFilter === 'Todos' || r.fields.Rol === roleFilter) &&
+    (roleFilter !== 'Todos' || !excludeOtro || r.fields.Rol !== 'Otro') &&
     (cf === 'Todos' || r.fields.Ciclo === cf)
   );
   if (!filtered.length) return null;
