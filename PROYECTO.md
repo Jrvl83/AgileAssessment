@@ -44,10 +44,10 @@ AssessmentAgile/
 │   └── workflows/
 │       └── deploy.yml      # CI/CD: lint+tests en PRs, deploy en main
 ├── tests/
-│   ├── setup.js            # Globals: DIMS, getLevel, state, render stubs
+│   ├── setup.js            # Globals: DIMS, MIN_ROLE_RESPONSES, getLevel, state, render stubs
 │   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (25 tests)
-│   ├── analysis.test.js    # Tests: calcDispersion, getMajorityRole, getTeamFilteredStats, computeStats (24 tests)
-│   └── evolution.test.js   # Tests: getEvolutionData (10 tests)
+│   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats (38 tests)
+│   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
 │   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin
 │   └── package.json        # Dependencias: firebase-admin, firebase-functions
@@ -106,7 +106,7 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con citas anónimas, notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, botón "↗ Compartir reporte", exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "Brechas de percepción detectadas" con badge ⚡ por dimensión, botón "↗ Compartir reporte", exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; briefing pre-assessment editable (guardado en `workspaces/{uid}`); historial de reportes compartidos con fecha de expiración y botón Revocar |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
@@ -441,10 +441,25 @@ Desde el panel admin se puede exportar:
 
 ---
 
+### Plan V2 — Fase 2 (en curso — 2026-04-11)
+
+| # | Mejora | Estado | Descripción |
+|---|--------|--------|-------------|
+| #10 | Análisis de consistencia por pregunta | ✅ `0f7c479` | `isPolarized(counts)`: suma de extremos (0+3) ≥50% con ambos presentes y ≥3 respuestas. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
+| #9 | Índice de momentum de mejora | ✅ `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos. |
+| #1 | Detección de divergencia entre roles | ✅ `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts). |
+| #7 | Tendencia histórica por dimensión | Pendiente | Gráfico de líneas (Chart.js) en pestaña Evolución — una línea por dimensión a lo largo de todos los ciclos. Solo con ≥3 ciclos. |
+| #3 | Guía de debriefing auto-generada | Pendiente | Depende de #1. Banco de preguntas en `assessment-config.js`. Descargable como PDF. |
+
+---
+
 ## Historial de versiones (commits clave)
 
 | Commit | Descripción |
 |--------|-------------|
+| `5631870` | Feat: detección de divergencia de percepción entre roles — sección colapsable y badges ⚡ por dimensión (#1 V2) |
+| `0311cff` | Feat: índice de momentum — indicador ↗/→/↘ con delta promedio por ciclo en tarjeta de equipo (#9 V2) |
+| `0f7c479` | Feat: análisis de consistencia por pregunta — badge "Opiniones divididas" en histogramas polarizados (#10 V2) |
 | `86abfc4` | Feat: briefing pre-assessment personalizable — pantalla de encuadre antes del formulario (#5 V2) |
 | `412812e` | Feat: contador de respuestas en tiempo real con onSnapshot y badge de comparación vs. ciclo anterior (#20 V2) |
 | `8370eb1` | Feat: historial de reportes compartidos en pestaña Equipos con botón Revocar (#19 V2) |
@@ -465,7 +480,7 @@ Desde el panel admin se puede exportar:
 | `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
 | (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
 | (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
-| (anterior) | Tests: suite Vitest — 59 tests en scoring, analysis y evolution |
+| (anterior) | Tests: suite Vitest — 80 tests en scoring (25), analysis (38) y evolution (17) |
 | (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)` |
 | (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
 | (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
