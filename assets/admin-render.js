@@ -691,7 +691,8 @@ function renderAnalysis() {
                   ${gapsExpanded ? `<div class="collapse-body" style="padding-top:4px;">${gapBody}</div>` : ''}
                 </div>`;
             })()}
-            <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:4px;">
+            <div class="no-print" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:4px;">
+              <button class="btn sm secondary" onclick="showDebriefGuide('${tid}','${state.cycleFilter||'Todos'}')">Guía de facilitación</button>
               <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
             </div>
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
@@ -1202,6 +1203,133 @@ function renderTeams() {
       </div>
       ${list}
     </div>`;
+}
+
+// ── Guía de facilitación ──────────────────────────────────────────
+function showDebriefGuide(tid, cycleFilter) {
+  const guide = generateDebriefGuide(tid, cycleFilter);
+  if (!guide) { toast('Sin datos suficientes para generar la guía'); return; }
+
+  const { teamName, cycleFilter: cf, date, stats, opportunities, celebrations, gaps } = guide;
+  const { avgTotal, count, level } = stats;
+  const cycleLabel = cf !== 'Todos' ? cf : 'Todos los ciclos';
+
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const oppsHtml = opportunities.map(op => {
+    const delta = op.prevPct !== null
+      ? (op.pct > op.prevPct ? ` ▲ +${op.pct - op.prevPct}%` : op.pct < op.prevPct ? ` ▼ ${op.pct - op.prevPct}%` : '')
+      : '';
+    return `
+      <div class="opp" style="border-color:${op.color}30;background:${op.color}06;">
+        <div class="opp-header">
+          <span class="opp-dot" style="background:${op.color}"></span>
+          <span class="opp-name" style="color:${op.color}">${esc(op.label)}</span>
+          <span class="opp-score" style="color:${op.color}">${op.pct}%${delta}</span>
+        </div>
+        <div class="opp-qs">
+          ${op.questions.map((q, i) => `
+            <div class="opp-q">
+              <span class="opp-q-num">${i+1}.</span>
+              <span>${esc(q)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }).join('');
+
+  const gapsHtml = gaps.length
+    ? gaps.map(g => `
+        <div class="gap-row">
+          <span class="gap-dot" style="background:${g.dimColor}"></span>
+          <div>
+            <div class="gap-dim" style="color:${g.dimColor}">${esc(g.dimLabel)}</div>
+            <div class="gap-meta">${esc(g.roleHigh)}: ${g.pctHigh}% · ${esc(g.roleLow)}: ${g.pctLow}% — diferencia de ${g.diff} puntos</div>
+          </div>
+        </div>`).join('')
+    : `<p class="no-data">No se detectaron brechas significativas entre roles (umbral: 25 pts).</p>`;
+
+  const celebHtml = celebrations.length
+    ? celebrations.map(c => `
+        <div class="cel-row">
+          <span class="cel-dot" style="background:${c.color}"></span>
+          <span class="cel-name">${esc(c.label)}</span>
+          <span class="cel-delta">▲ +${c.pct - c.prevPct}% vs. ciclo anterior</span>
+        </div>`).join('')
+    : `<p class="no-data">Se necesitan al menos 2 ciclos con datos para mostrar puntos de celebración.</p>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Guía de Facilitación — ${esc(teamName)}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,Arial,sans-serif;color:#111827;padding:32px 40px;font-size:13px;line-height:1.5}
+  .print-btn{display:inline-flex;align-items:center;gap:6px;background:#1a4fd6;color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:22px}
+  .header{border-bottom:2.5px solid #1a56db;padding-bottom:14px;margin-bottom:20px}
+  .header h1{font-size:20px;font-weight:700;color:#1a56db}
+  .header .meta{font-size:11px;color:#6b7280;margin-top:3px}
+  .score-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .s-chip{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px}
+  .s-chip .num{font-size:22px;font-weight:700}
+  .s-chip .lbl{font-size:10px;color:#6b7280;margin-top:2px}
+  .sec{margin-bottom:28px}
+  .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;border-bottom:1px solid #e5e7eb;padding-bottom:7px;margin-bottom:14px}
+  .opp{margin-bottom:18px;padding:14px 16px;border-radius:8px;border:1px solid}
+  .opp-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .opp-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .opp-name{font-size:15px;font-weight:700;flex:1}
+  .opp-score{font-size:12px;font-weight:600}
+  .opp-qs{}
+  .opp-q{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:12.5px;color:#374151}
+  .opp-q:last-child{border-bottom:none}
+  .opp-q-num{font-weight:700;flex-shrink:0;color:#9ca3af;min-width:18px}
+  .gap-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6}
+  .gap-row:last-child{border-bottom:none}
+  .gap-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+  .gap-dim{font-size:13px;font-weight:600}
+  .gap-meta{font-size:11px;color:#6b7280;margin-top:2px}
+  .cel-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f3f4f6}
+  .cel-row:last-child{border-bottom:none}
+  .cel-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .cel-name{flex:1;font-size:13px;font-weight:600}
+  .cel-delta{font-size:12px;font-weight:700;color:#0d7a52}
+  .no-data{font-size:12px;color:#9ca3af;font-style:italic}
+  .footer{margin-top:28px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:10px}
+  @media print{.print-btn{display:none}body{padding:16px 24px}}
+</style>
+</head>
+<body>
+  <button class="print-btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+  <div class="header">
+    <h1>Guía de Facilitación — ${esc(teamName)}</h1>
+    <div class="meta">${esc(cycleLabel)} · ${date} · ${count} respuesta${count !== 1 ? 's' : ''}</div>
+  </div>
+  <div class="score-row">
+    <div class="s-chip"><div class="num" style="color:${level.color}">${avgTotal}%</div><div class="lbl">Score total</div></div>
+    <div class="s-chip"><div class="num" style="color:${level.color}">${esc(level.label)}</div><div class="lbl">Nivel de madurez</div></div>
+    <div class="s-chip"><div class="num">${count}</div><div class="lbl">Respuestas</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-title">Focos de conversación — top ${opportunities.length} oportunidades</div>
+    ${oppsHtml}
+  </div>
+  <div class="sec">
+    <div class="sec-title">Brechas de percepción entre roles</div>
+    ${gapsHtml}
+  </div>
+  <div class="sec">
+    <div class="sec-title">Celebrar el progreso</div>
+    ${celebHtml}
+  </div>
+  <div class="footer">Assessment de Madurez Agile · Guía de Facilitación · ${esc(teamName)}</div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
 }
 
 // ── Reporte compartible ───────────────────────────────────────────

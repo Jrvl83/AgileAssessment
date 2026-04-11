@@ -640,7 +640,66 @@ function saveCoachNote(teamId, ciclo, text) {
   }, 800);
 }
 
+// ── Guía de debriefing ────────────────────────────────────────────
+// Genera la estructura de datos para la guía de facilitación.
+// Retorna null si el equipo no existe o no tiene respuestas.
+function generateDebriefGuide(tid, cycleFilter) {
+  const cf = cycleFilter || 'Todos';
+  const team = state.teams.find(t => t.id === tid);
+  if (!team) return null;
+
+  const ds = getTeamFilteredStats(tid, 'Todos', cf);
+  if (!ds) return null;
+
+  // Obtener evolución para comparar con ciclo anterior
+  const evData = getEvolutionData(tid, 'Todos');
+  let prevDimPcts = null;
+  if (cf !== 'Todos') {
+    const idx = evData.findIndex(e => e.cycleName === cf);
+    if (idx > 0) prevDimPcts = evData[idx - 1].avgDims;
+  } else if (evData.length >= 2) {
+    prevDimPcts = evData[evData.length - 2].avgDims;
+  }
+
+  // Scores por dimensión con delta respecto al ciclo anterior
+  const dimScores = DIMS.map(d => ({
+    key:     d.key,
+    label:   d.label,
+    color:   d.color,
+    pct:     ds.avgDims[d.key].pct,
+    prevPct: prevDimPcts ? prevDimPcts[d.key].pct : null,
+  }));
+
+  // Top 3 oportunidades (menor score, priorizando las < 80%)
+  const sorted = [...dimScores].sort((a, b) => a.pct - b.pct);
+  const below80 = sorted.filter(d => d.pct < 80);
+  const focusDims = (below80.length > 0 ? below80 : sorted).slice(0, 3);
+
+  const opportunities = focusDims.map(d => {
+    const lvl = d.pct <= 33 ? 0 : d.pct <= 66 ? 1 : 2;
+    return { ...d, questions: COACHING_QUESTIONS[d.key][lvl] };
+  });
+
+  // Celebraciones: dimensiones que mejoraron >= 5 pts vs. ciclo anterior
+  const celebrations = dimScores
+    .filter(d => d.prevPct !== null && d.pct - d.prevPct >= 5)
+    .sort((a, b) => (b.pct - b.prevPct) - (a.pct - a.prevPct));
+
+  // Brechas de percepción entre roles
+  const gaps = detectRoleGaps(tid, cf);
+
+  return {
+    teamName:    team.name,
+    cycleFilter: cf,
+    date:        new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }),
+    stats:       { avgTotal: ds.avgTotal, count: ds.count, level: ds.level },
+    opportunities,
+    celebrations,
+    gaps,
+  };
+}
+
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
+  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData, generateDebriefGuide };
 }

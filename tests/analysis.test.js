@@ -1,4 +1,4 @@
-import { calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats } from '../assets/admin-api.js';
+import { calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide } from '../assets/admin-api.js';
 
 // ── calcDispersion ────────────────────────────────────────────────
 
@@ -311,5 +311,126 @@ describe('detectRoleGaps', () => {
     expect(g).toHaveProperty('roleLow');
     expect(g).toHaveProperty('pctLow');
     expect(g.pctHigh).toBeGreaterThan(g.pctLow);
+  });
+});
+
+// ── generateDebriefGuide ──────────────────────────────────────────
+
+describe('generateDebriefGuide', () => {
+  function makeResp(teamId, ciclo, pct, rol = 'Dev Team') {
+    const base = { Equipo: [teamId], Rol: rol, Ciclo: ciclo, 'Score Total %': pct, Answers: {} };
+    DIMS.forEach(d => { base[d.field] = Math.round((pct / 100) * d.max); });
+    return { fields: base };
+  }
+
+  beforeEach(() => {
+    state.teams = [{ id: 'team1', name: 'Alpha', active: true, notas: {} }];
+    state.cycles = [
+      { id: 'c1', name: 'Q1', active: false },
+      { id: 'c2', name: 'Q2', active: true },
+    ];
+    state.responses = [
+      makeResp('team1', 'Q1', 50),
+      makeResp('team1', 'Q2', 70),
+    ];
+  });
+
+  test('retorna null cuando el equipo no existe', () => {
+    expect(generateDebriefGuide('equipo_inexistente', 'Todos')).toBeNull();
+  });
+
+  test('retorna null cuando no hay respuestas para el equipo', () => {
+    state.responses = [];
+    expect(generateDebriefGuide('team1', 'Todos')).toBeNull();
+  });
+
+  test('retorna estructura correcta con datos válidos', () => {
+    const guide = generateDebriefGuide('team1', 'Todos');
+    expect(guide).not.toBeNull();
+    expect(guide).toHaveProperty('teamName', 'Alpha');
+    expect(guide).toHaveProperty('stats');
+    expect(guide).toHaveProperty('opportunities');
+    expect(guide).toHaveProperty('celebrations');
+    expect(guide).toHaveProperty('gaps');
+  });
+
+  test('opportunities incluye máximo 3 dimensiones', () => {
+    const guide = generateDebriefGuide('team1', 'Todos');
+    expect(guide.opportunities.length).toBeLessThanOrEqual(3);
+    expect(guide.opportunities.length).toBeGreaterThan(0);
+  });
+
+  test('cada oportunidad incluye preguntas de coaching', () => {
+    const guide = generateDebriefGuide('team1', 'Todos');
+    guide.opportunities.forEach(op => {
+      expect(op.questions).toBeDefined();
+      expect(op.questions).toHaveLength(3);
+      expect(typeof op.questions[0]).toBe('string');
+    });
+  });
+
+  test('preguntas corresponden al nivel bajo cuando pct <= 33%', () => {
+    // Forzar score bajo en todas las dims
+    state.responses = [makeResp('team1', 'Q1', 20)];
+    const guide = generateDebriefGuide('team1', 'Todos');
+    guide.opportunities.forEach(op => {
+      const lvl0Qs = COACHING_QUESTIONS[op.key][0];
+      expect(op.questions).toEqual(lvl0Qs);
+    });
+  });
+
+  test('preguntas corresponden al nivel medio cuando pct está entre 34% y 66%', () => {
+    state.responses = [makeResp('team1', 'Q1', 50)];
+    const guide = generateDebriefGuide('team1', 'Todos');
+    guide.opportunities.forEach(op => {
+      const lvl1Qs = COACHING_QUESTIONS[op.key][1];
+      expect(op.questions).toEqual(lvl1Qs);
+    });
+  });
+
+  test('detecta celebraciones cuando una dimensión mejoró >= 5 pts', () => {
+    // Q1: 40%, Q2: 70% → todas las dims mejoraron ~30 pts
+    state.responses = [
+      makeResp('team1', 'Q1', 40),
+      makeResp('team1', 'Q2', 70),
+    ];
+    const guide = generateDebriefGuide('team1', 'Q2');
+    expect(guide.celebrations.length).toBeGreaterThan(0);
+    guide.celebrations.forEach(c => {
+      expect(c.pct - c.prevPct).toBeGreaterThanOrEqual(5);
+    });
+  });
+
+  test('no hay celebraciones cuando solo hay un ciclo', () => {
+    state.responses = [makeResp('team1', 'Q1', 70)];
+    const guide = generateDebriefGuide('team1', 'Todos');
+    expect(guide.celebrations).toHaveLength(0);
+  });
+
+  test('celebrations se ordenan de mayor a menor delta', () => {
+    state.responses = [
+      makeResp('team1', 'Q1', 40),
+      makeResp('team1', 'Q2', 70),
+    ];
+    const guide = generateDebriefGuide('team1', 'Q2');
+    for (let i = 1; i < guide.celebrations.length; i++) {
+      const prev = guide.celebrations[i - 1];
+      const curr = guide.celebrations[i];
+      expect(prev.pct - prev.prevPct).toBeGreaterThanOrEqual(curr.pct - curr.prevPct);
+    }
+  });
+
+  test('filtra por cycleFilter correctamente en stats', () => {
+    const guide = generateDebriefGuide('team1', 'Q2');
+    expect(guide.stats.count).toBe(1);
+    expect(guide.stats.avgTotal).toBe(70);
+  });
+
+  test('stats incluye nivel, avgTotal y count', () => {
+    const guide = generateDebriefGuide('team1', 'Todos');
+    expect(guide.stats).toHaveProperty('avgTotal');
+    expect(guide.stats).toHaveProperty('count');
+    expect(guide.stats).toHaveProperty('level');
+    expect(guide.stats.level).toHaveProperty('label');
   });
 });

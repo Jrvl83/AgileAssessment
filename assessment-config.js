@@ -262,6 +262,114 @@ const CROSS_PATTERNS = [
   }
 ];
 
+// ── Preguntas de coaching para la guía de debriefing ─────────────
+// 3 niveles: [0] 0–33% (Inicial), [1] 34–66% (En desarrollo), [2] 67–100% (Maduro/Avanzado)
+// 3 preguntas por nivel
+const COACHING_QUESTIONS = {
+  eventos: [
+    [
+      "¿Qué impide que el equipo realice el Sprint Planning de forma consistente? ¿Hay una fecha fija reservada?",
+      "¿Cómo sería para el equipo tener un Sprint Goal claro antes de empezar cada Sprint? ¿Qué cambiaría?",
+      "¿Qué pasaría si el equipo cancelara el Daily durante un Sprint completo? ¿Qué información perdería?"
+    ],
+    [
+      "¿El Sprint Goal del último Sprint guió alguna decisión concreta durante ese Sprint? ¿Pueden dar un ejemplo?",
+      "¿Cómo sería una Retrospectiva perfecta para este equipo? ¿En qué se diferencia de la que hacen ahora?",
+      "¿Los stakeholders que asisten a la Sprint Review dan feedback que cambia el Product Backlog? ¿Cuándo fue la última vez?"
+    ],
+    [
+      "¿Hay algún evento Scrum que el equipo rediseñaría si pudiera hacerlo desde cero?",
+      "¿Cómo miden si el Sprint Goal se cumplió? ¿Qué lo haría aún más claro para el equipo?",
+      "¿Qué podría hacer que sus ceremonias dejaran de funcionar tan bien? ¿Qué protegerían activamente?"
+    ]
+  ],
+  backlog: [
+    [
+      "¿Si tuvieras que elegir una cosa del backlog para construir mañana, cuál sería y por qué? ¿Coincide con lo que está en el tope?",
+      "¿El equipo sabe cuál es el Product Goal? ¿Alguien puede recitarlo sin mirarlo?",
+      "¿Qué pasaría si el equipo no tuviera PO durante un Sprint? ¿Qué decisiones no podrían tomar?"
+    ],
+    [
+      "¿Cuándo fue la última vez que refinaron ítems con criterios de aceptación claros antes del Sprint Planning?",
+      "¿Hay ítems en el backlog de hace más de 3 meses? ¿Siguen siendo relevantes? ¿Qué dice eso de la priorización?",
+      "¿El equipo puede explicar el valor de negocio de cada ítem del Sprint Backlog actual?"
+    ],
+    [
+      "¿Cómo conecta el Sprint Goal actual con el Product Goal? ¿El equipo puede articularlo con sus propias palabras?",
+      "¿Cómo priorizan cuando dos ítems parecen igual de importantes? ¿Hay un criterio explícito y compartido?",
+      "¿Qué información adicional haría que el equipo se sintiera más seguro al comprometerse en el Sprint Planning?"
+    ]
+  ],
+  devteam: [
+    [
+      "¿Cómo deciden cada mañana en qué trabaja cada uno? ¿Hay alguien externo que lo decide por el equipo?",
+      "¿Cuántos ítems están en progreso simultáneamente ahora mismo? ¿Cómo se siente el equipo con ese número?",
+      "¿Tienen una Definition of Done? ¿Todos la conocen y la aplican de la misma forma?"
+    ],
+    [
+      "¿Hay tareas que siempre hace la misma persona? ¿Qué pasaría si esa persona no estuviera disponible esta semana?",
+      "¿En el último Sprint hubo ítems que no se completaron por dependencias externas al equipo? ¿Cuántos?",
+      "¿Cuándo fue la última vez que entregaron un Increment al final del Sprint que cumplía completamente la DoD?"
+    ],
+    [
+      "¿El WIP actual permite que el equipo se enfoque? ¿Hay algún momento del Sprint donde el flujo se atasca?",
+      "¿Cómo deciden cuándo parar de trabajar en algo y pedir ayuda? ¿Hay un criterio explícito en el equipo?",
+      "¿Qué habilidad le falta al equipo para ser completamente cross-functional? ¿Hay un plan para desarrollarla?"
+    ]
+  ],
+  transparencia: [
+    [
+      "¿Si un stakeholder quisiera saber hoy el estado del Sprint, dónde lo vería? ¿Está actualizado en este momento?",
+      "¿Cuándo fue el último impedimento que se escaló? ¿Cuánto tiempo tardó en resolverse?",
+      "¿Los valores de Scrum se mencionan en las conversaciones del equipo? ¿Cuándo fue la última vez?"
+    ],
+    [
+      "¿Hay información sobre el progreso del equipo que solo algunas personas conocen? ¿Qué pasaría si todos la supieran?",
+      "¿Los impedimentos que identifica el equipo en el Daily se resuelven dentro del Sprint o se arrastran varios?",
+      "¿Hay algo que el equipo sabe pero que no se dice en las reuniones? ¿Qué impediría decirlo abiertamente?"
+    ],
+    [
+      "¿Las métricas que usan actualmente reflejan valor entregado o solo trabajo realizado?",
+      "¿Cómo sabe el equipo que la Retro está funcionando? ¿Pueden dar un ejemplo de una mejora del último mes?",
+      "¿Qué información adicional ayudaría al equipo a tomar mejores decisiones cada día?"
+    ]
+  ],
+  tecnico: [
+    [
+      "¿Qué pasaría si mañana necesitaran hacer un despliegue de emergencia? ¿Cuánto tardaría y qué riesgo habría?",
+      "¿Hay partes del código que 'nadie quiere tocar'? ¿Qué dice eso de la salud técnica del sistema?",
+      "¿Tienen Definition of Done con criterios técnicos como pruebas o revisión de código? ¿Se cumple siempre?"
+    ],
+    [
+      "¿Cuándo fue la última vez que la deuda técnica impidió completar un ítem del Sprint? ¿Está visible en el backlog?",
+      "¿Qué porcentaje del código crítico tiene pruebas automatizadas? ¿Cómo se sienten con ese número?",
+      "¿El CI detecta errores antes de que lleguen a producción? ¿Cuándo fue el último fallo que llegó a prod?"
+    ],
+    [
+      "¿Qué métrica técnica usarían para mostrarle a un ejecutivo que el equipo puede escalar sin acumular riesgo?",
+      "¿Cuánto tarda desde que un cambio se aprueba hasta que llega a producción? ¿Qué podría acortarlo?",
+      "¿Cómo gestionan el balance entre nueva funcionalidad y mejora técnica? ¿Hay un criterio explícito?"
+    ]
+  ],
+  cliente: [
+    [
+      "¿Cuándo fue la última vez que alguien del equipo habló directamente con un usuario? ¿Qué aprendieron?",
+      "¿El equipo sabe si los features del último Sprint están siendo usados? ¿Cómo lo saben?",
+      "¿Si tuvieran 5 minutos para mostrar el valor entregado este mes a la dirección, qué mostrarían?"
+    ],
+    [
+      "¿Tienen métricas de negocio que revisen regularmente? ¿Cuál fue la última decisión del backlog que cambió por datos de uso?",
+      "¿Qué hipótesis de negocio están probando en el Sprint actual? ¿Cómo sabrán si se confirmó?",
+      "¿Los stakeholders de la última Sprint Review dieron feedback que cambió algún ítem del backlog? ¿Cuál?"
+    ],
+    [
+      "¿Qué experimento de producto querría hacer el equipo que aún no ha podido hacer? ¿Qué lo impide?",
+      "¿Cómo conectan las métricas de negocio que siguen con las decisiones técnicas diarias del equipo?",
+      "¿Hay algún segmento de usuarios cuyas necesidades aún no están bien entendidas? ¿Qué harían para conocerlas?"
+    ]
+  ]
+};
+
 function detectPatterns(dimScores) {
   return CROSS_PATTERNS.filter(p =>
     p.dims.every(k => dimScores[k] && dimScores[k].pct < p.maxPct)
@@ -295,5 +403,5 @@ function getRec(dim, pct, role) {
 
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SECTIONS, LEVELS, DIMS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, detectPatterns, getContextNote, getLevel, getRec };
+  module.exports = { SECTIONS, LEVELS, DIMS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, COACHING_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec };
 }
