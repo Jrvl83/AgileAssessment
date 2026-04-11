@@ -633,7 +633,7 @@ Q1 2027 — Fase 4: Plataforma
 | 12 | Estados por equipo | 3 | Media | #11 | Pendiente |
 | 13 | Recordatorios de ciclo | 3 | Media | SendGrid | Pendiente |
 | 14 | Preguntas personalizables | 3 | Alta | — | Pendiente |
-| 16 | White-label básico | 3 | Media | — | Pendiente |
+| 16 | White-label básico | 3 | Media | — | ✅ `352b690` |
 | 2 | Modo facilitación | 4 | Alta | #1 | Pendiente |
 | 8 | Benchmarking | 4 | Media-alta | Volumen datos | Pendiente |
 | 15 | Variante Kanban | 4 | Alta | #14 | Pendiente |
