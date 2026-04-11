@@ -378,17 +378,24 @@ function renderAnalysis() {
     return { role, count: rr.length, avg, level: getLevel(avg) };
   }).sort((a, b) => b.avg - a.avg);
 
+  const visibleOrgRoles = roleOrgStats.filter(rs => rs.count >= MIN_ROLE_RESPONSES);
+  const hiddenOrgRoles  = roleOrgStats.filter(rs => rs.count <  MIN_ROLE_RESPONSES);
   const roleCard = roleOrgStats.length > 1 ? `
     <div class="section-card">
       <div class="section-title">Madurez por rol · toda la organización${state.cycleFilter !== 'Todos' ? ' · ' + state.cycleFilter : ''}</div>
-      ${roleOrgStats.map(rs => `
+      ${visibleOrgRoles.length ? visibleOrgRoles.map(rs => `
         <div class="org-row">
           <div class="org-name">${rs.role}</div>
           <div class="org-bar-wrap"><div class="org-bar" style="width:${rs.avg}%;background:${rs.level.color}"></div></div>
           <div class="org-pct">${rs.avg}%</div>
           <span class="org-badge" style="background:${rs.level.bg};color:${rs.level.color}">${rs.level.label}</span>
           <span style="font-size:11px;color:var(--ink-faint);flex-shrink:0;min-width:52px;text-align:right;">${rs.count} resp.</span>
-        </div>`).join('')}
+        </div>`).join('') : `<div style="font-size:13px;color:var(--ink-faint);padding:8px 0;">Ningún rol alcanza el mínimo de ${MIN_ROLE_RESPONSES} respuestas.</div>`}
+      ${hiddenOrgRoles.length ? `
+        <div style="font-size:11px;color:var(--ink-faint);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
+          ⚠ Desglose oculto para proteger el anonimato — menos de ${MIN_ROLE_RESPONSES} respuestas:
+          ${hiddenOrgRoles.map(r => `<strong>${r.role}</strong> (${r.count})`).join(', ')}.
+        </div>` : ''}
     </div>` : '';
 
   const orgRoleCounts = { 'Todos': filtByCycle.length };
@@ -444,16 +451,24 @@ function renderAnalysis() {
             : teamResps.length
         };
         teamAvailRoles.forEach(r => { roleCounts[r] = teamResps.filter(x => x.fields.Rol === r).length; });
-        const rolePills = ['Todos', ...teamAvailRoles].map(r => `
-          <button class="role-pill ${r === selectedRole ? 'active' : ''}"
-            onclick="setTeamRole('${tid}','${r}')">
-            ${r} (${roleCounts[r]})
-          </button>`).join('');
+        const filteredByCycle = teamResps.filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter);
+        const filteredRoleCounts = {};
+        filteredByCycle.forEach(r => {
+          if (r.fields.Rol) filteredRoleCounts[r.fields.Rol] = (filteredRoleCounts[r.fields.Rol] || 0) + 1;
+        });
+        const anonWarning = selectedRole !== 'Todos' && (filteredRoleCounts[selectedRole] || 0) < MIN_ROLE_RESPONSES;
+
+        const rolePills = ['Todos', ...teamAvailRoles].map(r => {
+          const lowAnon = r !== 'Todos' && (filteredRoleCounts[r] || 0) < MIN_ROLE_RESPONSES;
+          return `<button class="role-pill ${r === selectedRole ? 'active' : ''}"
+            onclick="setTeamRole('${tid}','${r}')"
+            title="${lowAnon ? 'Menos de ' + MIN_ROLE_RESPONSES + ' respuestas — anonimato limitado' : ''}">
+            ${r} (${roleCounts[r]})${lowAnon ? ' ⚠' : ''}
+          </button>`;
+        }).join('');
 
         const exOtroTeam = state.excludeOtro && selectedRole === 'Todos';
         const ds = getTeamFilteredStats(tid, selectedRole, state.cycleFilter, exOtroTeam) || s;
-
-        const filteredByCycle = teamResps.filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter);
         const majorityRole = selectedRole === 'Todos' ? getMajorityRole(filteredByCycle) : null;
         const roleForRec = selectedRole !== 'Todos' ? selectedRole : majorityRole;
         const recRoleNote = selectedRole === 'Todos' && majorityRole
@@ -529,6 +544,9 @@ function renderAnalysis() {
               </div>
             </div>
             <div class="role-filter no-print">${rolePills}</div>
+            ${anonWarning ? `<div class="no-print" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">
+              ⚠ Solo ${filteredRoleCounts[selectedRole] || 0} respuesta${(filteredRoleCounts[selectedRole] || 0) !== 1 ? 's' : ''} de <strong>${selectedRole}</strong> en este ciclo. Con menos de ${MIN_ROLE_RESPONSES} respuestas, el desglose por rol puede comprometer el anonimato.
+            </div>` : ''}
             <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:4px;">
               <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
             </div>

@@ -14,6 +14,9 @@ const fns  = firebase.functions();
 
 // LEVELS, DIMS, RECS, RECS_ROLE, getLevel, getRec → assessment-config.js
 
+// Mínimo de respuestas por rol para mostrar el desglose por rol (protección de anonimato)
+const MIN_ROLE_RESPONSES = 3;
+
 // ── State ────────────────────────────────────────────────────────
 const state = {
   currentUser:        null,
