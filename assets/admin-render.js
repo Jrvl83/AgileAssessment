@@ -561,6 +561,15 @@ function renderAnalysis() {
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>
                 <span class="tac-level" style="background:${ds.level.bg};color:${ds.level.color}">${ds.level.label}</span>
+                ${(() => {
+                  const m = calcMomentum(tid, selectedRole);
+                  if (!m) return '';
+                  const cfg = m.direction === 'up'   ? { icon:'↗', color:'#0d7a52', label: '+' + m.avg + ' pts/ciclo' }
+                            : m.direction === 'down' ? { icon:'↘', color:'#c0282a', label: m.avg + ' pts/ciclo' }
+                            :                          { icon:'→', color:'#6b7280', label: 'Estable' };
+                  return `<div style="font-size:10px;color:${cfg.color};margin-top:3px;text-align:right;font-weight:600;"
+                    title="Momentum: delta promedio en los últimos ${m.cycles} ciclos">${cfg.icon} ${cfg.label}</div>`;
+                })()}
               </div>
             </div>
             <div class="role-filter no-print">${rolePills}</div>

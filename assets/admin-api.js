@@ -20,6 +20,22 @@ function isPolarized(counts) {
   return counts[0] > 0 && counts[3] > 0 && (counts[0] + counts[3]) / total >= 0.5;
 }
 
+// Calcula el momentum de mejora: delta promedio por ciclo en los últimos n ciclos
+// Retorna { avg, cycles, direction } o null si hay menos de 2 ciclos con datos
+function calcMomentum(tid, role, n) {
+  const evData = getEvolutionData(tid, role || 'Todos');
+  if (evData.length < 2) return null;
+  const recent = evData.slice(-(n || 3));
+  if (recent.length < 2) return null;
+  const deltas = [];
+  for (let i = 1; i < recent.length; i++) {
+    deltas.push(recent[i].avgTotal - recent[i - 1].avgTotal);
+  }
+  const avg = Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length);
+  const direction = avg > 2 ? 'up' : avg < -2 ? 'down' : 'flat';
+  return { avg, cycles: recent.length, direction };
+}
+
 function computeGlobalDimAverages(cFilter, excludeOtro) {
   const teamsWithData = Object.values(state.teamStats).filter(s => s.count > 0);
   if (teamsWithData.length < 2) return null;
@@ -568,5 +584,5 @@ function saveCoachNote(teamId, ciclo, text) {
 
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, isPolarized, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
+  module.exports = { calcDispersion, isPolarized, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
 }

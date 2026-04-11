@@ -1,4 +1,4 @@
-import { getEvolutionData } from '../assets/admin-api.js';
+import { getEvolutionData, calcMomentum } from '../assets/admin-api.js';
 
 function makeResponse({ teamId = 'team1', rol = 'Dev Team', ciclo = 'Sprint 1',
   scoreEventos = 10, scoreBacklog = 7, scoreDevTeam = 10,
@@ -108,5 +108,60 @@ describe('getEvolutionData', () => {
     expect(data).toHaveLength(1);
     expect(data[0].count).toBe(2);
     expect(data[0].avgTotal).toBe(Math.round((60 + 80) / 2));
+  });
+});
+
+// ── calcMomentum ──────────────────────────────────────────────────
+
+describe('calcMomentum', () => {
+  function setup(totals) {
+    state.cycles = totals.map((_, i) => ({ id: 'c' + i, name: 'C' + i, active: i === totals.length - 1 }));
+    state.responses = totals.map((pct, i) => makeResponse({ ciclo: 'C' + i, totalPct: pct }));
+  }
+
+  test('retorna null con un solo ciclo', () => {
+    setup([60]);
+    expect(calcMomentum('team1', 'Todos')).toBeNull();
+  });
+
+  test('retorna null con equipo sin respuestas', () => {
+    setup([60, 70]);
+    expect(calcMomentum('equipo_inexistente', 'Todos')).toBeNull();
+  });
+
+  test('dirección up cuando delta promedio > 2', () => {
+    setup([50, 65]); // delta +15
+    const m = calcMomentum('team1', 'Todos');
+    expect(m.direction).toBe('up');
+    expect(m.avg).toBe(15);
+  });
+
+  test('dirección down cuando delta promedio < -2', () => {
+    setup([70, 55]); // delta -15
+    const m = calcMomentum('team1', 'Todos');
+    expect(m.direction).toBe('down');
+    expect(m.avg).toBe(-15);
+  });
+
+  test('dirección flat cuando delta está entre -2 y 2', () => {
+    setup([60, 61]); // delta +1
+    const m = calcMomentum('team1', 'Todos');
+    expect(m.direction).toBe('flat');
+  });
+
+  test('usa los últimos n ciclos cuando hay más de n', () => {
+    // Ciclos: 30→60→62→64 — últimos 3: deltas +2, +2 → avg 2 → flat
+    setup([30, 60, 62, 64]);
+    const m = calcMomentum('team1', 'Todos', 3);
+    expect(m.cycles).toBe(3);
+    expect(m.avg).toBe(2);
+  });
+
+  test('promedia correctamente múltiples deltas', () => {
+    // deltas: +10, +20 → avg 15
+    setup([40, 50, 70]);
+    const m = calcMomentum('team1', 'Todos');
+    expect(m.avg).toBe(15);
+    expect(m.direction).toBe('up');
   });
 });
