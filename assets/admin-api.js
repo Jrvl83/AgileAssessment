@@ -204,6 +204,21 @@ async function fetchAllData() {
 
     await fetchPlans();
     computeStats();
+
+    let rptQuery = db.collection('reportes');
+    if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
+    const rptSnap = await rptQuery.get();
+    state.reports = rptSnap.docs.map(d => {
+      const r = d.data();
+      return {
+        id: d.id,
+        equipoNombre: r.equipoNombre || '',
+        ciclo: r.ciclo || 'Todos',
+        ownerId: r.ownerId || '',
+        generatedAt: r.generatedAt ? r.generatedAt.toDate() : null,
+        expiresAt:   r.expiresAt   ? r.expiresAt.toDate()   : null,
+      };
+    }).sort((a, b) => (b.generatedAt || 0) - (a.generatedAt || 0));
   } catch(e) { toast('Error al conectar con Firebase'); }
   setState({ loading: false });
 }
@@ -456,6 +471,16 @@ async function generateReport(teamId, cycleFilter) {
     showReportLink(url, team.name, cf);
     toast('Reporte generado');
   } catch(e) { toast('Error al generar el reporte'); }
+}
+
+// ── Reportes compartibles — gestión ──────────────────────────────
+async function revokeReport(token, label) {
+  if (!confirm(`¿Revocar el reporte "${label}"?\n\nEl link dejará de funcionar inmediatamente.`)) return;
+  try {
+    await db.collection('reportes').doc(token).delete();
+    toast('Reporte revocado');
+    await fetchAllData();
+  } catch(e) { toast('Error al revocar el reporte'); }
 }
 
 // ── Notas del coach ──────────────────────────────────────────────

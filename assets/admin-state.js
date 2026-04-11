@@ -51,7 +51,8 @@ const state = {
   teamRecsExpanded:   {},
   teamDetailExpanded: {},
   newPlanDimension:   '',
-  excludeOtro:        false
+  excludeOtro:        false,
+  reports:            []
 };
 
 // setState actualiza el estado y dispara un re-render.

@@ -975,7 +975,32 @@ function renderTeams() {
           }).join('')}
         </div>`;
 
-  return cyclesSection + addForm + `
+  const now = new Date();
+  const reportsSection = state.reports.length ? `
+    <div class="section-card">
+      <div class="section-title">Reportes compartidos</div>
+      <div class="team-list">
+        ${state.reports.map(r => {
+          const label     = r.equipoNombre + (r.ciclo && r.ciclo !== 'Todos' ? ' · ' + r.ciclo : '');
+          const escLabel  = label.replace(/'/g, "\\'");
+          const reportUrl = location.origin + '/reporte.html?t=' + r.id;
+          const genStr    = r.generatedAt ? r.generatedAt.toLocaleDateString('es') : '—';
+          const expStr    = r.expiresAt   ? r.expiresAt.toLocaleDateString('es')   : '—';
+          const expired   = r.expiresAt && r.expiresAt < now;
+          return `<div class="team-row">
+            <div class="team-row-name" style="font-size:13px;">${label}</div>
+            <span style="font-size:11px;color:var(--ink-faint);">Generado: ${genStr}</span>
+            <span style="font-size:11px;color:${expired ? '#c0282a' : 'var(--ink-faint)'};">${expired ? '✕ Expirado' : 'Expira: ' + expStr}</span>
+            <div style="display:flex;gap:6px;">
+              ${!expired ? `<button class="btn sm" onclick="copyQRUrl('${reportUrl}')">Copiar link</button>` : ''}
+              <button class="btn sm danger" onclick="revokeReport('${r.id}','${escLabel}')">Revocar</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  return cyclesSection + reportsSection + addForm + `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>
