@@ -12,7 +12,7 @@ Propuestas para evolucionar la herramienta de **medición** a **acompañamiento 
 |------|---------|---------|--------|
 | 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | ✅ Completada — 2026-04-10 |
 | 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | ✅ Completada — 2026-04-11 |
-| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | Pendiente |
+| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | 🔄 En curso — #16 ✅ · faltan #11, #12, #14 (#13 bloqueada por SendGrid) |
 | 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Pendiente |
 
 ---
@@ -151,7 +151,7 @@ En la pestaña Análisis, un indicador por equipo que muestra respuestas recibid
 
 ---
 
-## Fase 2 — Core coaching
+## Fase 2 — Core coaching ✅ COMPLETADA (2026-04-11)
 
 Las funcionalidades que distinguen una herramienta de coaching de una herramienta de medición. Son el corazón de la propuesta de valor diferenciadora.
 

@@ -44,9 +44,9 @@ AssessmentAgile/
 │   └── workflows/
 │       └── deploy.yml      # CI/CD: lint+tests en PRs, deploy en main
 ├── tests/
-│   ├── setup.js            # Globals: DIMS, MIN_ROLE_RESPONSES, getLevel, state, render stubs
+│   ├── setup.js            # Globals: DIMS, COACHING_QUESTIONS, MIN_ROLE_RESPONSES, getLevel, state, render stubs
 │   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (25 tests)
-│   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats (38 tests)
+│   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (50 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
 │   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin
@@ -106,9 +106,9 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "Brechas de percepción detectadas" con badge ⚡ por dimensión, botón "↗ Compartir reporte", exportación PDF/CSV |
-| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; briefing pre-assessment editable (guardado en `workspaces/{uid}`); historial de reportes compartidos con fecha de expiración y botón Revocar |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", exportación PDF/CSV |
+| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
+| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
@@ -331,6 +331,9 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `briefingTexto` | string | Texto de encuadre que el participante ve antes del formulario (vacío = sin pantalla de briefing) |
+| `marca` | string | Nombre de marca del workspace (reemplaza "Assessment de Madurez Agile" en el formulario y reportes) |
+| `logoUrl` | string | URL del logo — reemplaza el título de texto por una imagen |
+| `colorAcento` | string | Color HEX que sustituye al azul (#1a4fd6) por defecto en formulario y reportes |
 
 Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
@@ -384,6 +387,7 @@ Acceso: lectura pública (formulario lo lee sin login), escritura solo por el pr
 | `ownerId` | string | UID del admin que generó el reporte |
 | `generatedAt` | timestamp | Fecha de generación |
 | `expiresAt` | timestamp | Fecha de expiración (30 días desde generación) |
+| `branding` | object | Branding del workspace al momento de generación: `{ marca, logoUrl, colorAcento }` |
 | `data` | object | Snapshot con avgTotal, level, avgDims, dims, radarValues, roleStats, dispersion, recommendations |
 
 Acceso: lectura pública (cualquiera con el token), creación autenticada, eliminación solo por owner o super_admin.
@@ -441,15 +445,27 @@ Desde el panel admin se puede exportar:
 
 ---
 
-### Plan V2 — Fase 2 (en curso — 2026-04-11)
+### Plan V2 — Fase 2 (completada 2026-04-11)
 
-| # | Mejora | Estado | Descripción |
+| # | Mejora | Commit | Descripción |
 |---|--------|--------|-------------|
-| #10 | Análisis de consistencia por pregunta | ✅ `0f7c479` | `isPolarized(counts)`: suma de extremos (0+3) ≥50% con ambos presentes y ≥3 respuestas. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
-| #9 | Índice de momentum de mejora | ✅ `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos. |
-| #1 | Detección de divergencia entre roles | ✅ `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts). |
-| #7 | Tendencia histórica por dimensión | Pendiente | Gráfico de líneas (Chart.js) en pestaña Evolución — una línea por dimensión a lo largo de todos los ciclos. Solo con ≥3 ciclos. |
-| #3 | Guía de debriefing auto-generada | Pendiente | Depende de #1. Banco de preguntas en `assessment-config.js`. Descargable como PDF. |
+| #10 | Análisis de consistencia por pregunta | `0f7c479` | `isPolarized(counts)`: suma de extremos (0+3) ≥50% con ambos presentes y ≥3 respuestas. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
+| #9 | Índice de momentum de mejora | `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos. |
+| #1 | Detección de divergencia entre roles | `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts). |
+| #7 | Tendencia histórica por dimensión | `d507341` | `initEvolutionTrendChart()` + card con `<canvas>` en pestaña Evolución. Gráfico de líneas Chart.js (una línea por dimensión, mismos colores). Solo visible con ≥3 ciclos. Usa patrón `window._evolTrendData`. |
+| #3 | Guía de debriefing auto-generada | `aeeb628` | `COACHING_QUESTIONS` en `assessment-config.js` (3 preguntas × 3 niveles × 6 dims). `generateDebriefGuide(tid, cf)` retorna top 3 oportunidades + preguntas, celebraciones, gaps. Botón "Guía de facilitación" abre ventana imprimible. 12 tests nuevos (suite total: 92). |
+
+---
+
+### Plan V2 — Fase 3 (en curso)
+
+| # | Mejora | Commit | Descripción |
+|---|--------|--------|-------------|
+| #16 | White-label básico | `352b690` | Campos `marca`, `logoUrl`, `colorAcento` en `workspaces/{uid}`. Editor de marca en pestaña Equipos (guardado automático). `assessment-agile.html` aplica nombre, logo y color al cargar. `reporte.html` aplica el branding almacenado en el snapshot del reporte. |
+| #11 | Portal de equipo | — | Pendiente |
+| #12 | Estados por equipo | — | Pendiente (depende de #11) |
+| #14 | Preguntas personalizables | — | Pendiente |
+| #13 | Recordatorios de ciclo | — | Bloqueado — requiere SendGrid o dominio verificado |
 
 ---
 
@@ -457,6 +473,9 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `352b690` | Feat: white-label básico — marca, logoUrl, colorAcento en workspaces; aplicado en formulario y reportes (#16 V2) |
+| `aeeb628` | Feat: guía de debriefing auto-generada — COACHING_QUESTIONS + generateDebriefGuide + ventana imprimible (#3 V2) |
+| `d507341` | Feat: tendencia histórica por dimensión — gráfico de líneas Chart.js en pestaña Evolución (#7 V2) |
 | `5631870` | Feat: detección de divergencia de percepción entre roles — sección colapsable y badges ⚡ por dimensión (#1 V2) |
 | `0311cff` | Feat: índice de momentum — indicador ↗/→/↘ con delta promedio por ciclo en tarjeta de equipo (#9 V2) |
 | `0f7c479` | Feat: análisis de consistencia por pregunta — badge "Opiniones divididas" en histogramas polarizados (#10 V2) |
@@ -480,7 +499,7 @@ Desde el panel admin se puede exportar:
 | `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
 | (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
 | (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
-| (anterior) | Tests: suite Vitest — 80 tests en scoring (25), analysis (38) y evolution (17) |
+| (anterior) | Tests: suite Vitest — 92 tests en scoring (25), analysis (50) y evolution (17) |
 | (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)` |
 | (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
 | (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
