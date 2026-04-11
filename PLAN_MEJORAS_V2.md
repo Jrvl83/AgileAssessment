@@ -11,7 +11,7 @@ Propuestas para evolucionar la herramienta de **medición** a **acompañamiento 
 | Fase | Enfoque | Mejoras | Estado |
 |------|---------|---------|--------|
 | 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | ✅ Completada — 2026-04-10 |
-| 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | 🔄 En curso — #10 ✅ #9 ✅ #1 ✅ · faltan #7 y #3 |
+| 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | 🔄 En curso — #10 ✅ #9 ✅ #1 ✅ #7 ✅ · falta #3 |
 | 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | Pendiente |
 | 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Pendiente |
 
@@ -626,7 +626,7 @@ Q1 2027 — Fase 4: Plataforma
 | 20 | Contador en tiempo real | 1 | Baja-media | — | ✅ `412812e` |
 | 1 | Divergencia entre roles | 2 | Media | — | ✅ `5631870` |
 | 3 | Guía de debriefing | 2 | Media | #1 ✅ | Pendiente |
-| 7 | Tendencia histórica | 2 | Media | — | Pendiente |
+| 7 | Tendencia histórica | 2 | Media | — | ✅ `d507341` |
 | 9 | Índice de momentum | 2 | Media | — | ✅ `0311cff` |
 | 10 | Consistencia por pregunta | 2 | Baja-media | V1 histogramas ✅ | ✅ `0f7c479` |
 | 11 | Portal de equipo | 3 | Alta | — | Pendiente |
