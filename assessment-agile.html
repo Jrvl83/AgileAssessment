@@ -434,7 +434,7 @@ const db = firebase.firestore();
 // SECTIONS, LEVELS, DIMS, DIM_COLORS, RECS, RECS_ROLE, getLevel, getRec
 // → cargados desde assessment-config.js
 
-let screen = "intro"; // intro | section | results
+let screen = "loading"; // loading | briefing | intro | section | results
 let currentSection = 0;
 let answers = {};
 let role = "";
@@ -447,6 +447,7 @@ let cicloNombre = "";
 let teamSize = "";   // "1-5" | "6-9" | "10+"
 let scrumTime = "";  // "<6m" | "6-18m" | ">18m"
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
+let briefingTexto = "";
 
 function setTeam(id, text) {
   teamId = id;
@@ -493,6 +494,13 @@ async function loadTeams() {
     const found = teams.find(t => t.id === presetId);
     if (found) { teamId = found.id; teamName = found.name; }
   }
+  // Cargar briefing del workspace
+  try {
+    const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
+    briefingTexto = wsSnap.exists ? (wsSnap.data().briefingTexto || '') : '';
+  } catch(e) { briefingTexto = ''; }
+
+  screen = briefingTexto.trim() ? 'briefing' : 'intro';
   render();
 }
 
@@ -547,9 +555,23 @@ function calcResults() {
   return { total, max, pct:Math.round(total/max*100), dims };
 }
 
+function renderBriefing() {
+  const escaped = briefingTexto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `
+    <div style="padding:8px 0;">
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">Antes de comenzar</div>
+      <div style="font-size:16px;line-height:1.75;color:var(--ink-muted);white-space:pre-wrap;">${escaped}</div>
+      <div class="nav" style="border-top:none;padding-top:0;margin-top:32px;">
+        <button class="btn primary" onclick="screen='intro';render()">Entendido, comenzar →</button>
+      </div>
+    </div>`;
+}
+
 function render() {
   const app = document.getElementById('app');
-  if(screen==='intro') app.innerHTML = renderIntro();
+  if(screen==='loading') app.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--ink-faint);font-size:15px;">Cargando…</div>';
+  else if(screen==='briefing') app.innerHTML = renderBriefing();
+  else if(screen==='intro') app.innerHTML = renderIntro();
   else if(screen==='section') app.innerHTML = renderSection();
   else app.innerHTML = renderResults();
   app.classList.remove('fade-in');
@@ -705,7 +727,7 @@ function pick(key,val) { answers[key]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen='intro'; currentSection=0; answers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
+function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';

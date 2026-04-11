@@ -989,6 +989,21 @@ function renderTeams() {
           }).join('')}
         </div>`;
 
+  const BRIEFING_DEFAULT = 'Este assessment es anónimo. Los resultados se analizan de forma agregada — nadie podrá identificar tu respuesta individual. El objetivo es identificar juntos dónde podemos mejorar como equipo, no evaluar a personas.';
+  const briefingEscaped = (state.briefingTexto || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const briefingSection = `
+    <div class="section-card">
+      <div class="section-title">Briefing pre-assessment</div>
+      <p style="font-size:13px;color:var(--ink-faint);margin-bottom:12px;line-height:1.6;">
+        Texto que el participante ve antes de comenzar el formulario. Úsalo para encuadrar el propósito y la anonimidad del assessment.
+      </p>
+      <textarea id="briefing-textarea"
+        placeholder="${BRIEFING_DEFAULT}"
+        oninput="saveBriefing(this.value)"
+        style="width:100%;box-sizing:border-box;min-height:100px;font-size:13px;font-family:inherit;color:var(--ink);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;resize:vertical;background:#f9fafb;line-height:1.6;">${briefingEscaped}</textarea>
+      <p style="font-size:11px;color:var(--ink-faint);margin-top:6px;">Guardado automáticamente. Si lo dejas vacío, no se muestra pantalla de briefing.</p>
+    </div>`;
+
   const now = new Date();
   const reportsSection = state.reports.length ? `
     <div class="section-card">
@@ -1014,7 +1029,7 @@ function renderTeams() {
       </div>
     </div>` : '';
 
-  return cyclesSection + reportsSection + addForm + `
+  return cyclesSection + reportsSection + briefingSection + addForm + `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>

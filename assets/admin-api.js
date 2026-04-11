@@ -206,6 +206,11 @@ async function fetchAllData() {
     computeStats();
     startLiveResponseCount();
 
+    try {
+      const wsSnap = await db.collection('workspaces').doc(state.currentUser.uid).get();
+      state.briefingTexto = wsSnap.exists ? (wsSnap.data().briefingTexto || '') : '';
+    } catch(e) { state.briefingTexto = ''; }
+
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
     const rptSnap = await rptQuery.get();
@@ -482,6 +487,20 @@ async function revokeReport(token, label) {
     toast('Reporte revocado');
     await fetchAllData();
   } catch(e) { toast('Error al revocar el reporte'); }
+}
+
+// ── Briefing pre-assessment ──────────────────────────────────────
+const _briefingTimer = {};
+function saveBriefing(text) {
+  state.briefingTexto = text;
+  clearTimeout(_briefingTimer.t);
+  _briefingTimer.t = setTimeout(async () => {
+    try {
+      await db.collection('workspaces').doc(state.currentUser.uid).set(
+        { briefingTexto: text }, { merge: true }
+      );
+    } catch(e) { toast('Error al guardar el briefing'); }
+  }, 800);
 }
 
 // ── Contador en tiempo real ──────────────────────────────────────

@@ -60,6 +60,14 @@ service cloud.firestore {
       allow write: if isSuperAdmin();
     }
 
+    // ── Configuración de workspace ────────────────────────────────
+    // Lectura pública: el formulario de assessment lee el briefing sin login.
+    // Escritura: solo el propio workspace admin.
+    match /workspaces/{id} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == id;
+    }
+
     // ── Reportes compartibles ─────────────────────────────────────
     // Lectura pública: stakeholders acceden sin login con el token.
     // Creación: cualquier admin autenticado.
