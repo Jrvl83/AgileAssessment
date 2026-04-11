@@ -522,6 +522,20 @@ function renderAnalysis() {
         const commentCount = teamResps.reduce((n, r) =>
           n + SECTIONS.filter(sec => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length, 0);
 
+        // Badge de comparación ciclo activo vs ciclo anterior
+        const activeCycleName = (state.cycles.find(c => c.active) || {}).name;
+        const activeCycleIdx  = activeCycleName ? state.cycles.findIndex(c => c.name === activeCycleName) : -1;
+        const prevCycleName   = activeCycleIdx > 0 ? state.cycles[activeCycleIdx - 1].name : null;
+        const activeCount     = activeCycleName ? teamResps.filter(r => r.fields.Ciclo === activeCycleName).length : null;
+        const prevCount       = prevCycleName   ? teamResps.filter(r => r.fields.Ciclo === prevCycleName).length   : null;
+        const countBadge = activeCount !== null && state.cycleFilter === 'Todos'
+          ? (prevCount !== null && activeCount < prevCount
+            ? `<span style="font-size:10px;background:#fce8e8;color:#c0282a;padding:1px 7px;border-radius:99px;margin-left:6px;" title="${activeCycleName}: ${activeCount} resp. · ${prevCycleName}: ${prevCount} resp.">↓ ciclo activo: ${activeCount} resp.</span>`
+            : activeCount > 0
+              ? `<span style="font-size:10px;background:#eef2ff;color:#1a4fd6;padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: ${activeCount} resp.</span>`
+              : `<span style="font-size:10px;background:#f3f4f6;color:var(--ink-faint);padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: sin respuestas</span>`)
+          : '';
+
         const team = state.teams.find(t => t.id === tid);
         const nKey = state.cycleFilter === 'Todos' ? '_general' : state.cycleFilter.replace(/[^a-zA-Z0-9]/g, '_');
         const draftKey = tid + '_' + nKey;
@@ -536,7 +550,7 @@ function renderAnalysis() {
             <div class="tac-header">
               <div>
                 <div class="tac-name">${s.name}</div>
-                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}</div>
+                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}${countBadge}</div>
               </div>
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>

@@ -204,6 +204,7 @@ async function fetchAllData() {
 
     await fetchPlans();
     computeStats();
+    startLiveResponseCount();
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -481,6 +482,44 @@ async function revokeReport(token, label) {
     toast('Reporte revocado');
     await fetchAllData();
   } catch(e) { toast('Error al revocar el reporte'); }
+}
+
+// ── Contador en tiempo real ──────────────────────────────────────
+let _liveCountUnsub = null;
+function startLiveResponseCount() {
+  if (_liveCountUnsub) { _liveCountUnsub(); _liveCountUnsub = null; }
+  const teamIds = new Set(state.teams.map(t => t.id));
+  if (!teamIds.size) return;
+  _liveCountUnsub = db.collection('respuestas').onSnapshot(snap => {
+    const updated = snap.docs
+      .map(d => {
+        const r = d.data();
+        return {
+          id: d.id,
+          fields: {
+            Equipo: [r.equipoId],
+            Participante: r.participante,
+            Rol: r.rol,
+            Ciclo: r.ciclo || '',
+            ...Object.fromEntries(DIMS.map(d => [d.field, r[d.storeKey] || 0])),
+            'Score Total %': r.scoreTotalPct || 0,
+            Nivel: r.nivel || '',
+            Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
+            'Tamaño Equipo': r.tamanoEquipo || '',
+            'Tiempo Scrum': r.tiempoScrum || '',
+            Answers: r.answers || {},
+            Comments: r.comments || {}
+          }
+        };
+      })
+      .filter(r => teamIds.has(r.fields.Equipo[0]))
+      .sort((a, b) => (b.fields.Fecha || '').localeCompare(a.fields.Fecha || ''));
+    if (updated.length !== state.responses.length) {
+      state.responses = updated;
+      computeStats();
+      setState({});
+    }
+  });
 }
 
 // ── Notas del coach ──────────────────────────────────────────────
