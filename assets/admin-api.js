@@ -12,6 +12,14 @@ function calcDispersion(pctArr) {
   return { sd, min, max, align };
 }
 
+// Detecta preguntas polarizadas: respuestas concentradas en ambos extremos (0 y 3)
+// counts = [c0, c1, c2, c3] — frecuencia de cada valor de respuesta
+function isPolarized(counts) {
+  const total = counts.reduce((a, b) => a + b, 0);
+  if (total < 3) return false;
+  return counts[0] > 0 && counts[3] > 0 && (counts[0] + counts[3]) / total >= 0.5;
+}
+
 function computeGlobalDimAverages(cFilter, excludeOtro) {
   const teamsWithData = Object.values(state.teamStats).filter(s => s.count > 0);
   if (teamsWithData.length < 2) return null;
@@ -560,5 +568,5 @@ function saveCoachNote(teamId, ciclo, text) {
 
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
+  module.exports = { calcDispersion, isPolarized, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
 }

@@ -74,10 +74,16 @@ function renderQuestionDetail(tid, selectedRole) {
           </div>`;
       }).join('');
 
+      const polarizedBadge = isPolarized(counts)
+        ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.05em;padding:2px 6px;border-radius:10px;
+            margin-left:6px;vertical-align:middle;">Opiniones divididas</span>`
+        : '';
+
       return `
         <div style="margin-bottom:14px;">
           <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:6px;line-height:1.45;">
-            P${qi + 1}. ${q.text}
+            P${qi + 1}. ${q.text}${polarizedBadge}
           </div>
           ${bars}
         </div>`;

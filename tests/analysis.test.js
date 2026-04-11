@@ -1,4 +1,4 @@
-import { calcDispersion, getMajorityRole, getTeamFilteredStats, computeStats } from '../assets/admin-api.js';
+import { calcDispersion, isPolarized, getMajorityRole, getTeamFilteredStats, computeStats } from '../assets/admin-api.js';
 
 // ── calcDispersion ────────────────────────────────────────────────
 
@@ -29,6 +29,42 @@ describe('calcDispersion', () => {
   test('retorna sd como entero', () => {
     const result = calcDispersion([30, 70]);
     expect(Number.isInteger(result.sd)).toBe(true);
+  });
+});
+
+// ── isPolarized ───────────────────────────────────────────────────
+
+describe('isPolarized', () => {
+  test('true cuando extremos suman ≥50% y ambos presentes', () => {
+    // 2 en 0, 2 en 3, 0 en medios → 100% extremos
+    expect(isPolarized([2, 0, 0, 2])).toBe(true);
+  });
+
+  test('true con extremos en exacto 50%', () => {
+    // 1 en 0, 1 en 3, 2 en medios → 50%
+    expect(isPolarized([1, 1, 1, 1])).toBe(true);
+  });
+
+  test('false cuando extremos < 50%', () => {
+    // 1 en 0, 1 en 3, 6 en medios → 25%
+    expect(isPolarized([1, 3, 3, 1])).toBe(false);
+  });
+
+  test('false cuando solo hay respuestas en un extremo', () => {
+    // Solo ceros — no hay polarización, es consenso negativo
+    expect(isPolarized([4, 0, 0, 0])).toBe(false);
+  });
+
+  test('false cuando no hay respuestas en el extremo inferior', () => {
+    expect(isPolarized([0, 0, 1, 3])).toBe(false);
+  });
+
+  test('false con menos de 3 respuestas totales', () => {
+    expect(isPolarized([1, 0, 0, 1])).toBe(false);
+  });
+
+  test('false con counts vacío (sin respuestas)', () => {
+    expect(isPolarized([0, 0, 0, 0])).toBe(false);
   });
 });
 
