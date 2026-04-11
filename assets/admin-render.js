@@ -238,6 +238,82 @@ function initRadarCharts() {
   }
 }
 
+// ── Evolution trend chart ─────────────────────────────────────────
+function initEvolutionTrendChart() {
+  if (state.activeTab !== 'evolution') return;
+  if (typeof Chart === 'undefined') return;
+  if (!window._evolTrendData) return;
+
+  const canvas = document.getElementById('evo-trend-canvas');
+  if (!canvas) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels: window._evolTrendData.labels,
+      datasets: window._evolTrendData.datasets.map(ds => ({
+        label:              ds.label,
+        data:               ds.values,
+        borderColor:        ds.color,
+        backgroundColor:    ds.color + '18',
+        borderWidth: 2,
+        pointBackgroundColor: ds.color,
+        pointBorderColor:   '#fff',
+        pointBorderWidth:   1.5,
+        pointRadius:        4,
+        pointHoverRadius:   5,
+        tension:            0.3,
+        fill:               false,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            stepSize: 25,
+            callback: v => v + '%',
+            font:  { size: 11, family: "'DM Sans', sans-serif" },
+            color: '#6b7280',
+          },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+        x: {
+          ticks: {
+            font:  { size: 11, family: "'DM Sans', sans-serif" },
+            color: '#6b7280',
+          },
+          grid: { display: false },
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'bottom',
+          labels: {
+            font: { size: 11, family: "'DM Sans', sans-serif" },
+            usePointStyle: true,
+            pointStyleWidth: 8,
+            padding: 14,
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
+          }
+        }
+      },
+      animation: { duration: 350 },
+    }
+  });
+}
+
 // ── Render ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
@@ -250,8 +326,10 @@ function render() {
   if (!state.currentUser) { app.innerHTML = renderLogin(); return; }
   window._radarData = {};
   window._compareData = null;
+  window._evolTrendData = null;
   app.innerHTML = renderShell();
   requestAnimationFrame(initRadarCharts);
+  requestAnimationFrame(initEvolutionTrendChart);
 
   // Solo animar en cambios de tab o carga inicial, no en cada tecla
   if (!isTyping) {
@@ -788,6 +866,28 @@ function renderEvolution() {
     return `<span class="delta-eq"> → 0%</span>`;
   };
 
+  let trendCard = '';
+  if (data.length >= 3) {
+    window._evolTrendData = {
+      labels:   data.map(d => d.cycleName),
+      datasets: DIMS.map(d => ({
+        label:  d.label,
+        color:  d.color,
+        values: data.map(cycle => cycle.avgDims[d.key].pct),
+      }))
+    };
+    trendCard = `
+      <div class="section-card" style="margin-top:0;margin-bottom:0;">
+        <div class="section-title">Tendencia histórica por dimensión</div>
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;line-height:1.5;">
+          Evolución de cada dimensión a lo largo de todos los ciclos con datos.
+        </p>
+        <div style="position:relative;height:280px;">
+          <canvas id="evo-trend-canvas"></canvas>
+        </div>
+      </div>`;
+  }
+
   const timeline = `
     <div class="evo-timeline">
       ${data.map((d, i) => {
@@ -974,6 +1074,7 @@ function renderEvolution() {
         ${recs}
       </div>
     </div>
+    ${trendCard}
     ${qDetailCard}`;
 }
 
