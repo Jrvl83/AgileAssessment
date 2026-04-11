@@ -8,18 +8,26 @@ Propuestas para evolucionar la herramienta de **medición** a **acompañamiento 
 
 ## Resumen ejecutivo
 
-| Fase | Enfoque | Mejoras | Impacto |
-|------|---------|---------|---------|
-| 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | Alto / Complejidad baja |
-| 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | Muy alto / Complejidad media |
-| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | Alto / Complejidad media-alta |
-| 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Diferenciador / Complejidad alta |
+| Fase | Enfoque | Mejoras | Estado |
+|------|---------|---------|--------|
+| 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | ✅ Completada — 2026-04-10 |
+| 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | Pendiente |
+| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | Pendiente |
+| 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Pendiente |
 
 ---
 
-## Fase 1 — Quick wins
+## Fase 1 — Quick wins ✅ COMPLETADA
 
-Mejoras de alto impacto con poco esfuerzo. Se pueden implementar en sesiones cortas sin cambios arquitecturales.
+Implementada el 2026-04-10. Las 5 mejoras se implementaron en una sola sesión sin cambios arquitecturales.
+
+| # | Mejora | Commit |
+|---|--------|--------|
+| #4 | Notas del coach por equipo y ciclo | `1aee758` |
+| #6 | Umbral de anonimato por rol (MIN=3) | `36bae12` |
+| #19 | Historial de reportes compartidos | `8370eb1` |
+| #20 | Contador de respuestas en tiempo real | `412812e` |
+| #5 | Briefing pre-assessment personalizable | `86abfc4` |
 
 ---
 

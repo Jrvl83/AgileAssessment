@@ -71,14 +71,19 @@ PLAN_MEJORAS_V2.md          # 20 nuevas mejoras en 4 fases — roadmap Q2 2026 �
 ### Participante (sin login)
 
 ```
+[Si el coach configuró briefing]
+Pantalla de briefing — encuadre de anonimidad y propósito
+  → Botón "Entendido, comenzar →"
+    ↓
 Pantalla de inicio
   → Seleccionar equipo (activo en Firestore)
   → Ingresar nombre (opcional)
   → Seleccionar rol: Product Owner / Dev Team / Scrum Master / Otro
     ↓
-4 secciones del assessment (una por dimensión)
+6 secciones del assessment (una por dimensión)
   → 3–4 preguntas por sección
   → 4 opciones de respuesta por pregunta (radio buttons)
+  → Comentario abierto opcional por sección
   → Navegación con botones Anterior / Siguiente
     ↓
 Pantalla de resultados
@@ -101,9 +106,9 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con N de respuestas por rol), toggle "Excluir Otro" del promedio, badge de alineación, gráfico de radar por equipo, comparativa multi-equipo (radar superpuesto + tabla heatmap), recomendaciones colapsables, histogramas por pregunta con citas anónimas, botón "Compartir reporte" por equipo, exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con citas anónimas, notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, botón "↗ Compartir reporte", exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo |
+| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; briefing pre-assessment editable (guardado en `workspaces/{uid}`); historial de reportes compartidos con fecha de expiración y botón Revocar |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
@@ -320,6 +325,14 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `nombre` | string | Nombre del equipo |
 | `activo` | boolean | Si el equipo está disponible en el formulario |
 | `ownerId` | string | UID del workspace admin que creó el equipo |
+| `notas` | object | Notas del coach por ciclo `{ [cicloKey]: string }` — solo visibles en el panel admin |
+
+#### `workspaces`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `briefingTexto` | string | Texto de encuadre que el participante ve antes del formulario (vacío = sin pantalla de briefing) |
+
+Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
 #### `ciclos`
 | Campo | Tipo | Descripción |
@@ -393,6 +406,8 @@ Desde el panel admin se puede exportar:
 
 ## Mejoras implementadas
 
+### Plan coaching V1 (completado)
+
 | Prioridad | Mejora | Descripción |
 |-----------|--------|-------------|
 | Alta | `assessment-config.js` | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan como script externo. |
@@ -414,12 +429,27 @@ Desde el panel admin se puede exportar:
 | Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
 | Fix | Acceso sin workspaceId bloqueado | El formulario público sin `?workspaceId=X` en la URL muestra un mensaje de error en lugar de listar equipos de todos los workspaces. Previene leak de privacidad entre workspaces. |
 
+### Plan V2 — Fase 1 (completada 2026-04-10)
+
+| # | Mejora | Descripción |
+|---|--------|-------------|
+| #4 | Notas del coach por equipo y ciclo | Textarea al pie de cada tarjeta de equipo en Análisis. Guardado automático con debounce en `equipos/{id}.notas.{ciclo}`. Draft en memoria preserva el texto durante re-renders. |
+| #6 | Umbral de anonimato | Constante `MIN_ROLE_RESPONSES=3`. Pills con ⚠ si un rol tiene menos respuestas en el ciclo activo. Banner de advertencia al filtrar ese rol. En el card org, roles bajo umbral se excluyen con nota explicativa. |
+| #19 | Historial de reportes compartidos | Sección en pestaña Equipos: lista todos los reportes activos con equipo, ciclo, fechas de generación/expiración y botón Revocar. Cargado en `fetchAllData()` con query por `ownerId`. |
+| #20 | Contador de respuestas en tiempo real | `onSnapshot` sobre `respuestas` — detecta nuevas respuestas sin refrescar y actualiza automáticamente. Badge en el header de cada tarjeta: azul con conteo del ciclo activo, rojo con ↓ si está por debajo del ciclo anterior. |
+| #5 | Briefing pre-assessment personalizable | El coach edita el texto en pestaña Equipos (guardado en `workspaces/{uid}` vía debounce). Si está configurado, el participante ve una pantalla de briefing antes del formulario. Sin texto, el flujo es idéntico al anterior. |
+
 ---
 
 ## Historial de versiones (commits clave)
 
 | Commit | Descripción |
 |--------|-------------|
+| `86abfc4` | Feat: briefing pre-assessment personalizable — pantalla de encuadre antes del formulario (#5 V2) |
+| `412812e` | Feat: contador de respuestas en tiempo real con onSnapshot y badge de comparación vs. ciclo anterior (#20 V2) |
+| `8370eb1` | Feat: historial de reportes compartidos en pestaña Equipos con botón Revocar (#19 V2) |
+| `36bae12` | Feat: umbral de anonimato MIN=3 — pills ⚠, banner advertencia y exclusión en card org (#6 V2) |
+| `1aee758` | Feat: notas del coach por equipo y ciclo — textarea con debounce en `equipos/{id}.notas` (#4 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
 | `8a7c607` | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos |
 | `4d33ea7` | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10) |
