@@ -54,7 +54,10 @@ const state = {
   newPlanDimension:   '',
   excludeOtro:        false,
   reports:            [],
-  briefingTexto:      ''
+  briefingTexto:      '',
+  marca:              '',
+  logoUrl:            '',
+  colorAcento:        ''
 };
 
 // setState actualiza el estado y dispara un re-render.

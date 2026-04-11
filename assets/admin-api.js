@@ -290,8 +290,12 @@ async function fetchAllData() {
 
     try {
       const wsSnap = await db.collection('workspaces').doc(state.currentUser.uid).get();
-      state.briefingTexto = wsSnap.exists ? (wsSnap.data().briefingTexto || '') : '';
-    } catch(e) { state.briefingTexto = ''; }
+      const wsData = wsSnap.exists ? wsSnap.data() : {};
+      state.briefingTexto = wsData.briefingTexto || '';
+      state.marca         = wsData.marca         || '';
+      state.logoUrl       = wsData.logoUrl        || '';
+      state.colorAcento   = wsData.colorAcento    || '';
+    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -538,6 +542,11 @@ async function generateReport(teamId, cycleFilter) {
     ownerId: state.currentUser.uid,
     generatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
+    branding: {
+      marca:       state.marca       || '',
+      logoUrl:     state.logoUrl     || '',
+      colorAcento: state.colorAcento || '',
+    },
     data: {
       avgTotal: ds.avgTotal,
       count: ds.count,
@@ -582,6 +591,20 @@ function saveBriefing(text) {
         { briefingTexto: text }, { merge: true }
       );
     } catch(e) { toast('Error al guardar el briefing'); }
+  }, 800);
+}
+
+// ── Marca del workspace ──────────────────────────────────────────
+const _brandingTimers = {};
+function saveBranding(field, value) {
+  state[field] = value;
+  clearTimeout(_brandingTimers[field]);
+  _brandingTimers[field] = setTimeout(async () => {
+    try {
+      await db.collection('workspaces').doc(state.currentUser.uid).set(
+        { [field]: value }, { merge: true }
+      );
+    } catch(e) { toast('Error al guardar'); }
   }, 800);
 }
 

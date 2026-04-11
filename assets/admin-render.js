@@ -1155,6 +1155,41 @@ function renderTeams() {
           }).join('')}
         </div>`;
 
+  const marcaEsc      = (state.marca      || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const logoUrlEsc    = (state.logoUrl    || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const colorAcento   = state.colorAcento || '#1a4fd6';
+  const brandSection = `
+    <div class="section-card">
+      <div class="section-title">Marca del workspace</div>
+      <p style="font-size:13px;color:var(--ink-faint);margin-bottom:16px;line-height:1.6;">
+        Personaliza la apariencia del formulario y los reportes compartidos con la identidad de tu consultora o cliente.
+      </p>
+      <div style="display:grid;gap:16px;">
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Nombre de marca</label>
+          <input class="field-input" type="text" placeholder="Ej. Agile Warriors" value="${marcaEsc}"
+            oninput="saveBranding('marca',this.value)"/>
+          <span style="font-size:11px;color:var(--ink-faint);margin-top:4px;display:block;">Aparece en el encabezado del formulario y del reporte. Si se deja vacío, se usa el nombre por defecto.</span>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>URL del logo</label>
+          <input class="field-input" type="url" placeholder="https://ejemplo.com/logo.png" value="${logoUrlEsc}"
+            oninput="saveBranding('logoUrl',this.value)"/>
+          <span style="font-size:11px;color:var(--ink-faint);margin-top:4px;display:block;">Reemplaza el título con una imagen. Tamaño recomendado: 180×48 px, formato PNG o SVG.</span>
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Color de acento</label>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+            <input type="color" value="${colorAcento}"
+              oninput="saveBranding('colorAcento',this.value);this.nextElementSibling.textContent=this.value;"
+              style="width:36px;height:30px;padding:2px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;background:white;"/>
+            <span style="font-size:12px;font-family:monospace;color:var(--ink-muted);">${colorAcento}</span>
+          </div>
+          <span style="font-size:11px;color:var(--ink-faint);">Sustituye el azul (#1a4fd6) por defecto en el formulario y reportes.</span>
+        </div>
+      </div>
+    </div>`;
+
   const BRIEFING_DEFAULT = 'Este assessment es anónimo. Los resultados se analizan de forma agregada — nadie podrá identificar tu respuesta individual. El objetivo es identificar juntos dónde podemos mejorar como equipo, no evaluar a personas.';
   const briefingEscaped = (state.briefingTexto || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const briefingSection = `
@@ -1195,7 +1230,7 @@ function renderTeams() {
       </div>
     </div>` : '';
 
-  return cyclesSection + reportsSection + briefingSection + addForm + `
+  return cyclesSection + reportsSection + brandSection + briefingSection + addForm + `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>

@@ -407,8 +407,8 @@
 <body>
 <div class="shell">
   <div class="header">
-    <div class="header-eyebrow">Scrum Guide Standard</div>
-    <h1>Assessment de<br>Madurez Agile</h1>
+    <div id="header-eyebrow" class="header-eyebrow">Scrum Guide Standard</div>
+    <h1 id="header-h1">Assessment de<br>Madurez Agile</h1>
     <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 20 preguntas · ~12 minutos.</p>
   </div>
   <div id="app"></div>
@@ -494,10 +494,27 @@ async function loadTeams() {
     const found = teams.find(t => t.id === presetId);
     if (found) { teamId = found.id; teamName = found.name; }
   }
-  // Cargar briefing del workspace
+  // Cargar configuración del workspace (briefing + branding)
   try {
     const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
-    briefingTexto = wsSnap.exists ? (wsSnap.data().briefingTexto || '') : '';
+    const wsData = wsSnap.exists ? wsSnap.data() : {};
+    briefingTexto = wsData.briefingTexto || '';
+    // Aplicar branding
+    if (wsData.colorAcento) document.documentElement.style.setProperty('--accent', wsData.colorAcento);
+    if (wsData.marca || wsData.logoUrl) {
+      const eyebrow = document.getElementById('header-eyebrow');
+      const h1      = document.getElementById('header-h1');
+      if (eyebrow && wsData.marca) eyebrow.textContent = wsData.marca;
+      if (h1) {
+        if (wsData.logoUrl) {
+          const safeUrl = wsData.logoUrl.replace(/"/g, '%22');
+          const safeAlt = (wsData.marca || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          h1.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:48px;max-width:200px;object-fit:contain;display:block;">`;
+        } else if (wsData.marca) {
+          h1.textContent = wsData.marca;
+        }
+      }
+    }
   } catch(e) { briefingTexto = ''; }
 
   screen = briefingTexto.trim() ? 'briefing' : 'intro';

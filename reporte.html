@@ -126,7 +126,19 @@ function renderReport(r) {
   const d = r.data;
   const cicloLabel = r.ciclo && r.ciclo !== 'Todos' ? r.ciclo : 'Todos los ciclos';
 
-  document.getElementById('report-title').textContent = r.equipoNombre;
+  // Aplicar branding del workspace
+  const branding = r.branding || {};
+  if (branding.colorAcento) document.documentElement.style.setProperty('--accent', branding.colorAcento);
+  const eyebrow = document.querySelector('.header-eyebrow');
+  if (eyebrow && branding.marca) eyebrow.textContent = branding.marca;
+  if (branding.logoUrl) {
+    const safeUrl = branding.logoUrl.replace(/"/g, '%22');
+    const safeAlt = (branding.marca || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const titleEl = document.getElementById('report-title');
+    if (titleEl) titleEl.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span>${r.equipoNombre.replace(/</g,'&lt;')}</span>`;
+  } else {
+    document.getElementById('report-title').textContent = r.equipoNombre;
+  }
   document.getElementById('report-subtitle').textContent = 'Ciclo: ' + cicloLabel;
 
   const genDate = r.generatedAt
