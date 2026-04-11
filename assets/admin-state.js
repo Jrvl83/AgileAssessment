@@ -50,6 +50,7 @@ const state = {
   newUserEmail:       '',
   teamRecsExpanded:   {},
   teamDetailExpanded: {},
+  teamGapsExpanded:   {},
   newPlanDimension:   '',
   excludeOtro:        false,
   reports:            [],

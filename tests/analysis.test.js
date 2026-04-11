@@ -1,4 +1,4 @@
-import { calcDispersion, isPolarized, getMajorityRole, getTeamFilteredStats, computeStats } from '../assets/admin-api.js';
+import { calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats } from '../assets/admin-api.js';
 
 // ── calcDispersion ────────────────────────────────────────────────
 
@@ -225,5 +225,91 @@ describe('computeStats', () => {
     computeStats();
     expect(state.teamStats['team3'].count).toBe(0);
     expect(state.teamStats['team3'].avgTotal).toBeUndefined();
+  });
+});
+
+// ── detectRoleGaps ────────────────────────────────────────────────
+
+describe('detectRoleGaps', () => {
+  // Helper: 3 respuestas de un rol con el mismo porcentaje en todas las dimensiones
+  function makeRoleResps(teamId, rol, ciclo, dimPct) {
+    const base = { Equipo: [teamId], Rol: rol, Ciclo: ciclo, 'Score Total %': dimPct };
+    DIMS.forEach(d => { base[d.field] = Math.round((dimPct / 100) * d.max); });
+    return Array.from({ length: 3 }, () => ({ fields: { ...base } }));
+  }
+
+  beforeEach(() => {
+    state.cycles = [{ id: 'c1', name: 'Q1', active: true }];
+  });
+
+  test('retorna array vacío cuando no hay roles con suficientes respuestas', () => {
+    // Solo 1 respuesta por rol — por debajo del umbral de 3
+    state.responses = [
+      { fields: { Equipo: ['t1'], Rol: 'Dev Team', Ciclo: 'Q1', 'Score Eventos': 8, 'Score Backlog': 6, 'Score Dev Team': 8, 'Score Transparencia': 6, 'Score Técnico': 6, 'Score Cliente': 6, 'Score Total %': 70 } },
+      { fields: { Equipo: ['t1'], Rol: 'Product Owner', Ciclo: 'Q1', 'Score Eventos': 4, 'Score Backlog': 3, 'Score Dev Team': 4, 'Score Transparencia': 3, 'Score Técnico': 3, 'Score Cliente': 3, 'Score Total %': 33 } }
+    ];
+    expect(detectRoleGaps('t1', 'Todos')).toHaveLength(0);
+  });
+
+  test('retorna array vacío cuando solo hay un rol con suficientes respuestas', () => {
+    state.responses = makeRoleResps('t1', 'Dev Team', 'Q1', 70);
+    expect(detectRoleGaps('t1', 'Todos')).toHaveLength(0);
+  });
+
+  test('detecta brecha cuando la diferencia supera el umbral', () => {
+    state.responses = [
+      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
+      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
+    ];
+    const gaps = detectRoleGaps('t1', 'Todos', 25);
+    expect(gaps.length).toBeGreaterThan(0);
+    expect(gaps[0].diff).toBeGreaterThanOrEqual(25);
+  });
+
+  test('no detecta brecha cuando la diferencia es menor al umbral', () => {
+    state.responses = [
+      ...makeRoleResps('t1', 'Dev Team', 'Q1', 70),
+      ...makeRoleResps('t1', 'Product Owner', 'Q1', 65)
+    ];
+    const gaps = detectRoleGaps('t1', 'Todos', 25);
+    expect(gaps).toHaveLength(0);
+  });
+
+  test('las brechas se ordenan de mayor a menor diferencia', () => {
+    state.responses = [
+      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
+      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
+    ];
+    const gaps = detectRoleGaps('t1', 'Todos', 0);
+    for (let i = 1; i < gaps.length; i++) {
+      expect(gaps[i - 1].diff).toBeGreaterThanOrEqual(gaps[i].diff);
+    }
+  });
+
+  test('aplica filtro de ciclo correctamente', () => {
+    state.responses = [
+      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
+      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30),
+      ...makeRoleResps('t1', 'Dev Team', 'Q2', 60),
+      ...makeRoleResps('t1', 'Product Owner', 'Q2', 55)
+    ];
+    const gapsQ1 = detectRoleGaps('t1', 'Q1', 25);
+    const gapsQ2 = detectRoleGaps('t1', 'Q2', 25);
+    expect(gapsQ1.length).toBeGreaterThan(0);
+    expect(gapsQ2).toHaveLength(0);
+  });
+
+  test('cada gap incluye roleHigh, pctHigh, roleLow, pctLow', () => {
+    state.responses = [
+      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
+      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
+    ];
+    const gaps = detectRoleGaps('t1', 'Todos', 25);
+    const g = gaps[0];
+    expect(g).toHaveProperty('roleHigh');
+    expect(g).toHaveProperty('pctHigh');
+    expect(g).toHaveProperty('roleLow');
+    expect(g).toHaveProperty('pctLow');
+    expect(g.pctHigh).toBeGreaterThan(g.pctLow);
   });
 });

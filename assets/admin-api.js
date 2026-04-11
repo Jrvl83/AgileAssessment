@@ -20,6 +20,64 @@ function isPolarized(counts) {
   return counts[0] > 0 && counts[3] > 0 && (counts[0] + counts[3]) / total >= 0.5;
 }
 
+// Detecta brechas de percepción entre roles por dimensión
+// Retorna array de { dimKey, dimLabel, dimColor, roleHigh, pctHigh, roleLow, pctLow, diff }
+// ordenado de mayor a menor diferencia. Solo incluye roles con >= MIN_ROLE_RESPONSES respuestas.
+function detectRoleGaps(tid, cycleFilter, threshold) {
+  const thresh = threshold !== undefined ? threshold : 25;
+  const minResp = typeof MIN_ROLE_RESPONSES !== 'undefined' ? MIN_ROLE_RESPONSES : 3;
+  const cf = cycleFilter || 'Todos';
+  const teamResps = state.responses.filter(r =>
+    (r.fields.Equipo || []).includes(tid) &&
+    (cf === 'Todos' || r.fields.Ciclo === cf)
+  );
+
+  const roleGroups = {};
+  teamResps.forEach(r => {
+    const rol = r.fields.Rol;
+    if (!rol) return;
+    if (!roleGroups[rol]) roleGroups[rol] = [];
+    roleGroups[rol].push(r);
+  });
+
+  const validRoles = Object.entries(roleGroups)
+    .filter(([, rs]) => rs.length >= minResp)
+    .map(([role, rs]) => ({ role, rs }));
+
+  if (validRoles.length < 2) return [];
+
+  const roleAvgs = {};
+  validRoles.forEach(({ role, rs }) => {
+    roleAvgs[role] = {};
+    DIMS.forEach(d => {
+      const sum = rs.reduce((a, r) => a + (r.fields[d.field] || 0), 0);
+      roleAvgs[role][d.key] = Math.round((sum / rs.length / d.max) * 100);
+    });
+  });
+
+  const gaps = [];
+  DIMS.forEach(d => {
+    const byRole = validRoles.map(({ role }) => ({ role, pct: roleAvgs[role][d.key] }));
+    const maxPct = Math.max(...byRole.map(r => r.pct));
+    const minPct = Math.min(...byRole.map(r => r.pct));
+    const diff = maxPct - minPct;
+    if (diff >= thresh) {
+      gaps.push({
+        dimKey:   d.key,
+        dimLabel: d.label,
+        dimColor: d.color,
+        roleHigh: byRole.find(r => r.pct === maxPct).role,
+        pctHigh:  maxPct,
+        roleLow:  byRole.find(r => r.pct === minPct).role,
+        pctLow:   minPct,
+        diff
+      });
+    }
+  });
+
+  return gaps.sort((a, b) => b.diff - a.diff);
+}
+
 // Calcula el momentum de mejora: delta promedio por ciclo en los últimos n ciclos
 // Retorna { avg, cycles, direction } o null si hay menos de 2 ciclos con datos
 function calcMomentum(tid, role, n) {
@@ -584,5 +642,5 @@ function saveCoachNote(teamId, ciclo, text) {
 
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, isPolarized, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
+  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData };
 }

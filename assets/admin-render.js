@@ -37,6 +37,11 @@ function toggleTeamDetail(tid) {
   render();
 }
 
+function toggleTeamGaps(tid) {
+  state.teamGapsExpanded[tid] = !state.teamGapsExpanded[tid];
+  render();
+}
+
 // ── Detalle por pregunta con histogramas ─────────────────────────
 function renderQuestionDetail(tid, selectedRole) {
   const teamResps = state.responses
@@ -576,31 +581,75 @@ function renderAnalysis() {
             ${anonWarning ? `<div class="no-print" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">
               ⚠ Solo ${filteredRoleCounts[selectedRole] || 0} respuesta${(filteredRoleCounts[selectedRole] || 0) !== 1 ? 's' : ''} de <strong>${selectedRole}</strong> en este ciclo. Con menos de ${MIN_ROLE_RESPONSES} respuestas, el desglose por rol puede comprometer el anonimato.
             </div>` : ''}
+            ${(() => {
+              const gaps = detectRoleGaps(tid, state.cycleFilter);
+              if (!gaps.length) return '';
+              const gapsExpanded = !!state.teamGapsExpanded[tid];
+              const gapBody = gaps.map(g => {
+                const severity = g.diff >= 40 ? '#c0282a' : '#a05c0a';
+                const severityBg = g.diff >= 40 ? '#fce8e8' : '#fdefd6';
+                return `
+                  <div style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid ${g.dimColor}15;">
+                    <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${g.dimColor};flex-shrink:0;margin-top:3px;"></span>
+                    <div style="flex:1;font-size:12px;color:var(--ink);">
+                      <strong>${g.dimLabel}:</strong>
+                      ${g.roleHigh} <span style="font-weight:700;color:${g.dimColor};">${g.pctHigh}%</span>
+                      · ${g.roleLow} <span style="font-weight:700;color:${g.dimColor};">${g.pctLow}%</span>
+                    </div>
+                    <span style="background:${severityBg};color:${severity};font-size:10px;font-weight:700;
+                      padding:2px 7px;border-radius:99px;white-space:nowrap;flex-shrink:0;">${g.diff} pts</span>
+                  </div>`;
+              }).join('');
+              return `
+                <div class="collapse-section no-print">
+                  <button class="collapse-toggle" onclick="toggleTeamGaps('${tid}')"
+                    style="background:#fff8ed;border-color:#f59e0b;">
+                    <span class="collapse-toggle-label" style="color:#92400e;">
+                      ⚡ Brechas de percepción detectadas
+                      <span class="collapse-count" style="background:#f59e0b;color:#fff;">${gaps.length}</span>
+                    </span>
+                    <span class="collapse-chevron" style="color:#92400e;">${gapsExpanded ? '▲' : '▼'}</span>
+                  </button>
+                  ${gapsExpanded ? `<div class="collapse-body" style="padding-top:4px;">${gapBody}</div>` : ''}
+                </div>`;
+            })()}
             <div class="no-print" style="display:flex;justify-content:flex-end;margin-bottom:4px;">
               <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
             </div>
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
-            ${DIMS.map(d => {
-              const dp = ds.avgDims[d.key];
-              const disp = ds.dispersion && ds.dispersion[d.key];
-              const vsG  = globalAvgs ? dp.pct - globalAvgs[d.key] : null;
-              const vsBadge = vsG !== null
-                ? `<span class="dim-vs-avg ${vsG >= 0 ? 'dim-vs-avg-pos' : 'dim-vs-avg-neg'}">${vsG >= 0 ? '+' : ''}${vsG}% vs. media</span>`
-                : '';
-              return `<div class="dim-row">
-                <div class="dim-row-header">
-                  <span class="dim-label">${d.label}</span>
-                  <span style="display:flex;align-items:center;gap:4px;"><span class="dim-pct-label">${dp.pct}%</span>${vsBadge}</span>
-                </div>
-                <div class="dim-bar-wrap">
-                  <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
-                </div>
-                ${disp ? `<div style="display:flex;justify-content:space-between;margin-top:2px;">
-                  <span style="font-size:10px;color:var(--ink-faint);">Rango: ${disp.min}%–${disp.max}%</span>
-                  <span style="font-size:10px;color:${disp.align.color};">±${disp.sd}%</span>
-                </div>` : ''}
-              </div>`;
-            }).join('')}
+            ${(() => {
+              const gaps = detectRoleGaps(tid, state.cycleFilter);
+              const gapMap = new Map(gaps.map(g => [g.dimKey, g]));
+              return DIMS.map(d => {
+                const dp = ds.avgDims[d.key];
+                const disp = ds.dispersion && ds.dispersion[d.key];
+                const vsG  = globalAvgs ? dp.pct - globalAvgs[d.key] : null;
+                const vsBadge = vsG !== null
+                  ? `<span class="dim-vs-avg ${vsG >= 0 ? 'dim-vs-avg-pos' : 'dim-vs-avg-neg'}">${vsG >= 0 ? '+' : ''}${vsG}% vs. media</span>`
+                  : '';
+                const gap = gapMap.get(d.key);
+                const gapBadge = gap
+                  ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;
+                      background:${gap.diff >= 40 ? '#fce8e8' : '#fdefd6'};
+                      color:${gap.diff >= 40 ? '#c0282a' : '#a05c0a'};
+                      margin-left:4px;white-space:nowrap;"
+                      title="${gap.roleHigh}: ${gap.pctHigh}% · ${gap.roleLow}: ${gap.pctLow}%">⚡ ${gap.diff}pts</span>`
+                  : '';
+                return `<div class="dim-row">
+                  <div class="dim-row-header">
+                    <span class="dim-label">${d.label}${gapBadge}</span>
+                    <span style="display:flex;align-items:center;gap:4px;"><span class="dim-pct-label">${dp.pct}%</span>${vsBadge}</span>
+                  </div>
+                  <div class="dim-bar-wrap">
+                    <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
+                  </div>
+                  ${disp ? `<div style="display:flex;justify-content:space-between;margin-top:2px;">
+                    <span style="font-size:10px;color:var(--ink-faint);">Rango: ${disp.min}%–${disp.max}%</span>
+                    <span style="font-size:10px;color:${disp.align.color};">±${disp.sd}%</span>
+                  </div>` : ''}
+                </div>`;
+              }).join('');
+            })()}
             <div class="collapse-section">
               <button class="collapse-toggle" onclick="toggleTeamRecs('${tid}')">
                 <span class="collapse-toggle-label">
