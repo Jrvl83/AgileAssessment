@@ -507,6 +507,15 @@ function renderAnalysis() {
         const commentCount = teamResps.reduce((n, r) =>
           n + SECTIONS.filter(sec => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length, 0);
 
+        const team = state.teams.find(t => t.id === tid);
+        const nKey = state.cycleFilter === 'Todos' ? '_general' : state.cycleFilter.replace(/[^a-zA-Z0-9]/g, '_');
+        const draftKey = tid + '_' + nKey;
+        const currentNote = _noteDrafts[draftKey] !== undefined
+          ? _noteDrafts[draftKey]
+          : ((team && team.notas) || {})[nKey] || '';
+        const noteCicloLabel = state.cycleFilter === 'Todos' ? 'general' : state.cycleFilter;
+        const escapedNote = currentNote.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
         return `
           <div class="tac">
             <div class="tac-header">
@@ -564,6 +573,15 @@ function renderAnalysis() {
                 <span class="collapse-chevron">${detailExpanded ? '▲' : '▼'}</span>
               </button>
               ${detailExpanded ? `<div class="collapse-body">${renderQuestionDetail(tid, selectedRole)}</div>` : ''}
+            </div>
+            <div class="no-print" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+              <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
+                Notas del coach · ${noteCicloLabel}
+              </div>
+              <textarea id="coach-note-${tid}"
+                placeholder="Contexto de sesión, observaciones, situación del equipo…"
+                oninput="saveCoachNote('${tid}','${state.cycleFilter}',this.value)"
+                style="width:100%;box-sizing:border-box;min-height:72px;font-size:12px;font-family:inherit;color:var(--ink);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;resize:vertical;background:#f9fafb;line-height:1.5;">${escapedNote}</textarea>
             </div>
           </div>`;
       }).join('')}

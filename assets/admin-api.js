@@ -166,7 +166,8 @@ async function fetchAllData() {
     const tSnap = await tQuery.get();
     state.teams = tSnap.docs.map(d => ({
       id: d.id, name: d.data().nombre, active: !!d.data().activo,
-      ownerId: d.data().ownerId || null
+      ownerId: d.data().ownerId || null,
+      notas: d.data().notas || {}
     })).sort((a, b) => a.name.localeCompare(b.name));
 
     const teamIds = new Set(state.teams.map(t => t.id));
@@ -455,6 +456,23 @@ async function generateReport(teamId, cycleFilter) {
     showReportLink(url, team.name, cf);
     toast('Reporte generado');
   } catch(e) { toast('Error al generar el reporte'); }
+}
+
+// ── Notas del coach ──────────────────────────────────────────────
+const _noteTimers = {};
+const _noteDrafts = {};
+function saveCoachNote(teamId, ciclo, text) {
+  const key = ciclo === 'Todos' ? '_general' : ciclo.replace(/[^a-zA-Z0-9]/g, '_');
+  _noteDrafts[teamId + '_' + key] = text;
+  clearTimeout(_noteTimers[teamId]);
+  _noteTimers[teamId] = setTimeout(async () => {
+    try {
+      await db.collection('equipos').doc(teamId).update({ [`notas.${key}`]: text });
+      const team = state.teams.find(t => t.id === teamId);
+      if (team) { team.notas = team.notas || {}; team.notas[key] = text; }
+      delete _noteDrafts[teamId + '_' + key];
+    } catch(e) { toast('Error al guardar nota'); }
+  }, 800);
 }
 
 // CommonJS exports para tests (no-op en el browser)
