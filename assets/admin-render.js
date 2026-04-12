@@ -48,15 +48,84 @@ function updateAiCtx(key, val) {
   state.aiContext = { ...state.aiContext, [key]: val };
 }
 
+// Carga mammoth.js de forma lazy (solo la primera vez que se sube un .docx)
+function _loadMammoth() {
+  return new Promise((resolve, reject) => {
+    if (window.mammoth) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
+    s.onload = resolve;
+    s.onerror = () => reject(new Error('No se pudo cargar el parser de DOCX'));
+    document.head.appendChild(s);
+  });
+}
+
+const DOC_CHAR_LIMIT = 10000; // ≈ 5 páginas / ~2.500 palabras
+
+async function handleDocxUpload(key, input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('docx-status-' + key.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (statusEl) statusEl.textContent = 'Leyendo documento…';
+
+  try {
+    await _loadMammoth();
+  } catch (e) {
+    if (statusEl) statusEl.textContent = '✕ No se pudo cargar el parser. Verifica tu conexión.';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    try {
+      const arrayBuffer = ev.target.result;
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      let text = (result.value || '').trim();
+
+      const truncated = text.length > DOC_CHAR_LIMIT;
+      if (truncated) text = text.slice(0, DOC_CHAR_LIMIT);
+
+      state.aiDocContext = {
+        ...state.aiDocContext,
+        [key]: { text, name: file.name, chars: text.length, truncated }
+      };
+
+      if (statusEl) {
+        statusEl.innerHTML = truncated
+          ? `<span style="color:#a05c0a;">⚠ Se usarán los primeros ${DOC_CHAR_LIMIT.toLocaleString()} caracteres (documento excede el límite de ~5 páginas).</span>`
+          : `<span style="color:#0d7a52;">✓ ${file.name} · ${text.length.toLocaleString()} caracteres listos para el análisis.</span>`;
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = '✕ No se pudo leer el documento. Verifica que sea un archivo .docx válido.';
+      console.error('DOCX parse error:', err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function removeDocxUpload(key) {
+  const newCtx = { ...state.aiDocContext };
+  delete newCtx[key];
+  state.aiDocContext = newCtx;
+  // Limpiar el input de archivo sin re-renderizar
+  const input = document.getElementById('docx-input-' + key.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (input) input.value = '';
+  const statusEl = document.getElementById('docx-status-' + key.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (statusEl) statusEl.innerHTML = '';
+}
+
 async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
   const cf  = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
-  const contextoCoach = (state.aiContext[key] || '').trim();
+  const contextoCoach  = (state.aiContext[key] || '').trim();
+  const docEntry       = state.aiDocContext[key];
+  const documentoContexto = docEntry ? docEntry.text : null;
   setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: true, data: null, error: null } } });
 
   try {
     const fn     = fns.httpsCallable('analyzeTeamWithClaude');
-    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach });
+    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach, documentoContexto });
     // Pre-cargar contexto guardado para que el textarea lo muestre en futuros renders
     if (result.data && result.data.data && result.data.data.contextoCoach) {
       state.aiContext = { ...state.aiContext, [key]: result.data.data.contextoCoach };
@@ -1221,6 +1290,33 @@ function renderAnalysis() {
                     oninput="updateAiCtx('${aiKey}', this.value)"
                     style="width:100%;border:1.5px solid #dce6ff;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:var(--ink);background:white;resize:vertical;outline:none;min-height:52px;"
                   >${e(ctxVal)}</textarea>
+                  <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #dce6ff;">
+                    <label style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:4px;">
+                      Documento adicional <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional, solo .docx)</span>
+                    </label>
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <label style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1.5px solid #dce6ff;background:white;font-size:12px;color:var(--ink-muted);cursor:pointer;font-family:inherit;">
+                        📎 Adjuntar .docx
+                        <input id="docx-input-${aiKey.replace(/[^a-zA-Z0-9]/g,'_')}"
+                          type="file" accept=".docx"
+                          style="display:none"
+                          onchange="handleDocxUpload('${aiKey}', this)"/>
+                      </label>
+                      ${state.aiDocContext[aiKey]
+                        ? `<button onclick="removeDocxUpload('${aiKey}')"
+                            style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #fce8e8;background:#fce8e8;color:#c0282a;cursor:pointer;font-family:inherit;">
+                            ✕ Quitar
+                          </button>` : ''}
+                    </div>
+                    <p style="font-size:11px;color:var(--ink-faint);margin:5px 0 0;line-height:1.5;">
+                      Máx. ~5 páginas / 2.500 palabras. El archivo no se almacena — su contenido se incluye solo en el prompt de análisis.
+                    </p>
+                    <div id="docx-status-${aiKey.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:12px;margin-top:4px;min-height:16px;">
+                      ${state.aiDocContext[aiKey]
+                        ? `<span style="color:#0d7a52;">✓ ${e(state.aiDocContext[aiKey].name)} · ${state.aiDocContext[aiKey].chars.toLocaleString()} caracteres${state.aiDocContext[aiKey].truncated ? ' <span style="color:#a05c0a;">(truncado al límite)</span>' : ''}</span>`
+                        : ''}
+                    </div>
+                  </div>
                 </div>
                 ${(hasData || isLoading || hasError) ? `
                 <div style="padding:12px 14px;border-top:1px solid #dce6ff;">

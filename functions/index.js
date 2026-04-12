@@ -180,7 +180,7 @@ exports.onPlanUpdatedByTeam = functions.firestore
 // ── buildTeamPrompt ───────────────────────────────────────────────
 // Agrega los datos del equipo y construye el prompt para Claude.
 // allResps: todos los documentos de la colección respuestas de este equipo.
-function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach) {
+function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContexto) {
   const isAllCycles = !ciclo || ciclo === 'Todos';
   const cycleResps  = isAllCycles ? allResps : allResps.filter(r => r.ciclo === ciclo);
   if (!cycleResps.length) return null;
@@ -278,8 +278,11 @@ function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach) {
   const contextoSection = contextoCoach && contextoCoach.trim()
     ? `\n## Contexto adicional del coach\n${contextoCoach.trim()}\n` : '';
 
+  const documentoSection = documentoContexto && documentoContexto.trim()
+    ? `\n## Documento adjunto (extracto del coach, máx. ~5 páginas)\n${documentoContexto.trim()}\n` : '';
+
   const prompt = `Eres un coach agile experto. Analiza los datos de assessment de madurez Scrum del siguiente equipo y devuelve un JSON estructurado.
-${contextoSection}
+${contextoSection}${documentoSection}
 ## Perfil del equipo
 - Antigüedad con Scrum: ${profile.teamAge}
 - Tamaño: ${profile.teamSize}
@@ -334,10 +337,11 @@ exports.analyzeTeamWithClaude = functions
       throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
     }
 
-    const ownerId       = request.auth.uid;
-    const teamId        = (request.data.teamId        || '').trim();
-    const ciclo         = (request.data.ciclo         || '').trim() || null;
-    const contextoCoach = (request.data.contextoCoach || '').trim() || null;
+    const ownerId           = request.auth.uid;
+    const teamId            = (request.data.teamId            || '').trim();
+    const ciclo             = (request.data.ciclo             || '').trim() || null;
+    const contextoCoach     = (request.data.contextoCoach     || '').trim() || null;
+    const documentoContexto = (request.data.documentoContexto || '').trim() || null;
 
     if (!teamId) {
       throw new functions.https.HttpsError('invalid-argument', 'teamId es requerido.');
@@ -388,7 +392,7 @@ exports.analyzeTeamWithClaude = functions
     }
 
     // Construir prompt con datos calculados
-    const built = buildTeamPrompt(teamId, ciclo, allResps, contextoCoach);
+    const built = buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContexto);
     if (!built) {
       throw new functions.https.HttpsError('not-found', 'Sin datos para analizar.');
     }
