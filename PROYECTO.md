@@ -26,7 +26,9 @@ AssessmentAgile/
 ├── assessment-agile.html   # Formulario público del assessment (requiere ?workspaceId en URL)
 ├── admin.html              # Panel de administración — solo HTML + script tags (34 líneas)
 ├── reporte.html            # Reporte de solo lectura para stakeholders (acceso por token, sin login)
+├── equipo.html             # Portal público del equipo (acceso por token, ?t=TOKEN, sin login, dinámico)
 ├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
+├── seed-data.js            # Script de datos de prueba (pegar en consola del navegador logueado en admin)
 ├── assets/
 │   ├── admin.css           # Todos los estilos del panel admin
 │   ├── admin-state.js      # Firebase init + variables de estado globales
@@ -63,6 +65,7 @@ PLAN_MEJORAS_V2.md          # 20 nuevas mejoras en 4 fases — roadmap Q2 2026 �
 | `/` y cualquier ruta | `assessment-agile.html` | Requiere `?workspaceId=X` — sin él muestra error |
 | `/admin` | `admin.html` | Requiere login (Firebase Auth) |
 | `/reporte.html?t=TOKEN` | `reporte.html` | Público, sin login — token con expiración de 30 días |
+| `/equipo.html?t=TOKEN` | `equipo.html` | Público, sin login — token permanente (regenerable desde admin) |
 
 ---
 
@@ -108,8 +111,9 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 |---------|----------------|---------|
 | **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar |
-| **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Exportación a PDF agrupado por estado |
+| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
+| **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
+| **Configuración** | Todos | Editor de preguntas del assessment por sección: desactivar preguntas (excluidas del scoring), editar texto de preguntas existentes, agregar preguntas personalizadas (hasta 3 por sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -362,21 +366,48 @@ Acceso: lectura pública (formulario lo lee sin login), escritura solo por el pr
 | `scoreCliente` | number | Puntaje bruto de la dimensión Orientación al Cliente |
 | `scoreTotalPct` | number | Porcentaje total (0–100) |
 | `nivel` | string | Etiqueta del nivel de madurez |
-| `answers` | object | Respuestas individuales por pregunta (índice → valor 0–3) |
+| `answers` | object | Respuestas individuales por pregunta (`{secId}_{qi}` → valor 0–3) |
 | `comments` | object | Comentarios abiertos por sección (sectionId → string, opcional) |
+| `customAnswers` | object | Respuestas a preguntas personalizadas del workspace (no afectan el scoring) |
 | `fecha` | timestamp | Timestamp del servidor al momento del envío |
 
 #### `planes`
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | `equipoId` | string | ID del equipo al que aplica el plan |
-| `equipoNombre` | string | Nombre del equipo (desnormalizado) |
 | `iniciativa` | string | Descripción de la acción de mejora |
 | `responsable` | string | Persona responsable de la acción |
-| `fecha` | string | Fecha objetivo (formato YYYY-MM-DD) |
-| `estado` | string | Estado: "Pendiente" / "En progreso" / "Completado" |
+| `fechaObjetivo` | string | Fecha objetivo (formato YYYY-MM-DD) |
+| `estado` | string | Estado: `pendiente` / `en-curso` / `completado` |
 | `ciclo` | string | Ciclo en que se creó la acción |
 | `dimension` | string | Dimensión objetivo (key de DIMS, opcional) |
+| `ownerId` | string | UID del workspace admin |
+| `portalToken` | string | Token del portal del equipo — permite al equipo actualizar el estado sin login |
+| `updatedByTeam` | boolean | `true` si el último cambio de estado lo hizo el equipo desde el portal |
+| `updatedByTeamAt` | timestamp | Timestamp del cambio de estado hecho por el equipo |
+
+#### `portales`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `teamId` | string | ID del equipo al que pertenece el portal |
+| `teamName` | string | Nombre del equipo (desnormalizado) |
+| `ownerId` | string | UID del workspace admin que creó el portal |
+| `token` | string | Token único de acceso (igual al ID del documento) |
+| `createdAt` | timestamp | Fecha de creación del portal |
+| `lastSynced` | timestamp | Fecha del último sync de datos desde el admin |
+| `scores` | object | Snapshot de scores por dimensión del último ciclo |
+| `evolution` | array | Evolución histórica por ciclo para el gráfico |
+| `plans` | array | Lista de planes del equipo con estado actual |
+
+Acceso: lectura pública, creación/actualización/eliminación solo por el owner.
+
+#### `configuraciones`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `questionOverrides` | object | Por sección+pregunta: `{ [secId_qi]: { disabled: bool, texto: string } }` |
+| `customQuestions` | object | Por sección: `{ [secId]: [{ id, texto, opts: string[] }] }` — hasta 3 por sección |
+
+ID del documento = UID del workspace admin. Acceso: lectura pública, escritura solo por el propio admin.
 
 #### `reportes`
 | Campo | Tipo | Descripción |
@@ -457,15 +488,15 @@ Desde el panel admin se puede exportar:
 
 ---
 
-### Plan V2 — Fase 3 (en curso)
+### Plan V2 — Fase 3 (completada 2026-04-11)
 
 | # | Mejora | Commit | Descripción |
 |---|--------|--------|-------------|
 | #16 | White-label básico | `352b690` | Campos `marca`, `logoUrl`, `colorAcento` en `workspaces/{uid}`. Editor de marca en pestaña Equipos (guardado automático). `assessment-agile.html` aplica nombre, logo y color al cargar. `reporte.html` aplica el branding almacenado en el snapshot del reporte. |
-| #11 | Portal de equipo | — | Pendiente |
-| #12 | Estados por equipo | — | Pendiente (depende de #11) |
-| #14 | Preguntas personalizables | — | Pendiente |
-| #13 | Recordatorios de ciclo | — | Bloqueado — requiere SendGrid o dominio verificado |
+| #11 | Portal de equipo | `c517c11` | Nueva página `equipo.html?t=TOKEN`. Vista pública dinámica (onSnapshot) con radar, barras por dimensión, evolución histórica y plan de acción. Colección `portales/{token}` con snapshot sincronizado en background. Botón `+ Portal` / `Portal ↗` por equipo en pestaña Equipos. Reglas Firestore: lectura pública, escritura solo al owner. |
+| #12 | Estados por equipo | `3d0906b` | El equipo puede cambiar estado de planes (pendiente → en-curso → completado) desde el portal, sin login. Actualización optimista en UI. Regla Firestore con cross-validation: valida que `portalToken` del plan exista en `portales` y que `teamId` coincida. Badge "Actualizado por equipo" en el plan admin. |
+| #14 | Preguntas personalizables | `82dc6fc` | Colección `configuraciones/{ownerId}`. Nueva pestaña "Configuración" en admin con editor por sección: desactivar preguntas, editar texto, agregar preguntas personalizadas (hasta 3/sección). `assessment-agile.html` lee config y filtra/aplica overrides sin afectar scoring. Respuestas custom guardadas en `customAnswers` separado. |
+| #13 | Recordatorios de ciclo | — | Diferida — requiere SendGrid con dominio verificado |
 
 ---
 
@@ -473,6 +504,9 @@ Desde el panel admin se puede exportar:
 
 | Commit | Descripción |
 |--------|-------------|
+| `82dc6fc` | Feat: preguntas personalizables por workspace — pestaña Configuración, configuraciones/{id}, overrides + custom questions (#14 V2) |
+| `3d0906b` | Feat: estados del plan actualizables por el equipo desde el portal — optimistic UI + regla Firestore con cross-validation (#12 V2) |
+| `c517c11` | Feat: portal del equipo — equipo.html pública con onSnapshot, radar, evolución y plan de acción (#11 V2) |
 | `352b690` | Feat: white-label básico — marca, logoUrl, colorAcento en workspaces; aplicado en formulario y reportes (#16 V2) |
 | `aeeb628` | Feat: guía de debriefing auto-generada — COACHING_QUESTIONS + generateDebriefGuide + ventana imprimible (#3 V2) |
 | `d507341` | Feat: tendencia histórica por dimensión — gráfico de líneas Chart.js en pestaña Evolución (#7 V2) |
