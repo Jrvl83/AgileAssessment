@@ -57,7 +57,8 @@ AssessmentAgile/
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
-PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — roadmap actual con IA integrada (Claude API)
+PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — completado 2026-04-12
+PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento
 ```
 
 ### Routing (firebase.json)
@@ -530,6 +531,24 @@ Desde el panel admin se puede exportar:
 
 ---
 
+### Plan V4 — En progreso 🔄 (iniciado 2026-04-12)
+
+9 mejoras en 3 niveles de prioridad. Análisis completo en `PLAN_MEJORAS_V4.md`.
+Origen: revisión metodológica desde perspectiva de Agile coach experto.
+
+| Prioridad | Mejoras | Estado |
+|-----------|---------|--------|
+| Alta | #A SM en RECS_ROLE, #B Nivel Avanzado (4ª rec), #C Pregunta impedimentos | ✅ Completada 2026-04-12 |
+| Media | #D No aplica técnico, #E Alerta score-comentario, #F Benchmark segmentado | ⏳ Pendiente |
+| Baja | #G Salud del equipo, #H Ponderación preguntas, #I Guía llenado individual | ⏳ Pendiente |
+
+#### Prioridad Alta — implementada
+
+- **#A/#B** Nivel Avanzado en recomendaciones — `getRec` actualizado con umbral `pct<=82` para idx 2 y `pct>82` para idx 3. 4ª entrada añadida a `RECS` (6 dims) y `RECS_ROLE` (PO + Dev Team + SM × 6 dims = 18 textos). Equipos Avanzado dejan de recibir recomendaciones de Maduro. Tests: 94 → 96. Commit: `4c2f8ad`
+- **#C** Pregunta de impedimentos en Transparencia — 4ª pregunta en sección Transparencia: *"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?"*. `DIMS.transparencia.max` 9 → 12. `calcResults()` ya era dinámico. ⚠ Nota: datos históricos de transparencia muestran máx. 75% (9/12) — iniciar nuevo ciclo para comparaciones válidas. Commit: `4c2f8ad`
+
+---
+
 ### Plan V3 — COMPLETO ✅ (2026-04-12)
 
 10 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
@@ -607,6 +626,7 @@ Desde el panel admin se puede exportar:
 | `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
 | `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
 | `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
+| `4c2f8ad` | Feat: mejoras metodológicas — nivel Avanzado en RECS/RECS_ROLE, pregunta impedimentos en Transparencia, max 9→12 (#A #B #C V4) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
