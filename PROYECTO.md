@@ -480,7 +480,7 @@ Desde el panel admin se puede exportar:
 
 | # | Mejora | Commit | Descripción |
 |---|--------|--------|-------------|
-| #10 | Análisis de consistencia por pregunta | `0f7c479` | `isPolarized(counts)`: suma de extremos (0+3) ≥50% con ambos presentes y ≥3 respuestas. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
+| #10 | Análisis de consistencia por pregunta | `0f7c479` | `isPolarized(counts)`: cada extremo debe representar ≥20% del total Y su suma ≥50%, con ≥3 respuestas. Evita falsos positivos con outliers. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
 | #9 | Índice de momentum de mejora | `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos. |
 | #1 | Detección de divergencia entre roles | `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts). |
 | #7 | Tendencia histórica por dimensión | `d507341` | `initEvolutionTrendChart()` + card con `<canvas>` en pestaña Evolución. Gráfico de líneas Chart.js (una línea por dimensión, mismos colores). Solo visible con ≥3 ciclos. Usa patrón `window._evolTrendData`. |
