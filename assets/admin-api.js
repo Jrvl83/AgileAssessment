@@ -299,7 +299,8 @@ async function fetchAllData() {
       state.marca         = wsData.marca         || '';
       state.logoUrl       = wsData.logoUrl        || '';
       state.colorAcento   = wsData.colorAcento    || '';
-    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; }
+      state.webhookUrl    = wsData.webhookUrl     || '';
+    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -378,6 +379,12 @@ async function toggleCycle(id, name, current) {
     }
     await db.collection('ciclos').doc(id).update({ activo: !current });
     toast(current ? `"${name}" cerrado` : `"${name}" activado`);
+    if (state.webhookUrl) {
+      fns.httpsCallable('dispatchWebhook')({
+        event:   current ? 'ciclo.cerrado' : 'ciclo.abierto',
+        payload: { cicloId: id, nombre: name }
+      }).catch(() => {});
+    }
     await fetchAllData();
   } catch(e) { toast('Error de conexión'); }
 }
@@ -582,6 +589,12 @@ async function generateReport(teamId, cycleFilter) {
     const url = window.location.origin + '/reporte.html?t=' + ref.id;
     showReportLink(url, team.name, cf);
     toast('Reporte generado');
+    if (state.webhookUrl) {
+      fns.httpsCallable('dispatchWebhook')({
+        event:   'reporte.generado',
+        payload: { token: ref.id, equipoId: teamId, equipoNombre: team.name, ciclo: cf, url }
+      }).catch(() => {});
+    }
   } catch(e) { toast('Error al generar el reporte'); }
 }
 
@@ -621,6 +634,28 @@ function saveBranding(field, value) {
       );
     } catch(e) { toast('Error al guardar'); }
   }, 800);
+}
+
+// ── Webhook ───────────────────────────────────────────────────────
+const _webhookTimer = {};
+function saveWebhookUrl(url) {
+  state.webhookUrl = url;
+  clearTimeout(_webhookTimer.t);
+  _webhookTimer.t = setTimeout(async () => {
+    try {
+      await db.collection('workspaces').doc(state.currentUser.uid).set(
+        { webhookUrl: url }, { merge: true }
+      );
+    } catch(e) { toast('Error al guardar la URL del webhook'); }
+  }, 800);
+}
+
+async function testWebhook() {
+  if (!state.webhookUrl) { toast('Configura una URL primero'); return; }
+  try {
+    await fns.httpsCallable('dispatchWebhook')({ event: 'test', payload: { message: 'Webhook de prueba desde AssessmentAgile' } });
+    toast('Webhook enviado — revisa tu endpoint');
+  } catch(e) { toast('Error: ' + (e.message || 'No se pudo enviar')); }
 }
 
 // ── Contador en tiempo real ──────────────────────────────────────

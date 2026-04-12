@@ -1751,6 +1751,25 @@ function renderConfig() {
 
   return `
     <div class="section-card">
+      <div class="section-title">Webhook</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">
+        Recibe un HTTP POST en tu URL cuando ocurren eventos clave. Útil para integraciones con Slack, Zapier, n8n, etc.
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="field-input" type="url" placeholder="https://tu-endpoint.com/webhook"
+          value="${e(state.webhookUrl || '')}"
+          oninput="saveWebhookUrl(this.value)"
+          style="flex:1;font-size:13px;"/>
+        <button class="btn sm" onclick="testWebhook()">Probar</button>
+      </div>
+      <p style="font-size:11px;color:var(--ink-faint);margin-top:10px;line-height:1.6;">
+        Eventos: <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;">ciclo.abierto</code>
+        <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;">ciclo.cerrado</code>
+        <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;">reporte.generado</code>
+        <code style="background:var(--surface-2);padding:1px 5px;border-radius:3px;">plan.actualizado</code>
+      </p>
+    </div>
+    <div class="section-card">
       <div class="section-title">Configuración de preguntas</div>
       <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;">
         Personaliza el formulario para este workspace. Los cambios aplican a partir del próximo assessment.

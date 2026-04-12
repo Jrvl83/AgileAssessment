@@ -53,6 +53,78 @@ exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
   return { uid: userRecord.uid, email };
 });
 
+// ── dispatchWebhook ───────────────────────────────────────────────
+// Lee webhookUrl del workspace del llamador y hace POST con el payload.
+exports.dispatchWebhook = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
+  }
+  const uid = context.auth.uid;
+  const wsDoc = await db.collection('workspaces').doc(uid).get();
+  const webhookUrl = wsDoc.exists ? wsDoc.data().webhookUrl : null;
+  if (!webhookUrl) return { skipped: true };
+
+  const payload = {
+    event:       data.event,
+    timestamp:   new Date().toISOString(),
+    workspaceId: uid,
+    data:        data.payload || {}
+  };
+
+  try {
+    const res = await fetch(webhookUrl, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    return { status: res.status };
+  } catch (e) {
+    throw new functions.https.HttpsError('internal', 'Error al enviar webhook: ' + e.message);
+  }
+});
+
+// ── onPlanUpdatedByTeam ───────────────────────────────────────────
+// Firestore trigger: dispara el webhook cuando el equipo actualiza un plan.
+exports.onPlanUpdatedByTeam = functions.firestore
+  .document('planes/{planId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after  = change.after.data();
+    if (!after.updatedByTeam || before.updatedByTeam === after.updatedByTeam) return null;
+
+    const ownerId = after.ownerId;
+    if (!ownerId) return null;
+
+    const wsDoc = await db.collection('workspaces').doc(ownerId).get();
+    const webhookUrl = wsDoc.exists ? wsDoc.data().webhookUrl : null;
+    if (!webhookUrl) return null;
+
+    const payload = {
+      event:       'plan.actualizado',
+      timestamp:   new Date().toISOString(),
+      workspaceId: ownerId,
+      data: {
+        planId:     context.params.planId,
+        equipoId:   after.equipoId   || '',
+        iniciativa: after.iniciativa || '',
+        estado:     after.estado     || '',
+        dimension:  after.dimension  || '',
+        ciclo:      after.ciclo      || '',
+      }
+    };
+
+    try {
+      await fetch(webhookUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+    } catch (e) {
+      console.error('Webhook error (plan.actualizado):', e.message);
+    }
+    return null;
+  });
+
 // ── deleteWorkspaceAdmin ──────────────────────────────────────────
 // Elimina la cuenta de Firebase Auth + el documento en Firestore.
 exports.deleteWorkspaceAdmin = functions.https.onCall(async (data, context) => {

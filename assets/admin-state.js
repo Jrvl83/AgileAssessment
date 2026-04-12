@@ -60,7 +60,8 @@ const state = {
   colorAcento:        '',
   portals:            {},
   configOverrides:    {},
-  configCustom:       {}
+  configCustom:       {},
+  webhookUrl:         ''
 };
 
 // setState actualiza el estado y dispara un re-render.
