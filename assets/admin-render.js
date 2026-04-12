@@ -67,6 +67,60 @@ async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
   }
 }
 
+// ── Cierre formal del ciclo ───────────────────────────────────────
+function showCloseCycleModal(cycleId, cycleName) {
+  const resps    = state.responses.filter(r => r.fields.Ciclo === cycleName);
+  const teamSet  = new Set(resps.map(r => (r.fields.Equipo||[])[0]).filter(Boolean));
+  const noResp   = state.teams.filter(t => t.active && !teamSet.has(t.id));
+
+  const statRows = [
+    `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0efe9;">
+       <span style="font-size:22px;font-weight:700;color:#1a4fd6;">${resps.length}</span>
+       <span style="font-size:13px;color:var(--ink-muted);">respuesta${resps.length!==1?'s':''} registradas</span>
+     </div>`,
+    `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0efe9;">
+       <span style="font-size:22px;font-weight:700;color:#0d7a52;">${teamSet.size}</span>
+       <span style="font-size:13px;color:var(--ink-muted);">equipo${teamSet.size!==1?'s':''} con respuestas</span>
+     </div>`
+  ].join('');
+
+  const noRespHtml = noResp.length
+    ? `<div style="margin-top:12px;padding:10px 12px;background:#fdefd6;border-radius:6px;font-size:12px;color:#a05c0a;">
+        <strong>Sin respuestas este ciclo:</strong> ${noResp.map(t => t.name).join(', ')}
+       </div>` : '';
+
+  const safeEscName = cycleName.replace(/"/g, '&quot;').replace(/'/g, "\\'");
+
+  const modal = document.getElementById('close-cycle-modal');
+  modal.innerHTML = `
+    <div style="background:white;border-radius:14px;padding:32px;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.22);">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c0282a;margin-bottom:8px;">Cierre de ciclo</div>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);margin-bottom:4px;">${cycleName}</h3>
+      <p style="font-size:13px;color:var(--ink-muted);margin-bottom:18px;line-height:1.6;">
+        El ciclo se marcará como <strong>cerrado</strong>. Los portales del equipo se sincronizarán con los datos finales y se registrará el evento en el webhook si está configurado.
+      </p>
+      <div style="background:var(--surface-2);border-radius:8px;padding:0 14px;margin-bottom:16px;">
+        ${statRows}
+      </div>
+      ${noRespHtml}
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px;">
+        <button class="btn sm secondary" onclick="closeCloseCycleModal()">Cancelar</button>
+        <button class="btn sm danger" onclick="confirmCloseCycle('${cycleId}','${safeEscName}')">Confirmar cierre</button>
+      </div>
+    </div>`;
+  modal.style.display = 'flex';
+}
+
+function closeCloseCycleModal() {
+  const modal = document.getElementById('close-cycle-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function confirmCloseCycle(cycleId, cycleName) {
+  closeCloseCycleModal();
+  await toggleCycle(cycleId, cycleName, true);
+}
+
 // ── Panel de Análisis IA ──────────────────────────────────────────
 function renderAIPanel(tid) {
   const cf    = state.cycleFilter || 'Todos';
@@ -738,12 +792,21 @@ function renderAnalysis() {
   const availCycles = state.cycles.length
     ? state.cycles.map(c => c.name)
     : [...new Set(state.responses.map(r => r.fields.Ciclo).filter(Boolean))].sort();
+  const activeCycleObj = state.cycles.find(c => c.active);
+  const closeCycleBtn = activeCycleObj
+    ? `<button class="btn sm danger no-print" style="margin-left:auto;flex-shrink:0;"
+        onclick="showCloseCycleModal('${activeCycleObj.id}','${activeCycleObj.name.replace(/'/g,"\\'")}')"
+        title="Cierre formal del ciclo activo — sincroniza portales y registra el cierre">
+        ⊘ Cerrar ciclo
+      </button>` : '';
+
   const cyclePills = availCycles.length ? `
     <div class="no-print" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
       <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;">Ciclo</span>
       ${['Todos', ...availCycles].map(c => `
         <button class="role-pill ${c === state.cycleFilter ? 'active' : ''}" onclick="setState({cycleFilter:'${c}'})">${c}</button>`
       ).join('')}
+      ${closeCycleBtn}
     </div>` : '';
 
   const roleOrgStats = [...new Set(filtByCycle.map(r => r.fields.Rol).filter(Boolean))].sort().map(role => {
