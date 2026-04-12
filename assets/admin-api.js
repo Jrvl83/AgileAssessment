@@ -329,10 +329,11 @@ async function fetchAllData() {
       state.marca          = wsData.marca          || '';
       state.logoUrl        = wsData.logoUrl         || '';
       state.colorAcento    = wsData.colorAcento     || '';
-      state.webhookUrl     = wsData.webhookUrl      || '';
-      state.anonymityMode  = wsData.anonymityMode   || 'full';
-      state.aiEnabled      = wsData.aiEnabled       || false;
-    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; }
+      state.webhookUrl              = wsData.webhookUrl              || '';
+      state.anonymityMode           = wsData.anonymityMode           || 'full';
+      state.aiEnabled               = wsData.aiEnabled               || false;
+      state.assessmentCadenceWeeks  = wsData.assessmentCadenceWeeks  || 0;
+    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; state.assessmentCadenceWeeks = 0; }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -697,6 +698,17 @@ async function saveAiEnabled(val) {
   try {
     await db.collection('workspaces').doc(state.currentUser.uid).set(
       { aiEnabled: val }, { merge: true }
+    );
+  } catch(e) { toast('Error al guardar'); }
+}
+
+// ── Cadencia de ciclos ────────────────────────────────────────────
+async function saveCadenceWeeks(val) {
+  const n = parseInt(val, 10) || 0;
+  setState({ assessmentCadenceWeeks: n, cadenceBannerDismissed: false });
+  try {
+    await db.collection('workspaces').doc(state.currentUser.uid).set(
+      { assessmentCadenceWeeks: n }, { merge: true }
     );
   } catch(e) { toast('Error al guardar'); }
 }

@@ -63,9 +63,11 @@ const state = {
   configOverrides:    {},
   configCustom:       {},
   webhookUrl:         '',
-  anonymityMode:      'full',
-  aiEnabled:          false,
-  aiAnalysis:         {}
+  anonymityMode:          'full',
+  aiEnabled:              false,
+  aiAnalysis:             {},
+  assessmentCadenceWeeks: 0,
+  cadenceBannerDismissed: false
 };
 
 // setState actualiza el estado y dispara un re-render.

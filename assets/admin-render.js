@@ -583,6 +583,7 @@ function renderShell() {
         <button class="btn sm danger" onclick="logout()">Cerrar sesión</button>
       </div>
     </div>
+    ${renderCadenceBanner()}
     ${state.activeTab === 'analysis'  ? renderAnalysis()
     : state.activeTab === 'evolution' ? renderEvolution()
     : state.activeTab === 'plan'      ? renderPlan()
@@ -646,6 +647,24 @@ function renderParticipationPanel(tid, cycleFilter) {
       </div>
       ${rows}
     </div>`;
+}
+
+// ── Cadence reminder banner ───────────────────────────────────────
+function renderCadenceBanner() {
+  if (!state.assessmentCadenceWeeks || state.loading || state.cadenceBannerDismissed) return '';
+  if (!state.responses.length) return '';
+  const lastFecha = state.responses[0].fields.Fecha;
+  if (!lastFecha) return '';
+  const weeksSinceLast = Math.floor((Date.now() - new Date(lastFecha).getTime()) / (7 * 24 * 60 * 60 * 1000));
+  if (weeksSinceLast < state.assessmentCadenceWeeks) return '';
+  const wLabel = weeksSinceLast === 1 ? '1 semana' : `${weeksSinceLast} semanas`;
+  const cLabel = state.assessmentCadenceWeeks === 1 ? '1 semana' : `${state.assessmentCadenceWeeks} semanas`;
+  return `<div style="background:var(--amber-light);border-bottom:1px solid #e0c06a;padding:11px 20px;font-size:13px;color:var(--amber);display:flex;align-items:center;gap:8px;">
+    <span style="font-size:15px;">⏰</span>
+    <span>Han pasado <strong>${wLabel}</strong> desde la última respuesta — cadencia configurada cada <strong>${cLabel}</strong>. ¿Ya abriste el nuevo ciclo?</span>
+    <button onclick="setState({cadenceBannerDismissed:true})" title="Descartar"
+      style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:var(--amber);line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
+  </div>`;
 }
 
 // ── Analysis tab ─────────────────────────────────────────────────
@@ -2077,6 +2096,25 @@ function renderConfig() {
             <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">Si está activo, el formulario avisa a los participantes que sus comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores individuales.</div>
           </div>
         </label>
+      </div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Cadencia de ciclos</div>
+      <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;margin-bottom:14px;">
+        Recibe un recordatorio en el panel cuando ha pasado más tiempo del esperado sin nuevas respuestas.
+      </p>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <label style="font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;">Recordar cada</label>
+        <select class="field-input" onchange="saveCadenceWeeks(this.value)"
+          style="width:auto;font-size:13px;padding:6px 10px;">
+          <option value="0"  ${state.assessmentCadenceWeeks === 0  ? 'selected' : ''}>Desactivado</option>
+          <option value="1"  ${state.assessmentCadenceWeeks === 1  ? 'selected' : ''}>1 semana</option>
+          <option value="2"  ${state.assessmentCadenceWeeks === 2  ? 'selected' : ''}>2 semanas</option>
+          <option value="3"  ${state.assessmentCadenceWeeks === 3  ? 'selected' : ''}>3 semanas</option>
+          <option value="4"  ${state.assessmentCadenceWeeks === 4  ? 'selected' : ''}>4 semanas</option>
+          <option value="6"  ${state.assessmentCadenceWeeks === 6  ? 'selected' : ''}>6 semanas</option>
+          <option value="8"  ${state.assessmentCadenceWeeks === 8  ? 'selected' : ''}>8 semanas</option>
+        </select>
       </div>
     </div>
     <div class="section-card">
