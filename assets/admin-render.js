@@ -567,6 +567,77 @@ function initEvolutionTrendChart() {
   });
 }
 
+// ── Tendencia org por ciclo ───────────────────────────────────────
+function initOrgTrendChart() {
+  if (state.activeTab !== 'analysis') return;
+  if (typeof Chart === 'undefined') return;
+  if (!window._orgTrendData) return;
+
+  const canvas = document.getElementById('org-trend-canvas');
+  if (!canvas) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const { labels, values } = window._orgTrendData;
+  new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Score promedio org.',
+        data: values,
+        borderColor: '#1a4fd6',
+        backgroundColor: '#1a4fd618',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#1a4fd6',
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 6,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            stepSize: 25,
+            callback: v => v + '%',
+            font: { size: 11, family: "'DM Sans', sans-serif" },
+            color: '#6b7280',
+          },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+        x: {
+          ticks: {
+            font: { size: 11, family: "'DM Sans', sans-serif" },
+            color: '#6b7280',
+          },
+          grid: { display: false },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const pt = window._orgTrendData.points[ctx.dataIndex];
+              return ` ${ctx.raw}%  ·  ${pt.count} resp. · ${pt.teamCount} equipo${pt.teamCount !== 1 ? 's' : ''}`;
+            }
+          }
+        }
+      },
+      animation: { duration: 350 },
+    }
+  });
+}
+
 // ── Render ───────────────────────────────────────────────────────
 function render() {
   const app = document.getElementById('app');
@@ -580,9 +651,11 @@ function render() {
   window._radarData = {};
   window._compareData = null;
   window._evolTrendData = null;
+  window._orgTrendData = null;
   app.innerHTML = renderShell();
   requestAnimationFrame(initRadarCharts);
   requestAnimationFrame(initEvolutionTrendChart);
+  requestAnimationFrame(initOrgTrendChart);
 
   // Solo animar en cambios de tab o carga inicial, no en cada tecla
   if (!isTyping) {
@@ -1253,7 +1326,35 @@ function renderAnalysis() {
     </div>`;
   })() : '';
 
-  return stats + exportRow + cyclePills + otroToggle + roleCard + comparison + compareByDim + cards;
+  // Tendencia org por ciclo (≥2 ciclos con datos, ≥2 equipos en total)
+  const orgTrendPoints = calcOrgTrend();
+  const orgTrendTeams  = new Set(state.responses.map(r => (r.fields.Equipo||[])[0]).filter(Boolean)).size;
+  const orgTrendChart  = orgTrendPoints.length >= 2 && orgTrendTeams >= 2 ? (() => {
+    window._orgTrendData = {
+      labels: orgTrendPoints.map(p => p.ciclo),
+      values: orgTrendPoints.map(p => p.avg),
+      points: orgTrendPoints
+    };
+    const first = orgTrendPoints[0].avg;
+    const last  = orgTrendPoints[orgTrendPoints.length - 1].avg;
+    const delta = last - first;
+    const trendBadge = delta > 0
+      ? `<span style="font-size:11px;background:#d4f0e5;color:#0d7a52;padding:2px 8px;border-radius:99px;font-weight:700;">↗ +${delta}pp</span>`
+      : delta < 0
+        ? `<span style="font-size:11px;background:#fce8e8;color:#c0282a;padding:2px 8px;border-radius:99px;font-weight:700;">↘ ${delta}pp</span>`
+        : `<span style="font-size:11px;background:#f3f4f6;color:var(--ink-faint);padding:2px 8px;border-radius:99px;">→ Sin cambio</span>`;
+    return `
+      <div class="section-card no-print">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <div class="section-title" style="margin-bottom:0;">Tendencia organizacional por ciclo</div>
+          ${trendBadge}
+        </div>
+        <div style="height:180px;"><canvas id="org-trend-canvas"></canvas></div>
+        <p style="font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:right;">${orgTrendTeams} equipos · ${orgTrendPoints.length} ciclos</p>
+      </div>`;
+  })() : '';
+
+  return stats + exportRow + cyclePills + otroToggle + roleCard + comparison + compareByDim + orgTrendChart + cards;
 }
 
 // ── Evolution tab ─────────────────────────────────────────────────

@@ -1050,7 +1050,22 @@ async function syncPortalAndRefresh(teamId) {
   setState({});
 }
 
+// Tendencia org por ciclo — score promedio de TODOS los equipos activos por ciclo
+// Retorna array de { ciclo, avg, count, teamCount } ordenado por el orden de state.cycles
+function calcOrgTrend() {
+  const cycleNames = state.cycles.map(c => c.name).filter(Boolean);
+  if (cycleNames.length < 2) return [];
+  const points = cycleNames.map(ciclo => {
+    const resps = state.responses.filter(r => r.fields.Ciclo === ciclo);
+    if (!resps.length) return null;
+    const teamSet = new Set(resps.map(r => (r.fields.Equipo || [])[0]).filter(Boolean));
+    const avg = Math.round(resps.reduce((s, r) => s + (r.fields['Score Total %'] || 0), 0) / resps.length);
+    return { ciclo, avg, count: resps.length, teamCount: teamSet.size };
+  }).filter(Boolean);
+  return points;
+}
+
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData, generateDebriefGuide };
+  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData, generateDebriefGuide, calcOrgTrend };
 }
