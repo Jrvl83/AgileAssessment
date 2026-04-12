@@ -439,17 +439,20 @@ function renderParticipationPanel(tid, cycleFilter) {
   const maxCount = Math.max(...presentRoles.map(r => counts[r]));
   const cycleLabel = cf === 'Todos' ? 'todos los ciclos' : cf;
 
+  // Roles que típicamente tienen 1 sola persona — no aplicar semáforo de validez
+  const SINGLE_PERSON_ROLES = new Set(['Product Owner', 'Scrum Master', 'Otro']);
+
   const rows = presentRoles.map(r => {
     const n = counts[r];
     const barPct = Math.round(n / maxCount * 100);
-    const isValid = n >= MIN_ROLE_RESPONSES;
-    const isOtro  = r === 'Otro';
-    const badge = isOtro
+    const isSingle = SINGLE_PERSON_ROLES.has(r);
+    const isValid  = n >= MIN_ROLE_RESPONSES;
+    const badge = isSingle
       ? `<span style="font-size:10px;color:var(--ink-faint);flex-shrink:0;">—</span>`
       : isValid
         ? `<span style="font-size:10px;color:#0d7a52;font-weight:600;flex-shrink:0;">✓ Válido</span>`
         : `<span style="font-size:10px;color:#a05c0a;font-weight:600;flex-shrink:0;">⚠ Mín. ${MIN_ROLE_RESPONSES}</span>`;
-    const barColor = isOtro ? '#9198aa' : isValid ? '#0d7a52' : '#f59e0b';
+    const barColor = isSingle ? '#9198aa' : isValid ? '#0d7a52' : '#f59e0b';
     return `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
         <div style="font-size:11px;color:var(--ink);min-width:108px;flex-shrink:0;">${r}</div>
