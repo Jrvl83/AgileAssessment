@@ -472,6 +472,9 @@ let startedAt = null;  // timestamp (ms) cuando el participante inicia la primer
 let briefingTexto = "";
 let anonymityMode = "full";  // "full" | "semi" | "nominal"
 let aiEnabled = false;
+let healthEnabled = false;   // activa la pantalla de salud del equipo al final
+let healthAnswers = {};      // respuestas a HEALTH_QUESTIONS
+let guidanceText = '';       // mensaje personalizado del coach en la pantalla de inicio
 let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
 
 function setTeam(id, text) {
@@ -525,7 +528,9 @@ async function loadTeams() {
     const wsData = wsSnap.exists ? wsSnap.data() : {};
     briefingTexto = wsData.briefingTexto || '';
     anonymityMode = wsData.anonymityMode || 'full';
-    aiEnabled     = wsData.aiEnabled     || false;
+    aiEnabled     = wsData.aiEnabled       || false;
+    healthEnabled = wsData.teamHealthEnabled || false;
+    guidanceText  = wsData.guidanceText    || '';
     // Aplicar branding
     if (wsData.colorAcento) document.documentElement.style.setProperty('--accent', wsData.colorAcento);
     if (wsData.marca || wsData.logoUrl) {
@@ -598,6 +603,11 @@ async function submitResults() {
     };
     if (completionSeconds !== null) respDoc.completionSeconds = completionSeconds;
     if (flaggedFast) respDoc.flaggedFast = true;
+    if (healthEnabled && Object.keys(healthAnswers).length > 0) {
+      const hSum = Object.values(healthAnswers).reduce((a, b) => a + b, 0);
+      respDoc.teamHealthScore = Math.round(hSum / (HEALTH_QUESTIONS.length * 3) * 100);
+      respDoc.healthAnswers = { ...healthAnswers };
+    }
     await db.collection('respuestas').add(respDoc);
     submitStatus = 'ok';
     try { localStorage.setItem('assessment_' + cicloFinal + '_' + teamId, '1'); } catch(e) {}
@@ -612,17 +622,21 @@ function calcResults() {
   const dims = {};
   const ov = wsConfig.questionOverrides || {};
   SECTIONS.forEach(sec => {
-    let s=0, m=0;
+    let wSum=0, wMax=0;
     const _qs = (sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions) ? sec.altQuestions : sec.questions;
     _qs.forEach((q,qi)=>{
       const qKey = `${sec.id}_${qi}`;
       if ((ov[qKey] || {}).disabled) return; // excluir preguntas desactivadas
-      m += 3;
-      s += (answers[qKey] || 0);
+      const w = q.weight || 1; // fundacionales tienen weight:1.5
+      wMax += 3 * w;
+      wSum += (answers[qKey] || 0) * w;
     });
-    if (m === 0) m = _qs.length * 3; // fallback (no debería pasar)
-    dims[sec.id]={ score:s, max:m, pct:Math.round(s/m*100), name:sec.title };
-    total+=s; max+=m;
+    // Normalizar al rango del DIMS.max para mantener comparabilidad con datos históricos
+    const dimEntry = DIMS.find(d => d.key === sec.id);
+    const dimMax = dimEntry ? dimEntry.max : (wMax > 0 ? wMax : _qs.length * 3);
+    const score = wMax > 0 ? Math.round(wSum / wMax * dimMax) : 0;
+    dims[sec.id] = { score, max:dimMax, pct:Math.round(score/dimMax*100), name:sec.title };
+    total+=score; max+=dimMax;
   });
   return { total, max, pct:Math.round(total/max*100), dims };
 }
@@ -642,7 +656,7 @@ function renderBriefing() {
 function renderAnonFooter() {
   const el = document.getElementById('anon-footer');
   if (!el) return;
-  if (!['intro','context','section'].includes(screen)) { el.style.display = 'none'; return; }
+  if (!['intro','context','section','health'].includes(screen)) { el.style.display = 'none'; return; }
   const msgs = {
     full:    'Tus respuestas son completamente anónimas. Solo se registra tu rol.',
     semi:    'Tus respuestas se guardan con un identificador de rol. El coach no ve tu nombre.',
@@ -663,6 +677,7 @@ function render() {
   else if(screen==='intro') app.innerHTML = renderIntro();
   else if(screen==='context') app.innerHTML = renderContext();
   else if(screen==='section') app.innerHTML = renderSection();
+  else if(screen==='health') app.innerHTML = renderHealth();
   else app.innerHTML = renderResults();
   app.classList.remove('fade-in');
   void app.offsetWidth;
@@ -704,6 +719,9 @@ function renderIntro() {
         </div>
         ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
         ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${cicloNombre}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(e){ return ''; } })()}
+      </div>
+      <div style="background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-top:16px;font-size:13px;color:var(--ink-muted);line-height:1.6;">
+        ${guidanceText || `Este assessment está diseñado para completarse de forma <strong>individual</strong>, sin coordinarlo con tus compañeros. ${anonymityMode === 'full' ? 'Tus respuestas son completamente anónimas.' : anonymityMode === 'semi' ? 'Tus respuestas se guardan con un identificador de rol.' : 'Tus respuestas están vinculadas a tu nombre.'} No hay respuestas correctas o incorrectas.`}
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
         <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
@@ -816,8 +834,8 @@ function renderSection() {
     </div>
     <div class="nav">
       ${currentSection>0?`<button class="btn" onclick="prev()">← Anterior</button>`:''}
-      <button class="btn primary" onclick="${isLast?'showResults()':'next()'}" ${!secDone?'disabled':''}>
-        ${isLast?'Ver resultados →':'Siguiente →'}
+      <button class="btn primary" onclick="${isLast ? (healthEnabled ? 'goToHealth()' : 'showResults()') : 'next()'}" ${!secDone?'disabled':''}>
+        ${isLast ? (healthEnabled ? 'Siguiente: Salud del equipo →' : 'Ver resultados →') : 'Siguiente →'}
       </button>
     </div>`;
 }
@@ -839,6 +857,40 @@ function renderResults() {
 function setRole(r) { role=r; render(); }
 function startAssessment() { if(role && teamId){ screen='context'; render(); } }
 function startContext() { screen='section'; currentSection=0; startedAt = Date.now(); render(); }
+function goToHealth() { screen='health'; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+function renderHealth() {
+  const allDone = HEALTH_QUESTIONS.every(q => healthAnswers[q.id] !== undefined);
+  const qs = HEALTH_QUESTIONS.map((q, qi) => {
+    const sel = healthAnswers[q.id];
+    return `<div class="question">
+      <div class="question-text"><span class="question-num">P${qi+1}</span>${q.text}</div>
+      <div class="options" role="radiogroup">
+        ${q.opts.map((opt, oi) => `
+          <button class="option ${sel===oi?'selected':''}" onclick="healthAnswers['${q.id}']=${oi};render()" role="radio" aria-checked="${sel===oi}">
+            <span class="option-score">${oi+1}</span>
+            <span class="option-label">${opt}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  return `
+    <div class="progress-wrap">
+      <div class="progress-meta">
+        <span class="progress-label" style="color:var(--green);">Salud del equipo</span>
+        <span class="progress-count">${Object.keys(healthAnswers).length}/${HEALTH_QUESTIONS.length} respondidas</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:100%;background:var(--green);"></div></div>
+    </div>
+    <div class="section-chip" style="background:var(--green-light);color:var(--green);">Sección adicional<span class="role-tag" style="background:var(--green);color:#fff;">Todo el equipo</span></div>
+    <div class="section-title">Seguridad psicológica del equipo</div>
+    <div class="section-desc">Estas 3 preguntas son opcionales. Evalúan el clima de confianza del equipo. Los resultados son independientes del score de madurez Scrum.</div>
+    ${qs}
+    <div class="nav">
+      <button class="btn" onclick="screen='section';currentSection=${SECTIONS.length-1};render()">← Volver</button>
+      <button class="btn primary" onclick="showResults()" ${!allDone?'disabled':''}>Ver resultados →</button>
+    </div>`;
+}
 
 function renderContext() {
   function pillGroup(label, opts, current, setter) {
@@ -878,7 +930,7 @@ function pickCustom(cqId,val) { customAnswers[cqId]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; teamType=''; render(); }
+function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; healthAnswers={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; teamType=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';

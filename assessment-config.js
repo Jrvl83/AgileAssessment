@@ -8,7 +8,7 @@ const SECTIONS = [
     desc:"Cómo el equipo vive los eventos definidos en la Scrum Guide", role:"PO + Dev Team",
     questions:[
       { text:"¿Con qué frecuencia se realiza la Sprint Planning y genera un Sprint Goal claro?",
-        opts:["Nunca o rara vez","A veces, pero el Goal es vago","Casi siempre con Goal definido","Siempre; el Goal guía cada decisión del Sprint"] },
+        opts:["Nunca o rara vez","A veces, pero el Goal es vago","Casi siempre con Goal definido","Siempre; el Goal guía cada decisión del Sprint"], weight:1.5 },
       { text:"¿El Daily Scrum se usa para inspeccionar el progreso hacia el Sprint Goal y adaptar el plan?",
         opts:["No hacemos Daily o es un reporte de estado","Hacemos Daily pero sin foco en el Goal","Mayormente nos enfocamos en el Goal","El Daily es una herramienta real de adaptación diaria"] },
       { text:"¿La Sprint Review involucra a stakeholders reales y genera feedback accionable?",
@@ -26,7 +26,7 @@ const SECTIONS = [
       { text:"¿Los ítems del backlog tienen criterios de aceptación claros antes de entrar al Sprint?",
         opts:["Rara vez tienen criterios","Algunos tienen criterios básicos","La mayoría tiene criterios antes del Sprint","Todos tienen criterios claros y el equipo los revisó"] },
       { text:"¿El Product Goal está definido y el equipo lo conoce?",
-        opts:["No existe Product Goal formal","Existe pero pocos en el equipo lo conocen","El equipo lo conoce pero no lo usa para tomar decisiones","El Product Goal guía el refinamiento y priorización"] }
+        opts:["No existe Product Goal formal","Existe pero pocos en el equipo lo conocen","El equipo lo conoce pero no lo usa para tomar decisiones","El Product Goal guía el refinamiento y priorización"], weight:1.5 }
     ]
   },
   {
@@ -36,7 +36,7 @@ const SECTIONS = [
       { text:"¿El equipo se autoorganiza para lograr el Sprint Goal sin necesitar asignación externa de tareas?",
         opts:["El líder o PM asigna todas las tareas","Hay algo de autoorganización pero con dependencia externa","El equipo mayormente se organiza solo","Plena autoorganización; el equipo decide cómo lograr el Goal"] },
       { text:"¿El Increment al final de cada Sprint cumple la Definition of Done y está potencialmente entregable?",
-        opts:["No tenemos Definition of Done","Tenemos DoD pero rara vez se cumple","Se cumple en la mayoría de Sprints","Siempre; cada Sprint produce un Increment usable"] },
+        opts:["No tenemos Definition of Done","Tenemos DoD pero rara vez se cumple","Se cumple en la mayoría de Sprints","Siempre; cada Sprint produce un Increment usable"], weight:1.5 },
       { text:"¿El equipo tiene las habilidades necesarias para entregar valor completo (cross-functional)?",
         opts:["Hay muchas dependencias externas para completar ítems","Dependencias frecuentes en algunas áreas","Mayormente autónomo, pocas dependencias","Totalmente cross-functional; entrega completa sin externos"] },
       { text:"¿Qué tan bien maneja el equipo el WIP (work in progress) para evitar cuellos de botella?",
@@ -52,7 +52,7 @@ const SECTIONS = [
       { text:"¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?",
         opts:["El plan no cambia una vez iniciado el Sprint","Adaptaciones mínimas, generalmente al final","Adaptaciones frecuentes con base en la evidencia","Inspección y adaptación continua; el plan es una guía viva"] },
       { text:"¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?",
-        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"] },
+        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"], weight:1.5 },
       { text:"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?",
         opts:["Los impedimentos no se identifican o permanecen bloqueados varias semanas sin dueño","Se mencionan en el Daily pero nadie los escala; el equipo los asume como parte del trabajo","La mayoría se escalan y se resuelven, aunque algunos quedan sin seguimiento","Los impedimentos se identifican, escalan y resuelven sistemáticamente antes de que bloqueen el Sprint Goal"] }
     ]
@@ -443,7 +443,42 @@ function getRec(dim, pct, role) {
   return RECS[dim][idx];
 }
 
+// Preguntas opcionales de salud del equipo (seguridad psicológica)
+// Solo se muestran cuando el workspace activa teamHealthEnabled
+const HEALTH_QUESTIONS = [
+  {
+    id: 'health_0',
+    text: '¿El equipo se siente seguro para dar feedback crítico en la Retro sin consecuencias negativas?',
+    opts: [
+      'Rara vez; hay tensión o miedo a hablar con honestidad',
+      'A veces, en contextos o con personas específicas',
+      'Generalmente sí, aunque con algunas reservas',
+      'Siempre; el feedback honesto es bienvenido y normalizado'
+    ]
+  },
+  {
+    id: 'health_1',
+    text: '¿Los errores se tratan como oportunidades de aprendizaje y no como fallos individuales?',
+    opts: [
+      'Los errores generan tensión o búsqueda de culpables',
+      'Depende del error; algunos se gestionan bien, otros no',
+      'Generalmente se aprende de los errores sin señalar responsables',
+      'Siempre; la cultura del equipo convierte los fallos en aprendizaje sistémico'
+    ]
+  },
+  {
+    id: 'health_2',
+    text: '¿Los miembros del equipo pueden plantear problemas y preocupaciones sin miedo a represalias?',
+    opts: [
+      'Rara vez; las personas guardan para sí sus preocupaciones',
+      'Algunas personas lo hacen; otras no se sienten seguras',
+      'La mayoría se siente cómoda planteando preocupaciones',
+      'Todos; el equipo actúa para que todas las voces sean escuchadas'
+    ]
+  }
+];
+
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { SECTIONS, LEVELS, DIMS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, COACHING_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec };
+  module.exports = { SECTIONS, LEVELS, DIMS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, COACHING_QUESTIONS, HEALTH_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec };
 }

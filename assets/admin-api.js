@@ -326,7 +326,8 @@ async function fetchAllData() {
             Comments: r.comments || {},
             FlaggedFast: r.flaggedFast || false,
             CompletionSeconds: r.completionSeconds || null,
-            TeamType: r.teamType || ''
+            TeamType: r.teamType || '',
+            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null
           }
         };
       })
@@ -354,7 +355,9 @@ async function fetchAllData() {
       state.anonymityMode           = wsData.anonymityMode           || 'full';
       state.aiEnabled               = wsData.aiEnabled               || false;
       state.assessmentCadenceWeeks  = wsData.assessmentCadenceWeeks  || 0;
-    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; state.assessmentCadenceWeeks = 0; }
+      state.teamHealthEnabled       = wsData.teamHealthEnabled        || false;
+      state.guidanceText            = wsData.guidanceText             || '';
+    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; state.assessmentCadenceWeeks = 0; state.teamHealthEnabled = false; state.guidanceText = ''; }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -399,6 +402,28 @@ async function toggleActive(id, name, current) {
     toast(current ? `"${name}" desactivado` : `"${name}" activado`);
     await fetchAllData();
   } catch(e) { toast('Error de conexión'); }
+}
+
+async function saveTeamHealthEnabled(val) {
+  setState({ teamHealthEnabled: val });
+  try {
+    await db.collection('workspaces').doc(state.currentUser.uid).set(
+      { teamHealthEnabled: val }, { merge: true }
+    );
+  } catch(e) { toast('Error al guardar'); }
+}
+
+const _guidanceTimer = {};
+function saveGuidanceText(txt) {
+  state.guidanceText = txt;
+  clearTimeout(_guidanceTimer.t);
+  _guidanceTimer.t = setTimeout(async () => {
+    try {
+      await db.collection('workspaces').doc(state.currentUser.uid).set(
+        { guidanceText: txt || firebase.firestore.FieldValue.delete() }, { merge: true }
+      );
+    } catch(e) { /* silent */ }
+  }, 800);
 }
 
 async function saveTeamCategory(teamId, category) {
@@ -782,7 +807,8 @@ function startLiveResponseCount() {
             Comments: r.comments || {},
             FlaggedFast: r.flaggedFast || false,
             CompletionSeconds: r.completionSeconds || null,
-            TeamType: r.teamType || ''
+            TeamType: r.teamType || '',
+            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null
           }
         };
       })

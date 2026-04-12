@@ -70,7 +70,9 @@ const state = {
   aiDocContext:           {},
   aiImages:              {},
   assessmentCadenceWeeks: 0,
-  cadenceBannerDismissed: false
+  cadenceBannerDismissed: false,
+  teamHealthEnabled:      false,
+  guidanceText:           ''
 };
 
 // setState actualiza el estado y dispara un re-render.

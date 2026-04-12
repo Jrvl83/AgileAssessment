@@ -1157,6 +1157,16 @@ function renderAnalysis() {
         const sortedByPct = DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
         const criticalDim = sortedByPct[0] && ds.avgDims[sortedByPct[0].key].pct < 33 ? sortedByPct[0] : null;
 
+        // Badge de salud del equipo (solo si hay respuestas con healthScore)
+        const healthResps = filteredByCycle.filter(r => r.fields.HealthScore !== null && r.fields.HealthScore !== undefined);
+        const healthBadge = healthResps.length > 0 ? (() => {
+          const avgH = Math.round(healthResps.reduce((a, r) => a + r.fields.HealthScore, 0) / healthResps.length);
+          const hl = avgH >= 70 ? { label:'Alta',  color:'#0d7a52', bg:'#d4f0e5' }
+                   : avgH >= 40 ? { label:'Media', color:'#a05c0a', bg:'#fdefd6' }
+                   :               { label:'Baja',  color:'#c0282a', bg:'#fce8e8' };
+          return `<span style="background:${hl.bg};color:${hl.color};font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;" title="Seguridad psicológica · ${healthResps.length} resp.">Salud ${hl.label} · ${avgH}%</span>`;
+        })() : '';
+
         const recs = lowDims.length
           ? lowDims.map(d => {
               const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, (ds.ctx && ds.ctx.teamSize) || ds.tamano, (ds.ctx && ds.ctx.teamAge) || ds.tiempoScrum);
@@ -1230,7 +1240,7 @@ function renderAnalysis() {
             <div class="tac-header">
               <div>
                 <div class="tac-name">${s.name}</div>
-                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}${countBadge}</div>
+                <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}${countBadge}${healthBadge}</div>
                 ${(() => {
                   const c = ds.ctx;
                   if (!c) return '';
@@ -2531,6 +2541,24 @@ function renderConfig() {
             <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">Si está activo, el formulario avisa a los participantes que sus comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores individuales.</div>
           </div>
         </label>
+      </div>
+      <div style="padding-top:14px;border-top:1px solid var(--border);margin-top:14px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" ${state.teamHealthEnabled ? 'checked' : ''} onchange="saveTeamHealthEnabled(this.checked)"
+            style="margin-top:3px;accent-color:var(--green);flex-shrink:0;"/>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);">Preguntas de salud del equipo</div>
+            <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">Añade 3 preguntas opcionales de seguridad psicológica al final del formulario. El resultado se guarda como <code style="background:var(--surface-2);padding:1px 4px;border-radius:3px;">teamHealthScore</code> independiente del score de madurez Scrum.</div>
+          </div>
+        </label>
+      </div>
+      <div style="padding-top:14px;border-top:1px solid var(--border);margin-top:14px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Mensaje de llenado individual</div>
+        <div style="font-size:12px;color:var(--ink-muted);margin-bottom:8px;">Texto que aparece en la pantalla de inicio del formulario. Deja en blanco para usar el mensaje por defecto.</div>
+        <textarea class="field-input" rows="2" placeholder="Este assessment está diseñado para completarse de forma individual…"
+          style="font-size:13px;resize:vertical;"
+          oninput="saveGuidanceText(this.value)"
+        >${e(state.guidanceText || '')}</textarea>
       </div>
     </div>
     <div class="section-card">
