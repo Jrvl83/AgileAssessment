@@ -23,6 +23,10 @@
         "destination": "/admin.html"
       },
       {
+        "source": "/facilitar",
+        "destination": "/facilitar.html"
+      },
+      {
         "source": "**",
         "destination": "/assessment-agile.html"
       }

@@ -1492,6 +1492,7 @@ function renderTeams() {
               <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
               <div style="display:flex;gap:6px;">
                 <button class="btn sm" onclick="showQR('${t.id}','${esc}')">QR</button>
+                <button class="btn sm" onclick="openFacilitar('${t.id}')" title="Abrir modo facilitación para este equipo">Facilitar →</button>
                 ${portalBtn}
                 <button class="btn sm" onclick="toggleActive('${t.id}','${esc}',${t.active})">
                   ${t.active ? 'Desactivar' : 'Activar'}
@@ -1795,6 +1796,13 @@ function showExistingPortal(teamId, teamName) {
   const portal = state.portals[teamId];
   if (!portal) return;
   showPortalLink(location.origin + '/equipo.html?t=' + portal.token, teamName);
+}
+
+// ── Modo facilitación ─────────────────────────────────────────────
+function openFacilitar(tid) {
+  const ciclo = state.cycleFilter && state.cycleFilter !== 'Todos'
+    ? '&ciclo=' + encodeURIComponent(state.cycleFilter) : '';
+  window.open('/facilitar?workspaceId=' + state.currentUser.uid + '&equipoId=' + tid + ciclo, '_blank');
 }
 
 // ── QR Code ──────────────────────────────────────────────────────
