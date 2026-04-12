@@ -42,7 +42,7 @@
   .shell {
     max-width: 720px;
     margin: 0 auto;
-    padding: 0 20px 80px;
+    padding: 0 20px 100px;
   }
 
   /* Header */
@@ -402,9 +402,25 @@
   /* Open question */
   .open-question { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
   textarea.field-input { resize: vertical; min-height: 72px; line-height: 1.5; }
+
+  /* Anon footer */
+  .anon-footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(250,250,248,0.96);
+    border-top: 1px solid var(--border);
+    padding: 10px 20px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-align: center;
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    line-height: 1.5;
+  }
 </style>
 </head>
 <body>
+<div id="anon-footer" class="anon-footer" style="display:none;"></div>
 <div class="shell">
   <div class="header">
     <div id="header-eyebrow" class="header-eyebrow">Scrum Guide Standard</div>
@@ -452,6 +468,8 @@ let dedicatedPO = ""; // "Sí" | "No" | "Compartido"
 let workMode = "";   // "Presencial" | "Híbrido" | "Totalmente remoto"
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
 let briefingTexto = "";
+let anonymityMode = "full";  // "full" | "semi" | "nominal"
+let aiEnabled = false;
 let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
 
 function setTeam(id, text) {
@@ -504,6 +522,8 @@ async function loadTeams() {
     const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
     const wsData = wsSnap.exists ? wsSnap.data() : {};
     briefingTexto = wsData.briefingTexto || '';
+    anonymityMode = wsData.anonymityMode || 'full';
+    aiEnabled     = wsData.aiEnabled     || false;
     // Aplicar branding
     if (wsData.colorAcento) document.documentElement.style.setProperty('--accent', wsData.colorAcento);
     if (wsData.marca || wsData.logoUrl) {
@@ -610,6 +630,23 @@ function renderBriefing() {
     </div>`;
 }
 
+function renderAnonFooter() {
+  const el = document.getElementById('anon-footer');
+  if (!el) return;
+  if (!['intro','context','section'].includes(screen)) { el.style.display = 'none'; return; }
+  const msgs = {
+    full:    'Tus respuestas son completamente anónimas. Solo se registra tu rol.',
+    semi:    'Tus respuestas se guardan con un identificador de rol. El coach no ve tu nombre.',
+    nominal: 'Tus respuestas están vinculadas a tu nombre.'
+  };
+  const msg = msgs[anonymityMode] || msgs.full;
+  const aiMsg = aiEnabled
+    ? ' · Los comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores.'
+    : '';
+  el.style.display = 'block';
+  el.innerHTML = `<span style="margin-right:6px;">🔒</span>${msg}${aiMsg ? `<span style="color:var(--ink-faint);">${aiMsg}</span>` : ''}`;
+}
+
 function render() {
   const app = document.getElementById('app');
   if(screen==='loading') app.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--ink-faint);font-size:15px;">Cargando…</div>';
@@ -621,6 +658,7 @@ function render() {
   app.classList.remove('fade-in');
   void app.offsetWidth;
   app.classList.add('fade-in');
+  renderAnonFooter();
 }
 
 function renderIntro() {
@@ -643,11 +681,13 @@ function renderIntro() {
         <label>¿A qué equipo perteneces?</label>
         ${teamsField}
       </div>
+      ${anonymityMode === 'full' ? '' : `
       <div class="field-group">
-        <label>Tu nombre <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
-        <input class="field-input" type="text" placeholder="Ej. María García"
+        <label>${anonymityMode === 'nominal' ? 'Tu nombre' : 'Identificador de rol'} <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+        <input class="field-input" type="text"
+          placeholder="${anonymityMode === 'nominal' ? 'Ej. María García' : 'Ej. Dev1, Dev2'}"
           value="${participantName}" oninput="participantName=this.value" autocomplete="off"/>
-      </div>
+      </div>`}
       <div class="role-select">
         <label>¿Cuál es tu rol en el equipo?</label>
         <div class="role-opts">

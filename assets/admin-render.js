@@ -1820,7 +1820,42 @@ function renderConfig() {
       </div>`;
   }).join('');
 
+  const ANON_MODES = [
+    { key: 'full',    label: 'Anónimo total',  desc: 'Solo se guarda el rol. El campo nombre no aparece en el formulario.' },
+    { key: 'semi',    label: 'Semi-anónimo',   desc: 'El participante puede escribir un identificador (Dev1, Dev2). El coach lo ve.' },
+    { key: 'nominal', label: 'Nominal',        desc: 'El participante escribe su nombre. Recomendado solo para autoevaluaciones individuales.' },
+  ];
+
   return `
+    <div class="section-card">
+      <div class="section-title">Anonimato y privacidad</div>
+      <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;margin-bottom:16px;">
+        Define qué información del participante se recolecta y cómo se comunica en el formulario.
+        El modo aplica a todas las respuestas nuevas de este workspace.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        ${ANON_MODES.map(m => `
+          <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid ${state.anonymityMode === m.key ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius-sm);background:${state.anonymityMode === m.key ? 'var(--accent-light)' : 'white'};cursor:pointer;">
+            <input type="radio" name="anonymityMode" value="${m.key}" ${state.anonymityMode === m.key ? 'checked' : ''}
+              onchange="saveAnonymityMode('${m.key}')"
+              style="margin-top:2px;accent-color:var(--accent);flex-shrink:0;"/>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:${state.anonymityMode === m.key ? 'var(--accent-dark)' : 'var(--ink)'};">${m.label}${m.key === 'full' ? ' <span style="font-size:10px;font-weight:500;background:var(--surface-3);color:var(--ink-faint);padding:1px 6px;border-radius:99px;">Por defecto</span>' : ''}</div>
+              <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">${m.desc}</div>
+            </div>
+          </label>`).join('')}
+      </div>
+      <div style="padding-top:14px;border-top:1px solid var(--border);">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+          <input type="checkbox" ${state.aiEnabled ? 'checked' : ''} onchange="saveAiEnabled(this.checked)"
+            style="margin-top:3px;accent-color:var(--accent);flex-shrink:0;"/>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);">Análisis con IA <span style="font-size:10px;font-weight:500;background:#f0fdf4;color:#0d7a52;padding:1px 6px;border-radius:99px;margin-left:4px;">Próximamente</span></div>
+            <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">Si está activo, el formulario avisa a los participantes que sus comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores individuales.</div>
+          </div>
+        </label>
+      </div>
+    </div>
     <div class="section-card">
       <div class="section-title">Webhook</div>
       <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">

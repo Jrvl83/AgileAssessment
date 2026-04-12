@@ -61,7 +61,9 @@ const state = {
   portals:            {},
   configOverrides:    {},
   configCustom:       {},
-  webhookUrl:         ''
+  webhookUrl:         '',
+  anonymityMode:      'full',
+  aiEnabled:          false
 };
 
 // setState actualiza el estado y dispara un re-render.

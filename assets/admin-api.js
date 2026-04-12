@@ -312,12 +312,14 @@ async function fetchAllData() {
     try {
       const wsSnap = await db.collection('workspaces').doc(state.currentUser.uid).get();
       const wsData = wsSnap.exists ? wsSnap.data() : {};
-      state.briefingTexto = wsData.briefingTexto || '';
-      state.marca         = wsData.marca         || '';
-      state.logoUrl       = wsData.logoUrl        || '';
-      state.colorAcento   = wsData.colorAcento    || '';
-      state.webhookUrl    = wsData.webhookUrl     || '';
-    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; }
+      state.briefingTexto  = wsData.briefingTexto  || '';
+      state.marca          = wsData.marca          || '';
+      state.logoUrl        = wsData.logoUrl         || '';
+      state.colorAcento    = wsData.colorAcento     || '';
+      state.webhookUrl     = wsData.webhookUrl      || '';
+      state.anonymityMode  = wsData.anonymityMode   || 'full';
+      state.aiEnabled      = wsData.aiEnabled       || false;
+    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
@@ -665,6 +667,25 @@ function saveWebhookUrl(url) {
       );
     } catch(e) { toast('Error al guardar la URL del webhook'); }
   }, 800);
+}
+
+// ── Anonimato ─────────────────────────────────────────────────────
+async function saveAnonymityMode(mode) {
+  setState({ anonymityMode: mode });
+  try {
+    await db.collection('workspaces').doc(state.currentUser.uid).set(
+      { anonymityMode: mode }, { merge: true }
+    );
+  } catch(e) { toast('Error al guardar'); }
+}
+
+async function saveAiEnabled(val) {
+  setState({ aiEnabled: val });
+  try {
+    await db.collection('workspaces').doc(state.currentUser.uid).set(
+      { aiEnabled: val }, { merge: true }
+    );
+  } catch(e) { toast('Error al guardar'); }
 }
 
 async function testWebhook() {
