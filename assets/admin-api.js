@@ -82,6 +82,19 @@ function detectRoleGaps(tid, cycleFilter, threshold) {
   return gaps.sort((a, b) => b.diff - a.diff);
 }
 
+// Agrupa comentarios por sección, incluyendo el rol del autor
+// Retorna array de { secId, secTitle, secColor, comments:[{text,rol}] } (solo secciones con comentarios)
+function groupCommentsBySection(teamResps) {
+  return SECTIONS.map(sec => {
+    const dim = DIMS.find(d => d.key === sec.id);
+    const secColor = dim ? dim.color : '#374151';
+    const comments = teamResps
+      .map(r => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
+      .filter(c => c.text.length > 0);
+    return { secId: sec.id, secTitle: sec.title, secColor, comments };
+  }).filter(s => s.comments.length > 0);
+}
+
 // Calcula el momentum de mejora: delta promedio por ciclo en los últimos n ciclos
 // Retorna { avg, cycles, direction } o null si hay menos de 2 ciclos con datos
 function calcMomentum(tid, role, n) {

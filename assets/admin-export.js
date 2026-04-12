@@ -170,6 +170,34 @@ async function exportPPT(teamId) {
     });
   }
 
+  // ── Slide N: Comentarios por sección ────────────────────────────
+  const pptResps = state.responses.filter(r =>
+    (r.fields.Equipo || []).includes(teamId) && (cf === 'Todos' || r.fields.Ciclo === cf)
+  );
+  const secGroups = groupCommentsBySection(pptResps);
+  if (secGroups.length > 0) {
+    const sc = pres.addSlide();
+    sc.addShape(pres.ShapeType.rect, { x:0, y:0, w:13.33, h:0.55, fill:{ color: accentHex } });
+    sc.addText('Comentarios', { x:0.3, y:0.1, w:8, h:0.38, fontSize:14, bold:true, color:'FFFFFF' });
+    sc.addText(teamName + '  ·  ' + cycleLabel, { x:8, y:0.1, w:5, h:0.38, fontSize:11, color:'FFFFFF', align:'right' });
+
+    let yPos = 0.75;
+    const maxY = 7.0;
+    outer: for (const { secTitle, secColor, comments } of secGroups) {
+      if (yPos + 0.35 > maxY) break;
+      const hex = secColor.replace('#', '');
+      sc.addText(secTitle, { x:0.3, y: yPos, w:12.73, h:0.3, fontSize:10, bold:true, color: hex });
+      yPos += 0.34;
+      for (const c of comments) {
+        if (yPos + 0.38 > maxY) break outer;
+        const prefix = c.rol ? `[${c.rol}]  ` : '';
+        sc.addText(`${prefix}"${c.text}"`, { x:0.5, y: yPos, w:12.4, h:0.36, fontSize:9, color:'374151', italic: true });
+        yPos += 0.38;
+      }
+      yPos += 0.08;
+    }
+  }
+
   const filename = `${teamName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '-')}-assessment-${new Date().toISOString().slice(0,10)}.pptx`;
   toast('Generando PPT…');
   await pres.writeFile({ fileName: filename });

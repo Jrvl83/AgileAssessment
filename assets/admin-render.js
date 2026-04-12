@@ -37,6 +37,39 @@ function toggleTeamDetail(tid) {
   render();
 }
 
+function toggleTeamComments(tid) {
+  state.teamCommentsExpanded[tid] = !state.teamCommentsExpanded[tid];
+  render();
+}
+
+// ── Panel de comentarios por sección ─────────────────────────────
+function renderCommentsPanel(tid, cycleFilter) {
+  const cf = cycleFilter || 'Todos';
+  const teamResps = state.responses.filter(r =>
+    (r.fields.Equipo || []).includes(tid) &&
+    (cf === 'Todos' || r.fields.Ciclo === cf)
+  );
+  const grouped = groupCommentsBySection(teamResps);
+  if (!grouped.length) return '<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin comentarios para este filtro.</div>';
+
+  return grouped.map(({ secTitle, secColor, comments }) => `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;color:${secColor};text-transform:uppercase;
+        letter-spacing:0.06em;margin-bottom:8px;padding-bottom:5px;
+        border-bottom:2px solid ${secColor}25;display:flex;align-items:center;gap:6px;">
+        ${secTitle}
+        <span style="background:${secColor}18;color:${secColor};font-size:9px;font-weight:700;
+          padding:1px 6px;border-radius:99px;">${comments.length}</span>
+      </div>
+      ${comments.map(c => `
+        <div style="background:${secColor}0d;border-left:3px solid ${secColor}55;border-radius:0 6px 6px 0;
+          padding:8px 12px;margin-bottom:6px;">
+          ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${secColor};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>` : ''}
+          <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
 function toggleTeamGaps(tid) {
   state.teamGapsExpanded[tid] = !state.teamGapsExpanded[tid];
   render();
@@ -94,19 +127,27 @@ function renderQuestionDetail(tid, selectedRole) {
         </div>`;
     }).join('');
 
-    const secComments = teamResps
-      .map(r => ((r.fields.Comments || {})[sec.id] || '').trim())
-      .filter(c => c.length > 0);
+    const secCommentItems = teamResps
+      .map(r => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
+      .filter(c => c.text.length > 0);
 
-    const commentsHtml = secComments.length > 0 ? `
+    const commentBadge = secCommentItems.length > 0
+      ? `<span style="display:inline-block;background:${color}18;color:${color};font-size:9px;font-weight:700;
+          padding:1px 6px;border-radius:99px;margin-left:6px;vertical-align:middle;">
+          ${secCommentItems.length} comentario${secCommentItems.length !== 1 ? 's' : ''}
+        </span>`
+      : '';
+
+    const commentsHtml = secCommentItems.length > 0 ? `
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${color}20;">
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
-          Comentarios (${secComments.length})
+          Comentarios (${secCommentItems.length})
         </div>
-        ${secComments.map(c => `
+        ${secCommentItems.map(c => `
           <div style="background:${color}0d;border-left:3px solid ${color}55;border-radius:0 6px 6px 0;
-            padding:8px 12px;margin-bottom:6px;font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">
-            "${c.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"
+            padding:8px 12px;margin-bottom:6px;">
+            ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${color};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>` : ''}
+            <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</span>
           </div>`).join('')}
       </div>` : '';
 
@@ -115,7 +156,7 @@ function renderQuestionDetail(tid, selectedRole) {
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;
           letter-spacing:0.06em;margin-bottom:10px;padding-bottom:5px;
           border-bottom:2px solid ${color}25;">
-          ${sec.title}
+          ${sec.title}${commentBadge}
         </div>
         ${questions}
         ${commentsHtml}
@@ -681,8 +722,9 @@ function renderAnalysis() {
           : null;
         window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: orgBenchmark };
 
-        const recsExpanded   = !!state.teamRecsExpanded[tid];
-        const detailExpanded = !!state.teamDetailExpanded[tid];
+        const recsExpanded      = !!state.teamRecsExpanded[tid];
+        const detailExpanded    = !!state.teamDetailExpanded[tid];
+        const commentsExpanded  = !!state.teamCommentsExpanded[tid];
         const recCount = lowDims.length;
         const commentCount = teamResps.reduce((n, r) =>
           n + SECTIONS.filter(sec => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length, 0);
@@ -849,6 +891,17 @@ function renderAnalysis() {
               </button>
               ${detailExpanded ? `<div class="collapse-body">${renderQuestionDetail(tid, selectedRole)}</div>` : ''}
             </div>
+            ${commentCount > 0 ? `
+            <div class="collapse-section">
+              <button class="collapse-toggle" onclick="toggleTeamComments('${tid}')">
+                <span class="collapse-toggle-label">
+                  Comentarios del equipo
+                  <span class="collapse-count">${commentCount}</span>
+                </span>
+                <span class="collapse-chevron">${commentsExpanded ? '▲' : '▼'}</span>
+              </button>
+              ${commentsExpanded ? `<div class="collapse-body">${renderCommentsPanel(tid, state.cycleFilter)}</div>` : ''}
+            </div>` : ''}
             <div class="no-print" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
               <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
                 Notas del coach · ${noteCicloLabel}
