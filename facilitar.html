@@ -245,6 +245,7 @@ function buildPresenter() {
         <span class="cb-counter">${currentSlide+1} / ${slides.length} &nbsp;·&nbsp; <span class="kbd">←</span> <span class="kbd">→</span> &nbsp;·&nbsp; <span class="kbd">N</span> notas</span>
       </div>
       <button class="cb-btn ${coachMode?'on':''}" onclick="toggleCoach()">${coachMode?'Notas ▲':'Notas ▼'}</button>
+      <button class="cb-btn" onclick="exportSession()" title="Exportar resumen de la sesión para imprimir">↓ Exportar</button>
       <button class="cb-btn" onclick="navigate(1)" ${isLast?'disabled':''}>Siguiente →</button>
     </div>
     ${coachMode ? `<div class="notes-panel">${buildNotes(slide)}</div>` : ''}
@@ -433,6 +434,107 @@ function buildCierreNotes() {
        <p class="n-item"><strong>Seguimiento:</strong> Agenda revisión en la próxima Retro.</p>`
     : '';
   return `${foco}${agenda}${sintesis}${fallback}`;
+}
+
+// ── Export session ───────────────────────────────────────────────────
+function exportSession() {
+  const today = new Date().toLocaleDateString('es', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const lv    = globalPct !== null ? getLevel(globalPct) : null;
+
+  const dimRows = DIMS.map(d => {
+    const sec   = SECTIONS.find(s => s.id === d.key);
+    const sc    = dimScores[d.key];
+    const pct   = sc ? sc.pct : null;
+    const lvIdx = pct === null ? 1 : pct <= 33 ? 0 : pct <= 66 ? 1 : 2;
+    const qs    = (COACHING_QUESTIONS[d.key] || [])[lvIdx] || [];
+    const lvDim = pct !== null ? getLevel(pct) : null;
+    const qHtml = qs.map((q, i) => `<li>${q}</li>`).join('');
+    return `
+      <div class="dim-block">
+        <div class="dim-head">
+          <span class="dim-name">${sec ? sec.title : d.label}</span>
+          ${pct !== null ? `<span class="dim-score">${pct}%</span>` : ''}
+          ${lvDim ? `<span class="dim-lv">${lvDim.label}</span>` : ''}
+        </div>
+        ${qHtml ? `<ul class="dim-qs">${qHtml}</ul>` : ''}
+      </div>`;
+  }).join('');
+
+  const actionsHtml = sessionActions.length
+    ? `<div class="section">
+        <div class="section-title">Acciones acordadas en sesión</div>
+        <table class="actions-table">
+          <thead><tr><th>Acción / Iniciativa</th><th>Responsable</th><th>Fecha</th><th>Dimensión</th></tr></thead>
+          <tbody>${sessionActions.map(a => `
+            <tr>
+              <td>${a.iniciativa}</td>
+              <td>${a.responsable||''}</td>
+              <td>${a.fechaObjetivo||''}</td>
+              <td>${a.dimLabel||a.dimension||''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+
+  const blankLines = Array(6).fill('<div class="blank-line"></div>').join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Sesión de facilitación — ${e(teamName)}</title>
+<style>
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1a1a2e; margin: 0; padding: 32px 40px; font-size: 13px; }
+  .header { border-bottom: 2px solid #1a4fd6; padding-bottom: 16px; margin-bottom: 24px; }
+  .header h1 { font-size: 22px; margin: 0 0 4px; }
+  .header .meta { font-size: 12px; color: #666; }
+  .global-score { display: inline-block; background: #f0f5ff; border: 1.5px solid #1a4fd6; border-radius: 8px; padding: 8px 18px; margin: 12px 0; }
+  .global-score .num { font-size: 28px; font-weight: 700; color: #1a4fd6; }
+  .global-score .lv  { font-size: 12px; font-weight: 700; color: #444; margin-left: 8px; text-transform: uppercase; letter-spacing: .06em; }
+  .section { margin-bottom: 24px; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: #888; margin-bottom: 10px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+  .dims-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dim-block { border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px 12px; }
+  .dim-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .dim-name { font-weight: 700; font-size: 12px; flex: 1; }
+  .dim-score { font-size: 16px; font-weight: 700; color: #1a4fd6; }
+  .dim-lv { font-size: 10px; color: #888; }
+  .dim-qs { margin: 0; padding-left: 16px; font-size: 11px; color: #444; line-height: 1.7; }
+  .actions-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .actions-table th { background: #f3f4f6; font-weight: 700; padding: 6px 8px; text-align: left; border: 1px solid #e5e7eb; }
+  .actions-table td { padding: 6px 8px; border: 1px solid #e5e7eb; vertical-align: top; }
+  .blank-lines { margin-top: 12px; }
+  .blank-line { border-bottom: 1px solid #ccc; height: 28px; margin-bottom: 4px; }
+  .commit-prompt { font-style: italic; color: #444; margin-bottom: 16px; font-size: 13px; }
+  @media print { body { padding: 24px; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>${e(teamName || 'Equipo')}</h1>
+    <div class="meta">Sesión de facilitación · ${e(cicloNombre || 'Ciclo activo')} · ${today}</div>
+    ${globalPct !== null ? `<div class="global-score"><span class="num">${globalPct}%</span>${lv ? `<span class="lv">${lv.label}</span>` : ''}</div>` : ''}
+  </div>
+
+  <div class="section">
+    <div class="section-title">Preguntas de coaching por dimensión</div>
+    <div class="dims-grid">${dimRows}</div>
+  </div>
+
+  ${actionsHtml}
+
+  <div class="section">
+    <div class="section-title">Compromisos del equipo</div>
+    <p class="commit-prompt">¿Cuál es la acción más importante que el equipo puede comprometerse a hacer antes del próximo Sprint?</p>
+    <div class="blank-lines">${blankLines}</div>
+  </div>
+
+  <script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank', 'width=900,height=700');
+  if (w) { w.document.write(html); w.document.close(); }
 }
 
 // ── Action form ─────────────────────────────────────────────────────
