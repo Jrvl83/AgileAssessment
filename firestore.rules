@@ -45,11 +45,24 @@ service cloud.firestore {
     }
 
     // ── Planes de acción ─────────────────────────────────────────
-    // Solo el dueño del equipo asociado o super_admin.
+    // Lectura/eliminación: solo el dueño del equipo o super_admin.
+    // Actualización completa: solo el dueño o super_admin.
+    // Actualización de estado: el equipo puede cambiar estado via portal si el plan
+    //   tiene portalToken y existe el portal correspondiente.
     match /planes/{id} {
-      allow read, delete, update: if isSuperAdmin() || ownsEquipo(resource.data.equipoId);
+      allow read, delete: if isSuperAdmin() || ownsEquipo(resource.data.equipoId);
       allow create: if request.auth != null
                     && (isSuperAdmin() || ownsEquipo(request.resource.data.equipoId));
+      allow update: if isSuperAdmin()
+                    || ownsEquipo(resource.data.equipoId)
+                    || (
+                      request.resource.data.diff(resource.data).affectedKeys()
+                        .hasOnly(['estado', 'updatedByTeam', 'updatedByTeamAt'])
+                      && request.resource.data.estado in ['pendiente', 'en-curso', 'completado']
+                      && resource.data.get('portalToken', '') != ''
+                      && exists(/databases/$(database)/documents/portales/$(resource.data.portalToken))
+                      && get(/databases/$(database)/documents/portales/$(resource.data.portalToken)).data.teamId == resource.data.equipoId
+                    );
     }
 
     // ── Usuarios ─────────────────────────────────────────────────

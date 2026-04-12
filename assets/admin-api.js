@@ -402,8 +402,9 @@ async function addPlan() {
   if (!state.newPlanTeamId || !state.newPlanIniciativa.trim()) return;
   const team = state.teams.find(t => t.id === state.newPlanTeamId);
   const cicloFinal = state.newPlanCiclo || (state.cycles.find(c => c.active) || {}).name || '';
+  const portalToken = (state.portals[state.newPlanTeamId] || {}).token || null;
   try {
-    await db.collection('planes').add({
+    const planData = {
       equipoId: state.newPlanTeamId,
       equipoNombre: team ? team.name : '',
       iniciativa: state.newPlanIniciativa.trim(),
@@ -413,7 +414,9 @@ async function addPlan() {
       ciclo: cicloFinal,
       dimension: state.newPlanDimension || '',
       fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (portalToken) planData.portalToken = portalToken;
+    await db.collection('planes').add(planData);
     state.newPlanIniciativa = ''; state.newPlanResponsable = ''; state.newPlanFecha = '';
     state.newPlanDimension = '';
     toast('Acción agregada');
@@ -424,7 +427,7 @@ async function addPlan() {
 
 async function updatePlanStatus(id, status) {
   try {
-    await db.collection('planes').doc(id).update({ estado: status });
+    await db.collection('planes').doc(id).update({ estado: status, updatedByTeam: false });
     await fetchPlans();
     setState({});
   } catch(e) { toast('Error de conexión'); }
@@ -798,6 +801,24 @@ async function syncPortalData(teamId) {
   } catch(e) { /* silent */ }
 }
 
+// Asigna portalToken a todos los planes de un equipo (en batch)
+async function setPortalTokenOnPlans(teamId, token) {
+  const plans = state.plans.filter(p => p.equipoId === teamId);
+  if (!plans.length) return;
+  const batch = db.batch();
+  plans.forEach(p => batch.update(db.collection('planes').doc(p.id), { portalToken: token }));
+  await batch.commit();
+}
+
+// Elimina portalToken de todos los planes de un equipo
+async function clearPortalTokenOnPlans(teamId) {
+  const plans = state.plans.filter(p => p.equipoId === teamId);
+  if (!plans.length) return;
+  const batch = db.batch();
+  plans.forEach(p => batch.update(db.collection('planes').doc(p.id), { portalToken: firebase.firestore.FieldValue.delete() }));
+  await batch.commit();
+}
+
 async function createPortal(teamId) {
   const team = state.teams.find(t => t.id === teamId);
   if (!team) return;
@@ -813,6 +834,7 @@ async function createPortal(teamId) {
       data: {}
     });
     state.portals[teamId] = { token };
+    await setPortalTokenOnPlans(teamId, token);
     await syncPortalData(teamId);
     showPortalLink(location.origin + '/equipo.html?t=' + token, team.name);
     toast('Portal del equipo creado');
@@ -825,6 +847,7 @@ async function revokePortal(teamId, teamName) {
   if (!portal) return;
   if (!confirm(`¿Revocar el portal de "${teamName}"?\n\nEl link dejará de funcionar inmediatamente.`)) return;
   try {
+    await clearPortalTokenOnPlans(teamId);
     await db.collection('portales').doc(portal.token).delete();
     delete state.portals[teamId];
     toast('Portal revocado');

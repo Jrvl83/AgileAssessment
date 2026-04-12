@@ -1617,6 +1617,7 @@ function renderPlan() {
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                   <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:${sc.bg};color:${sc.color};">${sc.label}</span>
+                  ${p.updatedByTeam ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#f0fdf4;color:#0d7a52;border:1px solid #bbf7d0;">Actualizado por equipo</span>` : ''}
                   <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
                     ${otherStates.map(([k,v]) => `<button class="btn sm" onclick="updatePlanStatus('${p.id}','${k}')" style="padding:3px 8px;font-size:11px;">${v.label}</button>`).join('')}
                     <button class="btn sm danger" onclick="deletePlan('${p.id}')" style="padding:3px 8px;font-size:11px;">✕</button>

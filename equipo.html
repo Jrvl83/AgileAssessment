@@ -82,6 +82,8 @@ const PLAN_STATE = {
 };
 
 let _radarChart = null;
+let _planStates = {}; // optimistic local overrides mientras Firestore procesa
+let _portalToken = null;
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -193,8 +195,11 @@ function renderPortal(portal) {
   const plansSection = plans.length ? `
     <div class="section-card">
       <div class="section-title">Plan de acción</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;">Puedes actualizar el estado de las acciones que te corresponden.</p>
       ${plans.map(p => {
-        const st = PLAN_STATE[p.estado] || PLAN_STATE['pendiente'];
+        const currentEstado = (_planStates[p.id] || {}).estado || p.estado || 'pendiente';
+        const st = PLAN_STATE[currentEstado] || PLAN_STATE['pendiente'];
+        const otherStates = Object.entries(PLAN_STATE).filter(([k]) => k !== currentEstado);
         const fechaHtml = p.fechaObjetivo
           ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${esc(p.fechaObjetivo)}</span>`
           : '';
@@ -207,12 +212,26 @@ function renderPortal(portal) {
         const cicloHtml = p.ciclo
           ? `<span style="font-size:10px;color:var(--ink-faint);">${esc(p.ciclo)}</span>`
           : '';
+        const updatedBadge = (_planStates[p.id] || {}).saving
+          ? `<span style="font-size:10px;color:var(--ink-faint);">Guardando…</span>`
+          : (_planStates[p.id] || {}).saved
+            ? `<span style="font-size:10px;color:#0d7a52;">Guardado</span>`
+            : '';
         return `
-          <div class="plan-item">
-            <span class="plan-status" style="background:${st.bg};color:${st.color};">${st.label}</span>
+          <div class="plan-item" id="plan-${p.id}">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;flex-shrink:0;">
+              <span class="plan-status" style="background:${st.bg};color:${st.color};">${st.label}</span>
+              ${updatedBadge}
+            </div>
             <div style="flex:1;min-width:0;">
               <div style="font-size:13px;font-weight:500;line-height:1.4;">${esc(p.iniciativa)}${dimHtml}</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center;">${respHtml}${fechaHtml}${cicloHtml}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                ${otherStates.map(([k, v]) => `<button onclick="changePlanStatus('${p.id}','${k}')"
+                  style="font-size:11px;padding:3px 10px;border-radius:99px;border:1.5px solid ${v.color};background:${v.bg};color:${v.color};cursor:pointer;font-family:inherit;font-weight:600;">
+                  ${v.label}
+                </button>`).join('')}
+              </div>
             </div>
           </div>`;
       }).join('')}
@@ -264,9 +283,42 @@ function renderPortal(portal) {
   }
 }
 
+async function changePlanStatus(planId, newEstado) {
+  // Optimistic update
+  _planStates[planId] = { estado: newEstado, saving: true, saved: false };
+  renderCurrentPortal();
+
+  try {
+    await db.collection('planes').doc(planId).update({
+      estado: newEstado,
+      updatedByTeam: true,
+      updatedByTeamAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    _planStates[planId] = { estado: newEstado, saving: false, saved: true };
+    // Limpiar indicador "Guardado" después de 2 s
+    setTimeout(() => {
+      if (_planStates[planId] && _planStates[planId].estado === newEstado) {
+        _planStates[planId].saved = false;
+      }
+      renderCurrentPortal();
+    }, 2000);
+  } catch(e) {
+    // Revertir en caso de error
+    delete _planStates[planId];
+    alert('No se pudo guardar el cambio. Verifica tu conexión e inténtalo de nuevo.');
+  }
+  renderCurrentPortal();
+}
+
+let _currentPortalData = null;
+function renderCurrentPortal() {
+  if (_currentPortalData) renderPortal(_currentPortalData);
+}
+
 function loadPortal() {
   const params = new URLSearchParams(window.location.search);
   const token = params.get('t');
+  _portalToken = token;
   if (!token) { showError('Link inválido. Solicita el link al coach.'); return; }
 
   db.collection('portales').doc(token).onSnapshot(doc => {
@@ -307,6 +359,7 @@ function loadPortal() {
       (updStr ? `Datos actualizados el ${updStr}<br>` : '') +
       'Vista de solo lectura · Assessment Agile';
 
+    _currentPortalData = portal;
     renderPortal(portal);
   }, () => {
     showError('Error al cargar el portal. Intenta nuevamente más tarde.');
