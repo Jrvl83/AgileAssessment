@@ -532,7 +532,7 @@ Desde el panel admin se puede exportar:
 | Fase | Mejoras | Estado |
 |------|---------|--------|
 | 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
-| 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | Pendiente |
+| 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | ✅ Completada 2026-04-12 |
 | 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | Pendiente |
 | 4 — Diferenciadores mercado | #8 Benchmark externo cross-workspace, #9 Multi-framework Kanban | Pendiente |
 
@@ -542,7 +542,10 @@ Desde el panel admin se puede exportar:
 - **#2** Panel de participación por rol — visible antes del radar en cada tarjeta de equipo. Barra proporcional + badge ✓/⚠ por rol. Semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona). Commit: `a4096e8` + fix `7f5aecf`
 - **#3** Anonimato configurable — selector en pestaña Configuración: anónimo total / semi-anónimo / nominal. Toggle IA (próximamente). Footer sticky en formulario con mensaje adaptado al modo. Campo nombre ocultado/renombrado según modo. Campos `anonymityMode` y `aiEnabled` en `workspaces/{uid}`. Commit: `ffdfbfc`
 
-**Arquitectura IA (Fase 2):** CF callable `analyzeTeamWithClaude` en `functions/index.js`. API Key en Firebase Secret Manager. Output JSON cacheado en `analisis_ia/{teamId}_{ciclo}`. Trigger manual, fallback a `RECS` hardcodeados.
+#### Fase 2 — implementada
+
+- **#4** Panel de comentarios — `groupCommentsBySection()` en `admin-api.js` agrupa comentarios con rol. `renderCommentsPanel(tid, cycleFilter)` en `admin-render.js`: panel colapsable por sección con tarjetas de rol + texto. Badge de densidad en header de cada sección del histograma. Role label en comentarios inline del detalle. Slide de comentarios agrupado por sección en exportación PPT. Commit: `325f30a`
+- **#10** CF `analyzeTeamWithClaude` — función callable autenticada que verifica ownership y `aiEnabled`. `buildTeamPrompt` agrega scores por dimensión, brechas de percepción (≥25pp), momentum vs ciclo anterior, comentarios con etiqueta de rol (~2k tokens). Llama a `claude-sonnet-4-6` y cachea el resultado JSON en `analisis_ia/{teamId}_{ciclo}`. Detecta respuestas nuevas desde el último análisis. Panel en tarjeta del equipo con 6 secciones: narrativa, foco de sesión, alertas, síntesis de comentarios, agenda borrador 90 min, resumen ejecutivo con botón "Copiar". API Key en Firebase Secret Manager (`ANTHROPIC_API_KEY`). Fallback si la API falla. Commit: `b7c7a00`
 
 ---
 
@@ -571,6 +574,8 @@ Desde el panel admin se puede exportar:
 | `a4096e8` | Feat: panel de participación por rol con semáforo de validez antes del radar (#2 V3) |
 | `7f5aecf` | Fix: semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona) |
 | `ffdfbfc` | Feat: anonimato configurable y footer de privacidad — 3 modos + toggle IA + footer sticky (#3 V3) |
+| `325f30a` | Feat: panel de comentarios por sección — groupCommentsBySection, renderCommentsPanel, badge densidad, role label, slide PPT (#4 V3) |
+| `b7c7a00` | Feat: análisis con IA — CF analyzeTeamWithClaude, buildTeamPrompt, caché analisis_ia, panel con 6 secciones (#10 V3) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
