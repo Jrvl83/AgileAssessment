@@ -1140,12 +1140,17 @@ function renderTeams() {
             const ownerLabel = ownerUser
               ? `<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px;">${ownerUser.nombre || ownerUser.email}</span>`
               : '';
+            const hasPortal = !!(state.portals && state.portals[t.id]);
+            const portalBtn = hasPortal
+              ? `<button class="btn sm" onclick="showExistingPortal('${t.id}','${esc}')">Portal ↗</button>`
+              : `<button class="btn sm" onclick="createPortal('${t.id}')">+ Portal</button>`;
             return `<div class="team-row">
               <div class="team-row-name">${t.name}${ownerLabel}</div>
               <span class="team-count-badge">${count} respuesta${count !== 1 ? 's' : ''}</span>
               <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
               <div style="display:flex;gap:6px;">
                 <button class="btn sm" onclick="showQR('${t.id}','${esc}')">QR</button>
+                ${portalBtn}
                 <button class="btn sm" onclick="toggleActive('${t.id}','${esc}',${t.active})">
                   ${t.active ? 'Desactivar' : 'Activar'}
                 </button>
@@ -1205,6 +1210,34 @@ function renderTeams() {
       <p style="font-size:11px;color:var(--ink-faint);margin-top:6px;">Guardado automáticamente. Si lo dejas vacío, no se muestra pantalla de briefing.</p>
     </div>`;
 
+  const portalEntries = state.portals ? Object.entries(state.portals) : [];
+  const portalsSection = portalEntries.length ? `
+    <div class="section-card">
+      <div class="section-title">Portales de equipo activos</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">Links permanentes para que el equipo vea sus resultados, evolución y plan de acción. Sin login ni controles de admin.</p>
+      <div class="team-list">
+        ${portalEntries.map(([tid, p]) => {
+          const team = state.teams.find(t => t.id === tid);
+          if (!team) return '';
+          const portalUrl = location.origin + '/equipo.html?t=' + p.token;
+          const escUrl    = portalUrl.replace(/'/g, "\\'");
+          const escName   = team.name.replace(/'/g, "\\'");
+          const updAt = p.updatedAt instanceof Date ? p.updatedAt
+            : (p.updatedAt && p.updatedAt.toDate ? p.updatedAt.toDate() : null);
+          const updStr = updAt ? updAt.toLocaleDateString('es') : '—';
+          return `<div class="team-row">
+            <div class="team-row-name" style="font-size:13px;">${team.name}</div>
+            <span style="font-size:11px;color:var(--ink-faint);">Actualizado: ${updStr}</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn sm" onclick="copyQRUrl('${escUrl}')">Copiar link</button>
+              <button class="btn sm" onclick="syncPortalAndRefresh('${tid}')">Sincronizar</button>
+              <button class="btn sm danger" onclick="revokePortal('${tid}','${escName}')">Revocar</button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
   const now = new Date();
   const reportsSection = state.reports.length ? `
     <div class="section-card">
@@ -1230,7 +1263,7 @@ function renderTeams() {
       </div>
     </div>` : '';
 
-  return cyclesSection + reportsSection + brandSection + briefingSection + addForm + `
+  return cyclesSection + reportsSection + portalsSection + brandSection + briefingSection + addForm + `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>
@@ -1390,6 +1423,36 @@ function showReportLink(url, teamName, ciclo) {
       </div>
     </div>`;
   modal.onclick = e => { if (e.target === modal) closeQR(); };
+}
+
+// ── Portal del equipo ─────────────────────────────────────────────
+function showPortalLink(url, teamName) {
+  const modal = document.getElementById('qr-modal');
+  modal.style.display = 'flex';
+  const escapedUrl = url.replace(/'/g, "\\'");
+  modal.innerHTML = `
+    <div style="background:white;border-radius:var(--radius);padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:600;color:var(--ink);">Portal del equipo</div>
+        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+      </div>
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
+        Link permanente de <strong>solo lectura</strong> para <strong>${teamName}</strong>.<br>
+        El equipo puede ver sus resultados, evolución histórica y plan de acción.
+      </div>
+      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn primary" onclick="copyQRUrl('${escapedUrl}')" style="flex:1;">Copiar link</button>
+        <button class="btn" onclick="closeQR()">Cerrar</button>
+      </div>
+    </div>`;
+  modal.onclick = e => { if (e.target === modal) closeQR(); };
+}
+
+function showExistingPortal(teamId, teamName) {
+  const portal = state.portals[teamId];
+  if (!portal) return;
+  showPortalLink(location.origin + '/equipo.html?t=' + portal.token, teamName);
 }
 
 // ── QR Code ──────────────────────────────────────────────────────

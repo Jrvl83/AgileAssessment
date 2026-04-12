@@ -57,7 +57,8 @@ const state = {
   briefingTexto:      '',
   marca:              '',
   logoUrl:            '',
-  colorAcento:        ''
+  colorAcento:        '',
+  portals:            {}
 };
 
 // setState actualiza el estado y dispara un re-render.

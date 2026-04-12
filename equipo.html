@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portal del Equipo</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f1117; --ink-muted: #5a5f72; --ink-faint: #9198aa;
+    --surface: #fafaf8; --surface-2: #f2f1ed;
+    --accent: #1a4fd6; --accent-light: #dce6ff;
+    --border: #dddbd4; --radius: 12px; --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.6; }
+  .shell { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .header-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(22px, 4vw, 32px); line-height: 1.1; margin-bottom: 6px; }
+  .header p { font-size: 14px; color: var(--ink-muted); }
+
+  .section-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .section-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+
+  .score-hero { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+  .score-big { font-size: 52px; font-weight: 600; line-height: 1; }
+  .level-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; display: inline-block; }
+
+  .dim-row { margin-bottom: 12px; }
+  .dim-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .dim-label { font-size: 13px; font-weight: 500; }
+  .dim-pct { font-size: 13px; font-weight: 600; }
+  .dim-bar-wrap { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+  .dim-bar { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+
+  .evol-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; }
+  .evol-row:last-child { border-bottom: none; }
+
+  .plan-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .plan-item:last-child { border-bottom: none; }
+  .plan-status { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+
+  .footer { text-align: center; font-size: 12px; color: var(--ink-faint); padding: 24px 0; border-top: 1px solid var(--border); margin-top: 20px; line-height: 1.8; }
+  .error-state { text-align: center; padding: 80px 20px; font-size: 15px; color: var(--ink-muted); }
+  .loading-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="header">
+    <div class="header-eyebrow" id="portal-eyebrow">Portal del Equipo</div>
+    <h1 id="portal-title">Cargando…</h1>
+    <p id="portal-subtitle"></p>
+  </div>
+  <div id="app">
+    <div class="loading-state">Cargando datos del equipo…</div>
+  </div>
+  <div class="footer" id="portal-footer"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
+  authDomain: "agile-assessment-5a117.firebaseapp.com",
+  projectId: "agile-assessment-5a117",
+  storageBucket: "agile-assessment-5a117.firebasestorage.app",
+  messagingSenderId: "41571782884",
+  appId: "1:41571782884:web:e8b96178aeffc4649edcf1"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const PLAN_STATE = {
+  'pendiente':  { label: 'Pendiente',  color: '#a05c0a', bg: '#fdefd6' },
+  'en-curso':   { label: 'En curso',   color: '#1a4fd6', bg: '#dce6ff' },
+  'completado': { label: 'Completado', color: '#0d7a52', bg: '#d4f0e5' }
+};
+
+let _radarChart = null;
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function levelColor(pct) {
+  return pct >= 83 ? '#0d7a52' : pct >= 66 ? '#1a4fd6' : pct >= 41 ? '#a05c0a' : '#c0282a';
+}
+
+function showError(msg) {
+  document.getElementById('portal-title').textContent = 'Portal no disponible';
+  document.getElementById('app').innerHTML = `<div class="error-state">${msg}</div>`;
+}
+
+function applyBranding(branding) {
+  if (!branding) return;
+  if (branding.colorAcento) document.documentElement.style.setProperty('--accent', branding.colorAcento);
+  const eyebrow = document.getElementById('portal-eyebrow');
+  if (branding.marca && eyebrow) eyebrow.textContent = branding.marca;
+  if (branding.logoUrl) {
+    const safeUrl = branding.logoUrl.replace(/"/g, '%22');
+    const safeAlt = esc(branding.marca || '');
+    const titleEl = document.getElementById('portal-title');
+    if (titleEl) {
+      titleEl.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span id="portal-team-name"></span>`;
+    }
+  }
+}
+
+function renderPortal(portal) {
+  const d = portal.data || {};
+  const dims = d.dims || [];
+  const avgDims = d.avgDims || {};
+  const level = d.level || null;
+  const hasData = typeof d.avgTotal === 'number';
+
+  // ── Score + Radar ──────────────────────────────────────────────
+  const scoreSection = hasData ? `
+    <div class="section-card">
+      <div class="score-hero">
+        <div style="flex:1;min-width:160px;">
+          <div class="score-big" style="color:${level ? level.color : levelColor(d.avgTotal)}">${d.avgTotal}%</div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            ${level ? `<span class="level-badge" style="background:${level.bg};color:${level.color}">${level.label}</span>` : ''}
+          </div>
+          <div style="margin-top:10px;font-size:12px;color:var(--ink-faint);">${d.count} respuesta${d.count !== 1 ? 's' : ''}</div>
+          ${d.activeCycle ? `<div style="margin-top:4px;font-size:12px;color:var(--ink-faint);">Ciclo activo: ${esc(d.activeCycle)}</div>` : ''}
+          ${level && level.desc ? `<div style="margin-top:12px;font-size:13px;color:var(--ink-muted);line-height:1.5;">${level.desc}</div>` : ''}
+        </div>
+        <div style="flex:0 0 auto;width:220px;">
+          <canvas id="radar-portal" style="display:block;width:100%;max-height:220px;"></canvas>
+        </div>
+      </div>
+    </div>` : `
+    <div class="section-card">
+      <div style="text-align:center;padding:24px 0;">
+        <div style="font-size:32px;margin-bottom:12px;">📊</div>
+        <div style="font-size:14px;color:var(--ink-muted);">No hay respuestas registradas todavía.<br>Completa el assessment para ver los resultados.</div>
+        ${d.activeCycle ? `<div style="margin-top:12px;font-size:13px;font-weight:500;color:var(--accent);">Ciclo activo: ${esc(d.activeCycle)}</div>` : ''}
+      </div>
+    </div>`;
+
+  // ── Dimensiones ────────────────────────────────────────────────
+  const dimsSection = hasData && dims.length ? `
+    <div class="section-card">
+      <div class="section-title">Resultados por dimensión</div>
+      ${dims.map(dim => {
+        const dp = avgDims[dim.key] || { pct: 0 };
+        return `
+          <div class="dim-row">
+            <div class="dim-row-header">
+              <span class="dim-label" style="color:${dim.color}">${esc(dim.label)}</span>
+              <span class="dim-pct" style="color:${dim.color}">${dp.pct}%</span>
+            </div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar" style="width:${dp.pct}%;background:${dim.color}"></div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // ── Evolución histórica ────────────────────────────────────────
+  const evol = d.evolutionData || [];
+  const evolSection = evol.length >= 2 ? `
+    <div class="section-card">
+      <div class="section-title">Evolución histórica</div>
+      ${evol.map((e, i) => {
+        const prev = i > 0 ? evol[i-1].avgTotal : null;
+        const delta = prev !== null ? e.avgTotal - prev : null;
+        const col = levelColor(e.avgTotal);
+        const deltaHtml = delta !== null
+          ? `<span style="font-size:11px;font-weight:600;color:${delta >= 0 ? '#0d7a52' : '#c0282a'};">${delta >= 0 ? '▲ +' : '▼ '}${delta}%</span>`
+          : '';
+        return `
+          <div class="evol-row">
+            <div style="width:110px;font-size:13px;font-weight:500;flex-shrink:0;">${esc(e.cycleName)}</div>
+            <div style="flex:1;min-width:80px;background:var(--surface-2);border-radius:99px;height:8px;overflow:hidden;">
+              <div style="width:${e.avgTotal}%;height:100%;background:${col};border-radius:99px;"></div>
+            </div>
+            <div style="font-size:13px;font-weight:600;width:44px;text-align:right;flex-shrink:0;color:${col};">${e.avgTotal}%</div>
+            <div style="width:64px;flex-shrink:0;text-align:right;">${deltaHtml}</div>
+            <div style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${e.count} resp.</div>
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // ── Plan de acción ─────────────────────────────────────────────
+  const plans = (d.plans || []).filter(p => p.iniciativa);
+  const plansSection = plans.length ? `
+    <div class="section-card">
+      <div class="section-title">Plan de acción</div>
+      ${plans.map(p => {
+        const st = PLAN_STATE[p.estado] || PLAN_STATE['pendiente'];
+        const fechaHtml = p.fechaObjetivo
+          ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${esc(p.fechaObjetivo)}</span>`
+          : '';
+        const respHtml = p.responsable
+          ? `<span style="font-size:11px;color:var(--ink-muted);">${esc(p.responsable)}</span>`
+          : '';
+        const dimHtml = p.dimension
+          ? `<span style="font-size:10px;color:var(--ink-faint);margin-left:6px;">${esc(p.dimension)}</span>`
+          : '';
+        const cicloHtml = p.ciclo
+          ? `<span style="font-size:10px;color:var(--ink-faint);">${esc(p.ciclo)}</span>`
+          : '';
+        return `
+          <div class="plan-item">
+            <span class="plan-status" style="background:${st.bg};color:${st.color};">${st.label}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:500;line-height:1.4;">${esc(p.iniciativa)}${dimHtml}</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center;">${respHtml}${fechaHtml}${cicloHtml}</div>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
+  document.getElementById('app').innerHTML = scoreSection + dimsSection + evolSection + plansSection;
+
+  // Radar
+  if (hasData && d.radarValues && d.radarValues.length) {
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('radar-portal');
+      if (!canvas || typeof Chart === 'undefined') return;
+      if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
+      _radarChart = new Chart(canvas, {
+        type: 'radar',
+        data: {
+          labels: d.radarLabels,
+          datasets: [{
+            data: d.radarValues,
+            backgroundColor: 'rgba(26, 86, 219, 0.10)',
+            borderColor: 'rgba(26, 86, 219, 0.75)',
+            borderWidth: 2,
+            pointBackgroundColor: d.radarColors,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 1.5,
+            pointRadius: 4,
+            pointHoverRadius: 5,
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: true,
+          scales: {
+            r: {
+              min: 0, max: 100,
+              ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
+              grid: { color: 'rgba(0,0,0,0.07)' },
+              angleLines: { color: 'rgba(0,0,0,0.07)' },
+              pointLabels: { font: { size: 10, family: "'DM Sans', sans-serif" }, color: '#374151' }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + '%' } }
+          },
+          animation: { duration: 350 }
+        }
+      });
+    });
+  }
+}
+
+function loadPortal() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('t');
+  if (!token) { showError('Link inválido. Solicita el link al coach.'); return; }
+
+  db.collection('portales').doc(token).onSnapshot(doc => {
+    if (!doc.exists) {
+      showError('Este portal no existe o ha sido revocado.');
+      return;
+    }
+    const portal = doc.data();
+
+    // Título
+    const titleEl = document.getElementById('portal-title');
+    const teamNameSpan = document.getElementById('portal-team-name');
+    if (teamNameSpan) {
+      teamNameSpan.textContent = portal.teamName || 'Equipo';
+    } else if (titleEl) {
+      titleEl.textContent = portal.teamName || 'Equipo';
+    }
+    document.title = (portal.teamName || 'Equipo') + ' — Portal del Equipo';
+    document.getElementById('portal-subtitle').textContent = 'Resultados y plan de acción del equipo';
+
+    // Branding
+    applyBranding(portal.branding);
+    // Si hay logo, actualizar el span con el nombre
+    const spanAfterLogo = document.getElementById('portal-team-name');
+    if (spanAfterLogo) spanAfterLogo.textContent = portal.teamName || 'Equipo';
+    // Si no hay logo, el h1 ya tiene el texto
+    if (!(portal.branding && portal.branding.logoUrl)) {
+      const h1 = document.getElementById('portal-title');
+      if (h1 && !h1.querySelector('img')) h1.textContent = portal.teamName || 'Equipo';
+    }
+
+    // Footer
+    const updAt = portal.updatedAt ? portal.updatedAt.toDate() : null;
+    const updStr = updAt
+      ? updAt.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
+      : null;
+    document.getElementById('portal-footer').innerHTML =
+      (updStr ? `Datos actualizados el ${updStr}<br>` : '') +
+      'Vista de solo lectura · Assessment Agile';
+
+    renderPortal(portal);
+  }, () => {
+    showError('Error al cargar el portal. Intenta nuevamente más tarde.');
+  });
+}
+
+loadPortal();
+</script>
+</body>
+</html>

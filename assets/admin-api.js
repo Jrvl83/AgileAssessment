@@ -311,6 +311,13 @@ async function fetchAllData() {
         expiresAt:   r.expiresAt   ? r.expiresAt.toDate()   : null,
       };
     }).sort((a, b) => (b.generatedAt || 0) - (a.generatedAt || 0));
+
+    await fetchPortals();
+    // Sync portales en background — no bloquea la UI
+    const portalTeamIds = Object.keys(state.portals);
+    if (portalTeamIds.length) {
+      Promise.all(portalTeamIds.map(tid => syncPortalData(tid))).catch(() => {});
+    }
   } catch(e) { toast('Error al conectar con Firebase'); }
   setState({ loading: false });
 }
@@ -720,6 +727,115 @@ function generateDebriefGuide(tid, cycleFilter) {
     celebrations,
     gaps,
   };
+}
+
+// ── Portal del equipo ─────────────────────────────────────────────
+function generateToken() {
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function fetchPortals() {
+  if (!state.currentUser) return;
+  try {
+    const snap = await db.collection('portales')
+      .where('ownerId', '==', state.currentUser.uid).get();
+    const portals = {};
+    snap.docs.forEach(d => {
+      const data = d.data();
+      if (data.teamId) portals[data.teamId] = { token: d.id, updatedAt: data.updatedAt || null };
+    });
+    state.portals = portals;
+  } catch(e) { state.portals = {}; }
+}
+
+async function syncPortalData(teamId) {
+  const portal = state.portals[teamId];
+  if (!portal) return;
+  const team = state.teams.find(t => t.id === teamId);
+  if (!team) return;
+
+  const ds = getTeamFilteredStats(teamId, 'Todos', 'Todos');
+  const evData = getEvolutionData(teamId, 'Todos');
+  const activeCycle = (state.cycles.find(c => c.active) || {}).name || '';
+  const teamPlans = state.plans.filter(p => p.equipoId === teamId).map(p => ({
+    id: p.id,
+    iniciativa: p.iniciativa || '',
+    responsable: p.responsable || '',
+    fechaObjetivo: p.fechaObjetivo || '',
+    estado: p.estado || 'pendiente',
+    ciclo: p.ciclo || '',
+    dimension: p.dimension || ''
+  }));
+
+  const portalUpdate = {
+    teamName: team.name,
+    branding: { marca: state.marca || '', logoUrl: state.logoUrl || '', colorAcento: state.colorAcento || '' },
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    data: ds ? {
+      avgTotal: ds.avgTotal,
+      count: ds.count,
+      level: ds.level,
+      avgDims: ds.avgDims,
+      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
+      radarValues: DIMS.map(d => ds.avgDims[d.key].pct),
+      radarLabels: DIMS.map(d => d.label),
+      radarColors: DIMS.map(d => d.color),
+      evolutionData: evData.map(e => ({ cycleName: e.cycleName, avgTotal: e.avgTotal, count: e.count })),
+      plans: teamPlans,
+      activeCycle
+    } : {
+      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color })),
+      plans: teamPlans,
+      activeCycle
+    }
+  };
+
+  try {
+    await db.collection('portales').doc(portal.token).set(portalUpdate, { merge: true });
+    if (state.portals[teamId]) state.portals[teamId].updatedAt = new Date();
+  } catch(e) { /* silent */ }
+}
+
+async function createPortal(teamId) {
+  const team = state.teams.find(t => t.id === teamId);
+  if (!team) return;
+  const token = generateToken();
+  try {
+    await db.collection('portales').doc(token).set({
+      teamId,
+      ownerId: state.currentUser.uid,
+      teamName: team.name,
+      branding: { marca: state.marca || '', logoUrl: state.logoUrl || '', colorAcento: state.colorAcento || '' },
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      data: {}
+    });
+    state.portals[teamId] = { token };
+    await syncPortalData(teamId);
+    showPortalLink(location.origin + '/equipo.html?t=' + token, team.name);
+    toast('Portal del equipo creado');
+    setState({});
+  } catch(e) { toast('Error al crear el portal'); }
+}
+
+async function revokePortal(teamId, teamName) {
+  const portal = state.portals[teamId];
+  if (!portal) return;
+  if (!confirm(`¿Revocar el portal de "${teamName}"?\n\nEl link dejará de funcionar inmediatamente.`)) return;
+  try {
+    await db.collection('portales').doc(portal.token).delete();
+    delete state.portals[teamId];
+    toast('Portal revocado');
+    setState({});
+  } catch(e) { toast('Error al revocar el portal'); }
+}
+
+async function syncPortalAndRefresh(teamId) {
+  await syncPortalData(teamId);
+  toast('Portal actualizado');
+  setState({});
 }
 
 // CommonJS exports para tests (no-op en el browser)
