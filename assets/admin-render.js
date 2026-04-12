@@ -650,10 +650,18 @@ function renderParticipationPanel(tid, cycleFilter) {
       </div>`;
   }).join('');
 
+  const fastCount = teamResps.filter(r => r.fields.FlaggedFast).length;
+  const fastBadge = fastCount > 0
+    ? `<span title="${fastCount} respuesta${fastCount!==1?'s':''} completada${fastCount!==1?'s':''} en menos de 3 minutos — revisar calidad del dato"
+        style="font-size:10px;font-weight:600;color:#a05c0a;background:#fdefd6;border-radius:99px;padding:2px 8px;flex-shrink:0;cursor:default;">
+        ⚡ ${fastCount} rápida${fastCount!==1?'s':''}
+      </span>` : '';
+
   return `
     <div class="no-print" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;">
-      <div style="font-size:10px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">
-        Participación · ${cycleLabel} · ${total} respuesta${total !== 1 ? 's' : ''}
+      <div style="font-size:10px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <span>Participación · ${cycleLabel} · ${total} respuesta${total !== 1 ? 's' : ''}</span>
+        ${fastBadge}
       </div>
       ${rows}
     </div>`;

@@ -467,6 +467,7 @@ let teamAge = "";    // "< 3 meses" | "3–12 meses" | "1–2 años" | "> 2 año
 let dedicatedPO = ""; // "Sí" | "No" | "Compartido"
 let workMode = "";   // "Presencial" | "Híbrido" | "Totalmente remoto"
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
+let startedAt = null;  // timestamp (ms) cuando el participante inicia la primera sección
 let briefingTexto = "";
 let anonymityMode = "full";  // "full" | "semi" | "nominal"
 let aiEnabled = false;
@@ -571,7 +572,9 @@ async function submitResults() {
     }
     const scoreFields = {};
     DIMS.forEach(d => { scoreFields[d.storeKey] = dims[d.key] ? dims[d.key].score : 0; });
-    await db.collection('respuestas').add({
+    const completionSeconds = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
+    const flaggedFast = completionSeconds !== null && completionSeconds < 180;
+    const respDoc = {
       equipoId: teamId,
       equipoNombre: teamName,
       participante: participantName.trim() || 'Anónimo',
@@ -590,7 +593,10 @@ async function submitResults() {
       comments: {...openTexts},
       customAnswers: {...customAnswers},
       fecha: firebase.firestore.FieldValue.serverTimestamp()
-    });
+    };
+    if (completionSeconds !== null) respDoc.completionSeconds = completionSeconds;
+    if (flaggedFast) respDoc.flaggedFast = true;
+    await db.collection('respuestas').add(respDoc);
     submitStatus = 'ok';
     try { localStorage.setItem('assessment_' + cicloFinal + '_' + teamId, '1'); } catch(e) {}
   } catch(e) {
@@ -826,7 +832,7 @@ function renderResults() {
 
 function setRole(r) { role=r; render(); }
 function startAssessment() { if(role && teamId){ screen='context'; render(); } }
-function startContext() { screen='section'; currentSection=0; render(); }
+function startContext() { screen='section'; currentSection=0; startedAt = Date.now(); render(); }
 
 function renderContext() {
   function pillGroup(label, opts, current, setter) {

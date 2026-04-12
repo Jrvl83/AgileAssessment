@@ -305,7 +305,9 @@ async function fetchAllData() {
             'Dedicated PO': r.dedicatedPO || '',
             'Work Mode': r.workMode || '',
             Answers: r.answers || {},
-            Comments: r.comments || {}
+            Comments: r.comments || {},
+            FlaggedFast: r.flaggedFast || false,
+            CompletionSeconds: r.completionSeconds || null
           }
         };
       })
@@ -749,7 +751,9 @@ function startLiveResponseCount() {
             'Dedicated PO': r.dedicatedPO || '',
             'Work Mode': r.workMode || '',
             Answers: r.answers || {},
-            Comments: r.comments || {}
+            Comments: r.comments || {},
+            FlaggedFast: r.flaggedFast || false,
+            CompletionSeconds: r.completionSeconds || null
           }
         };
       })
