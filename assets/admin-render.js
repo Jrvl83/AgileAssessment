@@ -115,17 +115,81 @@ function removeDocxUpload(key) {
   if (statusEl) statusEl.innerHTML = '';
 }
 
+const IMG_MAX_SIZE  = 2 * 1024 * 1024; // 2 MB por imagen
+const IMG_MAX_COUNT = 3;
+
+async function handleImageUpload(key, input) {
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+
+  const safeKey  = key.replace(/[^a-zA-Z0-9]/g, '_');
+  const statusEl = document.getElementById('img-status-' + safeKey);
+  const existing = state.aiImages[key] || [];
+  const available = IMG_MAX_COUNT - existing.length;
+
+  if (available <= 0) {
+    if (statusEl) statusEl.textContent = `Máximo ${IMG_MAX_COUNT} imágenes permitidas.`;
+    input.value = '';
+    return;
+  }
+
+  const toProcess = files.slice(0, available);
+  const loaded = [];
+
+  for (const file of toProcess) {
+    if (file.size > IMG_MAX_SIZE) {
+      if (statusEl) statusEl.innerHTML =
+        `<span style="color:#c0282a;">✕ "${file.name}" supera el límite de 2 MB — omitida.</span>`;
+      continue;
+    }
+    const mediaType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+    await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const base64 = ev.target.result.split(',')[1];
+        loaded.push({ name: file.name, data: base64, mediaType, size: file.size });
+        resolve();
+      };
+      reader.onerror = resolve;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  input.value = '';
+  if (!loaded.length) return;
+
+  state.aiImages = { ...state.aiImages, [key]: [...existing, ...loaded] };
+  render(); // Re-renderiza para mostrar las miniaturas
+}
+
+function removeImage(key, index) {
+  const imgs = (state.aiImages[key] || []).filter((_, i) => i !== index);
+  if (imgs.length) {
+    state.aiImages = { ...state.aiImages, [key]: imgs };
+  } else {
+    const newImgs = { ...state.aiImages };
+    delete newImgs[key];
+    state.aiImages = newImgs;
+  }
+  render();
+}
+
 async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
   const cf  = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
   const contextoCoach  = (state.aiContext[key] || '').trim();
   const docEntry       = state.aiDocContext[key];
   const documentoContexto = docEntry ? docEntry.text : null;
+  const imagesRaw      = state.aiImages[key] || [];
+  // Enviar solo data + mediaType (omitir nombre/size para reducir payload)
+  const images = imagesRaw.length
+    ? imagesRaw.map(img => ({ data: img.data, mediaType: img.mediaType }))
+    : null;
   setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: true, data: null, error: null } } });
 
   try {
     const fn     = fns.httpsCallable('analyzeTeamWithClaude');
-    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach, documentoContexto });
+    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach, documentoContexto, images });
     // Pre-cargar contexto guardado para que el textarea lo muestre en futuros renders
     if (result.data && result.data.data && result.data.data.contextoCoach) {
       state.aiContext = { ...state.aiContext, [key]: result.data.data.contextoCoach };
@@ -1317,6 +1381,35 @@ function renderAnalysis() {
                         : ''}
                     </div>
                   </div>
+                  ${(() => {
+                    const imgs = state.aiImages[aiKey] || [];
+                    const safeAiKey = aiKey.replace(/[^a-zA-Z0-9]/g,'_');
+                    const thumbs = imgs.map((img, i) => `
+                      <div style="display:inline-flex;align-items:center;gap:4px;padding:3px 6px 3px 8px;background:#f0f4ff;border:1px solid #dce6ff;border-radius:6px;font-size:11px;color:var(--ink-muted);">
+                        🖼 ${e(img.name)}
+                        <button onclick="removeImage('${aiKey}',${i})"
+                          style="background:none;border:none;cursor:pointer;color:#c0282a;font-size:13px;line-height:1;padding:0 2px;font-family:inherit;">✕</button>
+                      </div>`).join('');
+                    return `
+                  <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #dce6ff;">
+                    <label style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:4px;">
+                      Imágenes (gráficos) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional · máx. ${IMG_MAX_COUNT} · PNG/JPG)</span>
+                    </label>
+                    ${imgs.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${thumbs}</div>` : ''}
+                    ${imgs.length < IMG_MAX_COUNT ? `
+                    <label style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1.5px solid #dce6ff;background:white;font-size:12px;color:var(--ink-muted);cursor:pointer;font-family:inherit;">
+                      🖼 Añadir imagen
+                      <input id="img-input-${safeAiKey}"
+                        type="file" accept=".png,.jpg,.jpeg" multiple
+                        style="display:none"
+                        onchange="handleImageUpload('${aiKey}', this)"/>
+                    </label>` : ''}
+                    <p style="font-size:11px;color:var(--ink-faint);margin:5px 0 0;line-height:1.5;">
+                      Sube capturas de gráficos o tablas del equipo. Claude las analizará con visión. Máx. 2 MB c/u. No se almacenan.
+                    </p>
+                    <div id="img-status-${safeAiKey}" style="font-size:12px;margin-top:4px;min-height:16px;"></div>
+                  </div>`;
+                  })()}
                 </div>
                 ${(hasData || isLoading || hasError) ? `
                 <div style="padding:12px 14px;border-top:1px solid #dce6ff;">

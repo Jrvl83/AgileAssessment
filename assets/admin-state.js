@@ -68,6 +68,7 @@ const state = {
   aiAnalysis:             {},
   aiContext:              {},
   aiDocContext:           {},
+  aiImages:              {},
   assessmentCadenceWeeks: 0,
   cadenceBannerDismissed: false
 };

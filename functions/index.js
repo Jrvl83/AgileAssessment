@@ -342,6 +342,7 @@ exports.analyzeTeamWithClaude = functions
     const ciclo             = (request.data.ciclo             || '').trim() || null;
     const contextoCoach     = (request.data.contextoCoach     || '').trim() || null;
     const documentoContexto = (request.data.documentoContexto || '').trim() || null;
+    const images            = Array.isArray(request.data.images) ? request.data.images : null;
 
     if (!teamId) {
       throw new functions.https.HttpsError('invalid-argument', 'teamId es requerido.');
@@ -407,10 +408,26 @@ exports.analyzeTeamWithClaude = functions
     const anthropic = new Anthropic({ apiKey });
     let parsed;
     try {
+      // Construir contenido del mensaje: texto + imágenes opcionales
+      let msgContent;
+      if (images && images.length) {
+        msgContent = [];
+        for (const img of images) {
+          const mt = img.mediaType === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+          msgContent.push({ type: 'image', source: { type: 'base64', media_type: mt, data: img.data } });
+        }
+        // Instrucción + prompt después de las imágenes
+        msgContent.push({
+          type: 'text',
+          text: `Se adjuntan ${images.length} imagen${images.length !== 1 ? 'es' : ''} (capturas de gráficos o tablas del equipo). Analízalas e incorpóralas a tu análisis donde sean relevantes.\n\n${built.prompt}`
+        });
+      } else {
+        msgContent = built.prompt;
+      }
       const message = await anthropic.messages.create({
         model:      'claude-sonnet-4-6',
         max_tokens: 1024,
-        messages:   [{ role: 'user', content: built.prompt }],
+        messages:   [{ role: 'user', content: msgContent }],
       });
       const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
       // Extraer JSON aunque el modelo añada backticks
