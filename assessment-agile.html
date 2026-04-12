@@ -437,6 +437,7 @@ const db = firebase.firestore();
 let screen = "loading"; // loading | briefing | intro | section | results
 let currentSection = 0;
 let answers = {};
+let customAnswers = {}; // { [cqId]: 0-3 } — respuestas a preguntas personalizadas (no afectan score)
 let role = "";
 let teams = [];          // [{ id, name }] cargado desde Airtable
 let teamId = "";
@@ -448,6 +449,7 @@ let teamSize = "";   // "1-5" | "6-9" | "10+"
 let scrumTime = "";  // "<6m" | "6-18m" | ">18m"
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
 let briefingTexto = "";
+let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
 
 function setTeam(id, text) {
   teamId = id;
@@ -517,6 +519,15 @@ async function loadTeams() {
     }
   } catch(e) { briefingTexto = ''; }
 
+  // Cargar configuración de preguntas del workspace
+  try {
+    const cfgSnap = await db.collection('configuraciones').doc(workspaceId).get();
+    wsConfig = cfgSnap.exists ? {
+      questionOverrides: cfgSnap.data().questionOverrides || {},
+      customQuestions:   cfgSnap.data().customQuestions   || {}
+    } : { questionOverrides: {}, customQuestions: {} };
+  } catch(e) { wsConfig = { questionOverrides: {}, customQuestions: {} }; }
+
   screen = briefingTexto.trim() ? 'briefing' : 'intro';
   render();
 }
@@ -550,6 +561,7 @@ async function submitResults() {
       nivel: level.label,
       answers: {...answers},
       comments: {...openTexts},
+      customAnswers: {...customAnswers},
       fecha: firebase.firestore.FieldValue.serverTimestamp()
     });
     submitStatus = 'ok';
@@ -563,9 +575,16 @@ async function submitResults() {
 function calcResults() {
   let total=0, max=0;
   const dims = {};
+  const ov = wsConfig.questionOverrides || {};
   SECTIONS.forEach(sec => {
-    let s=0, m=sec.questions.length*3;
-    sec.questions.forEach((q,qi)=>{ s += (answers[sec.id+"_"+qi]||0); });
+    let s=0, m=0;
+    sec.questions.forEach((q,qi)=>{
+      const qKey = `${sec.id}_${qi}`;
+      if ((ov[qKey] || {}).disabled) return; // excluir preguntas desactivadas
+      m += 3;
+      s += (answers[qKey] || 0);
+    });
+    if (m === 0) m = sec.questions.length * 3; // fallback (no debería pasar)
     dims[sec.id]={ score:s, max:m, pct:Math.round(s/m*100), name:sec.title };
     total+=s; max+=m;
   });
@@ -675,22 +694,54 @@ function getSectionNote(secRole, userRole) {
 
 function renderSection() {
   const sec = SECTIONS[currentSection];
-  const totalQ = SECTIONS.reduce((a,s)=>a+s.questions.length,0);
-  const answered = Object.keys(answers).length;
-  const pct = Math.round(answered/totalQ*100);
-  const secDone = sec.questions.every((_,qi)=>answers[sec.id+"_"+qi]!==undefined);
-  const isLast = currentSection===SECTIONS.length-1;
+  const ov = wsConfig.questionOverrides || {};
+  const cqs = (wsConfig.customQuestions || {})[sec.id] || [];
 
-  let qs = sec.questions.map((q,qi)=>{
-    const key = sec.id+"_"+qi;
+  // Preguntas estándar activas (no desactivadas)
+  const activeQs = sec.questions.map((q, qi) => ({ q, qi }))
+    .filter(({ qi }) => !((ov[`${sec.id}_${qi}`] || {}).disabled));
+
+  // Total de preguntas estándar activas en todo el formulario
+  const totalQ = SECTIONS.reduce((a, s) => {
+    return a + s.questions.filter((_, qi) => !((ov[`${s.id}_${qi}`] || {}).disabled)).length;
+  }, 0);
+  const answered = Object.keys(answers).length;
+  const pct = Math.round(answered / totalQ * 100);
+
+  // La sección está completa cuando todas las preguntas activas están respondidas
+  const secDone = activeQs.every(({ qi }) => answers[`${sec.id}_${qi}`] !== undefined);
+  const isLast = currentSection === SECTIONS.length - 1;
+  let qNum = 0;
+
+  let qs = activeQs.map(({ q, qi }) => {
+    qNum++;
+    const key = `${sec.id}_${qi}`;
     const sel = answers[key];
+    const displayText = (ov[key] && ov[key].texto) ? ov[key].texto : q.text;
     return `<div class="question">
-      <div class="question-text"><span class="question-num">P${qi+1}</span>${q.text}</div>
-      <div class="options" role="radiogroup" aria-label="${q.text}">
-        ${q.opts.map((opt,oi)=>`
+      <div class="question-text"><span class="question-num">P${qNum}</span>${displayText}</div>
+      <div class="options" role="radiogroup" aria-label="${displayText}">
+        ${q.opts.map((opt, oi) => `
           <button class="option ${sel===oi?'selected':''}" onclick="pick('${key}',${oi})" role="radio" aria-checked="${sel===oi}">
             <span class="option-score">${oi+1}</span>
             <span class="option-label">${opt}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Preguntas personalizadas al final de la sección
+  const customQHtml = cqs.filter(cq => cq.texto && cq.opts.filter(Boolean).length >= 2).map(cq => {
+    const sel = customAnswers[cq.id];
+    qNum++;
+    return `<div class="question" style="border-top:2px dashed var(--border);padding-top:20px;margin-top:4px;">
+      <div style="font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Pregunta adicional</div>
+      <div class="question-text"><span class="question-num">P${qNum}</span>${cq.texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="options" role="radiogroup">
+        ${cq.opts.filter(Boolean).map((opt, oi) => `
+          <button class="option ${sel===oi?'selected':''}" onclick="pickCustom('${cq.id}',${oi})" role="radio" aria-checked="${sel===oi}">
+            <span class="option-score">${oi+1}</span>
+            <span class="option-label">${opt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -709,6 +760,7 @@ function renderSection() {
     <div class="section-desc">${sec.desc}</div>
     ${getSectionNote(sec.role, role)}
     ${qs}
+    ${customQHtml}
     <div class="open-question">
       <label style="font-size:14px;display:block;margin-bottom:8px;">
         <strong style="font-weight:500;color:var(--ink);">Comentario abierto</strong>
@@ -741,10 +793,11 @@ function renderResults() {
 function setRole(r) { role=r; render(); }
 function startAssessment() { if(role && teamId){ screen='section'; currentSection=0; render(); } }
 function pick(key,val) { answers[key]=val; render(); }
+function pickCustom(cqId,val) { customAnswers[cqId]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
+function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';

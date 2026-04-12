@@ -312,6 +312,7 @@ async function fetchAllData() {
       };
     }).sort((a, b) => (b.generatedAt || 0) - (a.generatedAt || 0));
 
+    await fetchConfig();
     await fetchPortals();
     // Sync portales en background — no bloquea la UI
     const portalTeamIds = Object.keys(state.portals);
@@ -730,6 +731,84 @@ function generateDebriefGuide(tid, cycleFilter) {
     celebrations,
     gaps,
   };
+}
+
+// ── Configuración de preguntas ────────────────────────────────────
+async function fetchConfig() {
+  if (!state.currentUser) return;
+  try {
+    const snap = await db.collection('configuraciones').doc(state.currentUser.uid).get();
+    if (snap.exists) {
+      const d = snap.data();
+      state.configOverrides = d.questionOverrides || {};
+      state.configCustom    = d.customQuestions   || {};
+    } else {
+      state.configOverrides = {};
+      state.configCustom    = {};
+    }
+  } catch(e) { state.configOverrides = {}; state.configCustom = {}; }
+}
+
+let _configSaveTimer = null;
+function scheduleConfigSave() {
+  clearTimeout(_configSaveTimer);
+  _configSaveTimer = setTimeout(async () => {
+    try {
+      await db.collection('configuraciones').doc(state.currentUser.uid).set({
+        questionOverrides: state.configOverrides,
+        customQuestions:   state.configCustom
+      });
+    } catch(e) { toast('Error al guardar la configuración'); }
+  }, 800);
+}
+
+function toggleQuestionDisabled(qKey) {
+  if (!state.configOverrides[qKey]) state.configOverrides[qKey] = { texto: '', disabled: false };
+  state.configOverrides[qKey].disabled = !state.configOverrides[qKey].disabled;
+  scheduleConfigSave();
+  setState({});
+}
+
+function saveQuestionText(qKey, text) {
+  if (!state.configOverrides[qKey]) state.configOverrides[qKey] = { texto: '', disabled: false };
+  state.configOverrides[qKey].texto = text;
+  scheduleConfigSave();
+}
+
+function restoreQuestionText(qKey) {
+  if (state.configOverrides[qKey]) state.configOverrides[qKey].texto = '';
+  scheduleConfigSave();
+  setState({});
+}
+
+function addCustomQuestion(sectionId) {
+  if (!state.configCustom[sectionId]) state.configCustom[sectionId] = [];
+  if (state.configCustom[sectionId].length >= 3) return;
+  state.configCustom[sectionId].push({
+    id: 'cq_' + sectionId + '_' + Date.now(),
+    texto: '',
+    opts: ['', '', '', '']
+  });
+  scheduleConfigSave();
+  setState({});
+}
+
+function removeCustomQuestion(sectionId, idx) {
+  if (!state.configCustom[sectionId]) return;
+  state.configCustom[sectionId].splice(idx, 1);
+  scheduleConfigSave();
+  setState({});
+}
+
+function saveCustomQuestionField(sectionId, idx, field, value) {
+  const cqs = state.configCustom[sectionId];
+  if (!cqs || !cqs[idx]) return;
+  if (field === 'texto') {
+    cqs[idx].texto = value;
+  } else if (field.startsWith('opt')) {
+    cqs[idx].opts[parseInt(field.slice(3))] = value;
+  }
+  scheduleConfigSave();
 }
 
 // ── Portal del equipo ─────────────────────────────────────────────

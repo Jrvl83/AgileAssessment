@@ -58,7 +58,9 @@ const state = {
   marca:              '',
   logoUrl:            '',
   colorAcento:        '',
-  portals:            {}
+  portals:            {},
+  configOverrides:    {},
+  configCustom:       {}
 };
 
 // setState actualiza el estado y dispara un re-render.

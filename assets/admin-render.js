@@ -385,6 +385,7 @@ function renderShell() {
         <button class="tab ${state.activeTab==='evolution'?'active':''}" onclick="setState({activeTab:'evolution'})">Evolución</button>
         <button class="tab ${state.activeTab==='plan'?'active':''}"      onclick="setState({activeTab:'plan'})">Plan de Acción</button>
         <button class="tab ${state.activeTab==='teams'?'active':''}"     onclick="setState({activeTab:'teams'})">Equipos</button>
+        <button class="tab ${state.activeTab==='config'?'active':''}"   onclick="setState({activeTab:'config'})">Configuración</button>
         ${state.currentRole === 'super_admin' ? `<button class="tab ${state.activeTab==='usuarios'?'active':''}" onclick="setState({activeTab:'usuarios'})">Usuarios</button>` : ''}
       </div>
       <div class="tab-actions">
@@ -396,6 +397,7 @@ function renderShell() {
     ${state.activeTab === 'analysis'  ? renderAnalysis()
     : state.activeTab === 'evolution' ? renderEvolution()
     : state.activeTab === 'plan'      ? renderPlan()
+    : state.activeTab === 'config'    ? renderConfig()
     : state.activeTab === 'usuarios'  ? renderUsuarios()
     : renderTeams()}`;
 }
@@ -1635,6 +1637,100 @@ function renderPlan() {
       ${statsRow}
       ${list}
     </div>`;
+}
+
+// ── Configuración tab ─────────────────────────────────────────────
+function renderConfig() {
+  if (state.loading) return `<div class="empty-state">Cargando…</div>`;
+
+  const overrides = state.configOverrides || {};
+  const custom    = state.configCustom    || {};
+
+  const e = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+  const sectionCards = SECTIONS.map(sec => {
+    const activeCount = sec.questions.filter((_, qi) => !((overrides[`${sec.id}_${qi}`] || {}).disabled)).length;
+
+    const qRows = sec.questions.map((q, qi) => {
+      const qKey      = `${sec.id}_${qi}`;
+      const ov        = overrides[qKey] || {};
+      const isDisabled = !!ov.disabled;
+      const hasCustom  = ov.texto && ov.texto !== q.text;
+      const displayTxt = ov.texto || q.text;
+
+      return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);${isDisabled?'opacity:0.5;':''}">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <button onclick="toggleQuestionDisabled('${qKey}')"
+              title="${isDisabled ? 'Activar' : 'Desactivar'}"
+              style="flex-shrink:0;margin-top:3px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;
+                     border:1.5px solid ${isDisabled ? 'var(--border)' : 'var(--accent)'};
+                     background:${isDisabled ? 'white' : 'var(--accent-light)'};
+                     color:${isDisabled ? 'var(--ink-faint)' : 'var(--accent)'};">
+              ${isDisabled ? 'Desactivada' : 'Activa'}
+            </button>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:10px;font-weight:600;color:var(--ink-faint);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">P${qi+1}</div>
+              <textarea class="field-input" rows="2"
+                style="font-size:13px;resize:vertical;min-height:52px;"
+                ${isDisabled ? 'disabled' : ''}
+                oninput="saveQuestionText('${qKey}',this.value)"
+              >${e(displayTxt)}</textarea>
+              ${hasCustom ? `<button onclick="restoreQuestionText('${qKey}')"
+                style="font-size:11px;color:var(--ink-faint);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;">
+                Restaurar texto original
+              </button>` : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    const cqs = custom[sec.id] || [];
+    const cqRows = cqs.map((cq, cqi) => `
+      <div style="background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;">Pregunta personalizada ${cqi+1}</span>
+          <button onclick="removeCustomQuestion('${sec.id}',${cqi})"
+            style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-faint);padding:0;line-height:1;">✕</button>
+        </div>
+        <textarea class="field-input" rows="2" placeholder="Texto de la pregunta…"
+          style="font-size:13px;resize:vertical;margin-bottom:10px;"
+          oninput="saveCustomQuestionField('${sec.id}',${cqi},'texto',this.value)"
+        >${e(cq.texto)}</textarea>
+        <div style="font-size:11px;color:var(--ink-faint);margin-bottom:6px;font-weight:500;">4 opciones de respuesta (de menor a mayor):</div>
+        ${cq.opts.map((opt, oi) => `
+          <input class="field-input" type="text" placeholder="Opción ${oi+1}"
+            value="${e(opt)}"
+            oninput="saveCustomQuestionField('${sec.id}',${cqi},'opt${oi}',this.value)"
+            style="font-size:12px;padding:6px 10px;margin-bottom:6px;"/>`).join('')}
+      </div>`).join('');
+
+    const canAdd = cqs.length < 3;
+
+    return `
+      <div class="section-card">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;">
+          <div class="section-title" style="margin-bottom:0;">${sec.title}</div>
+          <span style="font-size:11px;color:var(--ink-faint);">${activeCount}/${sec.questions.length} activas</span>
+        </div>
+        <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">Activa/desactiva preguntas o edita su texto. Guardado automático.</p>
+        ${qRows}
+        ${cqRows}
+        ${canAdd
+          ? `<button class="btn sm" onclick="addCustomQuestion('${sec.id}')" style="margin-top:14px;">+ Agregar pregunta personalizada</button>`
+          : `<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">Máximo 3 preguntas personalizadas por sección.</p>`}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="section-card">
+      <div class="section-title">Configuración de preguntas</div>
+      <p style="font-size:13px;color:var(--ink-muted);line-height:1.6;">
+        Personaliza el formulario para este workspace. Los cambios aplican a partir del próximo assessment.
+        <strong>Las preguntas personalizadas no afectan el score total</strong> — sus respuestas se guardan por separado.
+      </p>
+    </div>
+    ${sectionCards}`;
 }
 
 // ── Usuarios tab ─────────────────────────────────────────────────

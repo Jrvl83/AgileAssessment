@@ -93,6 +93,14 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // ── Configuración de preguntas ────────────────────────────────
+    // Lectura pública: assessment-agile.html aplica overrides sin login.
+    // Escritura: solo el propio workspace admin.
+    match /configuraciones/{id} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == id;
+    }
+
     // ── Portales de equipo ────────────────────────────────────────
     // Lectura pública: el equipo accede sin login con el token.
     // Creación/actualización: solo el workspace admin dueño.
