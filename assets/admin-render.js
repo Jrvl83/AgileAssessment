@@ -42,6 +42,140 @@ function toggleTeamComments(tid) {
   render();
 }
 
+// ── Análisis con IA ───────────────────────────────────────────────
+async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
+  const cf  = state.cycleFilter || 'Todos';
+  const key = `${tid}__${cf}`;
+  setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: true, data: null, error: null } } });
+
+  try {
+    const fn     = fns.httpsCallable('analyzeTeamWithClaude');
+    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf });
+    setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, ...result.data } } });
+  } catch (e) {
+    setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, data: null, error: e.message || 'Error al analizar' } } });
+  }
+}
+
+// ── Panel de Análisis IA ──────────────────────────────────────────
+function renderAIPanel(tid) {
+  const cf    = state.cycleFilter || 'Todos';
+  const key   = `${tid}__${cf}`;
+  const entry = state.aiAnalysis[key];
+
+  if (!entry) {
+    // No hay análisis todavía
+    return '';
+  }
+
+  if (entry.loading) {
+    return `<div style="padding:16px;text-align:center;font-size:13px;color:var(--ink-faint);">
+      Analizando con IA… puede tardar unos segundos.
+    </div>`;
+  }
+
+  if (entry.error) {
+    return `<div style="padding:12px 16px;background:#fce8e8;border-radius:var(--radius-sm);font-size:12px;color:#c0282a;">
+      Error: ${entry.error.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+    </div>`;
+  }
+
+  if (!entry.data) return '';
+
+  const d   = entry.data;
+  const DIM_LABELS = { eventos:'Ceremonias', backlog:'Product Backlog', devteam:'Dev Team',
+    transparencia:'Transparencia', tecnico:'Exc. Técnica', cliente:'Orient. Cliente' };
+  const DIM_COLORS = { eventos:'#1a4fd6', backlog:'#0d7a52', devteam:'#a05c0a',
+    transparencia:'#7c3aed', tecnico:'#0891b2', cliente:'#db2777' };
+
+  const generadoLabel = d.generadoEn
+    ? `Análisis generado ${new Date(d.generadoEn).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' })}`
+    : '';
+  const fromCacheBadge = entry.fromCache
+    ? `<span style="font-size:10px;background:#e0e7ff;color:#1a4fd6;padding:1px 7px;border-radius:99px;margin-left:6px;">Caché</span>`
+    : '<span style="font-size:10px;background:#d4f0e5;color:#0d7a52;padding:1px 7px;border-radius:99px;margin-left:6px;">Nuevo</span>';
+  const newRespsBadge = entry.newResponsesCount > 0
+    ? `<span style="font-size:10px;background:#fdefd6;color:#a05c0a;padding:1px 7px;border-radius:99px;margin-left:6px;">
+        ${entry.newResponsesCount} resp. nueva${entry.newResponsesCount !== 1 ? 's' : ''} — actualiza el análisis
+      </span>`
+    : '';
+
+  // Narrativa
+  const narrativaHtml = d.narrativa ? `
+    <div style="font-size:13px;color:var(--ink);line-height:1.65;margin-bottom:4px;">
+      ${d.narrativa.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
+    </div>` : '';
+
+  // Foco de sesión
+  const focoHtml = Array.isArray(d.focusSesion) && d.focusSesion.length ? `
+    <div style="margin-top:14px;">
+      <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Dimensiones prioritarias</div>
+      ${d.focusSesion.slice(0,3).map((f, i) => {
+        const color = DIM_COLORS[f.dimension] || '#374151';
+        const label = DIM_LABELS[f.dimension] || f.dimension;
+        return `<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+          <span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;
+            font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+          <div>
+            <span style="font-size:12px;font-weight:600;color:${color};">${label}</span>
+            <span style="font-size:12px;color:var(--ink);"> — ${(f.razon||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // Alertas
+  const alertasHtml = Array.isArray(d.alertas) && d.alertas.length ? `
+    <div style="margin-top:14px;background:#fce8e8;border-left:3px solid #c0282a;border-radius:0 6px 6px 0;padding:10px 14px;">
+      <div style="font-size:10px;font-weight:700;color:#c0282a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Alertas</div>
+      ${d.alertas.map(a => `<div style="font-size:12px;color:#7f1d1d;margin-bottom:4px;">⚠ ${a.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`).join('')}
+    </div>` : '';
+
+  // Síntesis de comentarios
+  const sintesisEntries = d.sintesisComentarios ? Object.entries(d.sintesisComentarios) : [];
+  const sintesisHtml = sintesisEntries.length ? `
+    <div style="margin-top:14px;">
+      <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Síntesis de comentarios</div>
+      ${sintesisEntries.map(([secId, text]) => {
+        const color = DIM_COLORS[secId] || '#374151';
+        const label = DIM_LABELS[secId]  || secId;
+        return `<div style="margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:${color};">${label}:</span>
+          <span style="font-size:12px;color:var(--ink);"> ${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  // Agenda
+  const agendaHtml = d.agendaSesion ? `
+    <div style="margin-top:14px;padding:12px 14px;background:#f8faff;border:1px solid #dce6ff;border-radius:var(--radius-sm);">
+      <div style="font-size:10px;font-weight:700;color:#1a4fd6;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Agenda de debrief (borrador 90 min)</div>
+      <div style="font-size:12px;color:var(--ink);line-height:1.6;white-space:pre-wrap;">${d.agendaSesion.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+    </div>` : '';
+
+  // Resumen ejecutivo
+  const resumenHtml = d.resumenEjecutivo ? `
+    <div style="margin-top:14px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);">
+      <div style="font-size:10px;font-weight:700;color:#0d7a52;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Resumen ejecutivo</div>
+      <div style="font-size:12px;color:var(--ink);line-height:1.6;">${d.resumenEjecutivo.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+      <button onclick="navigator.clipboard.writeText(${JSON.stringify(d.resumenEjecutivo || '')});toast('Copiado al portapapeles')"
+        style="margin-top:8px;font-size:11px;padding:3px 10px;border:1px solid #0d7a52;color:#0d7a52;background:transparent;border-radius:99px;cursor:pointer;">
+        Copiar
+      </button>
+    </div>` : '';
+
+  return `
+    <div style="font-size:11px;color:var(--ink-faint);margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+      ${generadoLabel}${fromCacheBadge}${newRespsBadge}
+    </div>
+    ${alertasHtml}
+    ${narrativaHtml}
+    ${focoHtml}
+    ${sintesisHtml}
+    ${agendaHtml}
+    ${resumenHtml}`;
+}
+
 // ── Panel de comentarios por sección ─────────────────────────────
 function renderCommentsPanel(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
@@ -871,6 +1005,42 @@ function renderAnalysis() {
                 </div>`;
               }).join('');
             })()}
+            ${state.aiEnabled ? (() => {
+              const cf          = state.cycleFilter || 'Todos';
+              const aiKey       = `${tid}__${cf}`;
+              const aiEntry     = state.aiAnalysis[aiKey];
+              const aiCount     = teamResps.filter(r => cf === 'Todos' || r.fields.Ciclo === cf).length;
+              const canAnalyze  = aiCount >= 3;
+              const isLoading   = !!(aiEntry && aiEntry.loading);
+              const hasData     = !!(aiEntry && aiEntry.data);
+              const hasError    = !!(aiEntry && aiEntry.error);
+              const btnDisabled = !canAnalyze || isLoading;
+              const btnLabel    = isLoading ? 'Analizando…'
+                : hasError   ? 'Reintentar'
+                : hasData && aiEntry.newResponsesCount > 0 ? `Actualizar (${aiEntry.newResponsesCount} nueva${aiEntry.newResponsesCount !== 1 ? 's' : ''})`
+                : hasData    ? 'Regenerar'
+                : 'Analizar con IA';
+              return `
+              <div class="no-print" style="border:1.5px solid #1a4fd6;border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0f5ff;">
+                  <span style="font-size:12px;font-weight:700;color:#1a4fd6;">Análisis con IA</span>
+                  <button
+                    onclick="${!btnDisabled ? `callAnalyzeTeamWithClaude('${tid}')` : ''}"
+                    ${btnDisabled ? 'disabled' : ''}
+                    ${!canAnalyze ? 'title="Se necesitan al menos 3 respuestas"' : ''}
+                    style="font-size:11px;padding:4px 14px;border-radius:99px;cursor:${btnDisabled?'not-allowed':'pointer'};
+                      border:1.5px solid ${btnDisabled?'#e5e7eb':'#1a4fd6'};
+                      color:${btnDisabled?'#9ca3af':'#fff'};
+                      background:${btnDisabled?'transparent':'#1a4fd6'};">
+                    ${btnLabel}
+                  </button>
+                </div>
+                ${(hasData || isLoading || hasError) ? `
+                <div style="padding:12px 14px;border-top:1px solid #dce6ff;">
+                  ${renderAIPanel(tid)}
+                </div>` : ''}
+              </div>`;
+            })() : ''}
             <div class="collapse-section">
               <button class="collapse-toggle" onclick="toggleTeamRecs('${tid}')">
                 <span class="collapse-toggle-label">

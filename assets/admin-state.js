@@ -64,7 +64,8 @@ const state = {
   configCustom:       {},
   webhookUrl:         '',
   anonymityMode:      'full',
-  aiEnabled:          false
+  aiEnabled:          false,
+  aiAnalysis:         {}
 };
 
 // setState actualiza el estado y dispara un re-render.
