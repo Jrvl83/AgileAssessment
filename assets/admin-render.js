@@ -416,6 +416,60 @@ function renderShell() {
     : renderTeams()}`;
 }
 
+// ── Participation panel ───────────────────────────────────────────
+function renderParticipationPanel(tid, cycleFilter) {
+  const cf = cycleFilter || 'Todos';
+  const ROLES_ORDER = ['Dev Team', 'Product Owner', 'Scrum Master', 'Otro'];
+  const teamResps = state.responses.filter(r =>
+    (r.fields.Equipo || []).includes(tid) &&
+    (cf === 'Todos' || r.fields.Ciclo === cf)
+  );
+  const total = teamResps.length;
+  if (total === 0) return '';
+
+  const counts = {};
+  ROLES_ORDER.forEach(r => { counts[r] = 0; });
+  teamResps.forEach(r => {
+    const rol = r.fields.Rol;
+    if (rol) counts[rol] = (counts[rol] || 0) + 1;
+  });
+
+  const presentRoles = ROLES_ORDER.filter(r => counts[r] > 0);
+  if (!presentRoles.length) return '';
+  const maxCount = Math.max(...presentRoles.map(r => counts[r]));
+  const cycleLabel = cf === 'Todos' ? 'todos los ciclos' : cf;
+
+  const rows = presentRoles.map(r => {
+    const n = counts[r];
+    const barPct = Math.round(n / maxCount * 100);
+    const isValid = n >= MIN_ROLE_RESPONSES;
+    const isOtro  = r === 'Otro';
+    const badge = isOtro
+      ? `<span style="font-size:10px;color:var(--ink-faint);flex-shrink:0;">—</span>`
+      : isValid
+        ? `<span style="font-size:10px;color:#0d7a52;font-weight:600;flex-shrink:0;">✓ Válido</span>`
+        : `<span style="font-size:10px;color:#a05c0a;font-weight:600;flex-shrink:0;">⚠ Mín. ${MIN_ROLE_RESPONSES}</span>`;
+    const barColor = isOtro ? '#9198aa' : isValid ? '#0d7a52' : '#f59e0b';
+    return `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <div style="font-size:11px;color:var(--ink);min-width:108px;flex-shrink:0;">${r}</div>
+        <div style="flex:1;height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden;">
+          <div style="width:${barPct}%;height:100%;background:${barColor};border-radius:99px;"></div>
+        </div>
+        <div style="font-size:11px;color:var(--ink-faint);min-width:42px;text-align:right;flex-shrink:0;">${n} resp.</div>
+        ${badge}
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="no-print" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;">
+      <div style="font-size:10px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;">
+        Participación · ${cycleLabel} · ${total} respuesta${total !== 1 ? 's' : ''}
+      </div>
+      ${rows}
+    </div>`;
+}
+
 // ── Analysis tab ─────────────────────────────────────────────────
 function renderAnalysis() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
@@ -737,6 +791,7 @@ function renderAnalysis() {
               <button class="btn sm secondary" onclick="exportPPT('${tid}')">↓ PPT</button>
               <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
             </div>
+            ${renderParticipationPanel(tid, state.cycleFilter)}
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
             ${(() => {
               const gaps = detectRoleGaps(tid, state.cycleFilter);
