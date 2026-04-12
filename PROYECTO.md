@@ -55,7 +55,8 @@ AssessmentAgile/
 │   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22)
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
-PLAN_MEJORAS_V2.md          # 20 nuevas mejoras en 4 fases — roadmap Q2 2026 – Q1 2027
+PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
+PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — roadmap actual con IA integrada (Claude API)
 ```
 
 ### Routing (firebase.json)
@@ -80,14 +81,21 @@ Pantalla de briefing — encuadre de anonimidad y propósito
     ↓
 Pantalla de inicio
   → Seleccionar equipo (activo en Firestore)
-  → Ingresar nombre (opcional)
+  → Ingresar nombre / identificador (opcional — se oculta en modo anónimo total)
   → Seleccionar rol: Product Owner / Dev Team / Scrum Master / Otro
+    ↓
+Pantalla de contexto del equipo (opcional, todos los campos saltables)
+  → ¿Cuánto tiempo llevan con Scrum? (< 3 meses / 3–12 meses / 1–2 años / > 2 años)
+  → ¿Cuántas personas hay en el equipo? (3–5 / 6–8 / 9+)
+  → ¿El PO tiene dedicación exclusiva? (Sí / No / Compartido)
+  → ¿Cómo trabaja el equipo? (Presencial / Híbrido / Totalmente remoto)
     ↓
 6 secciones del assessment (una por dimensión)
   → 3–4 preguntas por sección
   → 4 opciones de respuesta por pregunta (radio buttons)
   → Comentario abierto opcional por sección
   → Navegación con botones Anterior / Siguiente
+  → Footer sticky con mensaje de privacidad (adaptado al modo de anonimato)
     ↓
 Pantalla de resultados
   → Puntaje total y nivel de madurez
@@ -113,7 +121,7 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
-| **Configuración** | Todos | Webhook configurable por workspace (URL + botón "Probar"); eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. Editor de preguntas del assessment por sección: desactivar preguntas (excluidas del scoring), editar texto de preguntas existentes, agregar preguntas personalizadas (hasta 3 por sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
+| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA (próximamente), guardado en `workspaces/{uid}`. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -338,6 +346,9 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `marca` | string | Nombre de marca del workspace (reemplaza "Assessment de Madurez Agile" en el formulario y reportes) |
 | `logoUrl` | string | URL del logo — reemplaza el título de texto por una imagen |
 | `colorAcento` | string | Color HEX que sustituye al azul (#1a4fd6) por defecto en formulario y reportes |
+| `webhookUrl` | string | URL del endpoint para recibir eventos vía HTTP POST |
+| `anonymityMode` | string | Modo de anonimato: `'full'` (solo rol) / `'semi'` (identificador) / `'nominal'` (nombre visible). Default: `'full'` |
+| `aiEnabled` | boolean | Si está activo, el formulario muestra aviso de uso de IA a los participantes. Default: `false` |
 
 Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
@@ -356,8 +367,12 @@ Acceso: lectura pública (formulario lo lee sin login), escritura solo por el pr
 | `participante` | string | Nombre del participante ("Anónimo" si no completó) |
 | `rol` | string | Rol: Product Owner / Dev Team / Scrum Master / Otro |
 | `ciclo` | string | Nombre del ciclo activo al momento del envío |
-| `tamanoEquipo` | string | Tamaño del equipo: "1–5" / "6–9" / "10+" (opcional) |
-| `tiempoScrum` | string | Tiempo usando Scrum: "<6 meses" / "6–18 meses" / ">18 meses" (opcional) |
+| `tamanoEquipo` | string | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3. |
+| `tiempoScrum` | string | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3. |
+| `teamAge` | string | Antigüedad Scrum: "< 3 meses" / "3–12 meses" / "1–2 años" / "> 2 años" (opcional, V3) |
+| `teamSize` | string | Tamaño del equipo: "3–5" / "6–8" / "9+" (opcional, V3) |
+| `dedicatedPO` | string | PO dedicado: "Sí" / "No" / "Compartido" (opcional, V3) |
+| `workMode` | string | Modalidad: "Presencial" / "Híbrido" / "Totalmente remoto" (opcional, V3) |
 | `scoreEventos` | number | Puntaje bruto de la dimensión Ceremonias |
 | `scoreBacklog` | number | Puntaje bruto de la dimensión Product Backlog |
 | `scoreDevTeam` | number | Puntaje bruto de la dimensión Dev Team |
@@ -498,6 +513,37 @@ Desde el panel admin se puede exportar:
 | #14 | Preguntas personalizables | `82dc6fc` | Colección `configuraciones/{ownerId}`. Nueva pestaña "Configuración" en admin con editor por sección: desactivar preguntas, editar texto, agregar preguntas personalizadas (hasta 3/sección). `assessment-agile.html` lee config y filtra/aplica overrides sin afectar scoring. Respuestas custom guardadas en `customAnswers` separado. |
 | #13 | Recordatorios de ciclo | — | Diferida — requiere SendGrid con dominio verificado |
 
+### Plan V2 — Fase 4 (completada 2026-04-12)
+
+| # | Mejora | Commit | Descripción |
+|---|--------|--------|-------------|
+| #8 | Benchmark org en radar | `e4915bc` | Línea punteada gris en radar de cada equipo con el promedio de la organización. Delta "+N% org" en el header de la tarjeta de equipo. |
+| #18 | Webhooks configurables | `76ac19a` | CF callable `dispatchWebhook` + Firestore trigger `onPlanUpdatedByTeam`. Eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. URL configurable en pestaña Configuración del admin. Runtime actualizado a Node.js 22 y firebase-functions v7. |
+| #17 | Exportación PPT | `12e4f4d` | `exportPPT(teamId)` en `admin-export.js` con PptxGenJS. 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción. Captura del canvas Chart.js con `toDataURL`. Botón "↓ PPT" en cada tarjeta de equipo. |
+| #2 | Debriefing en sala | — | Diferida — el reporte compartible cubre el caso de uso principal |
+| #15 | Kanban | — | Diferida — requiere definición de dimensiones Kanban (incluida en V3 como #9) |
+
+---
+
+### Plan V3 — En progreso (iniciado 2026-04-12)
+
+9 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
+
+| Fase | Mejoras | Estado |
+|------|---------|--------|
+| 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
+| 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | Pendiente |
+| 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | Pendiente |
+| 4 — Diferenciadores mercado | #8 Benchmark externo cross-workspace, #9 Multi-framework Kanban | Pendiente |
+
+#### Fase 1 — implementada
+
+- **#1** Pantalla de contexto del equipo en el formulario — 4 campos opcionales (antigüedad Scrum, tamaño, PO dedicado, modalidad) guardados en `respuestas` como `teamAge`, `teamSize`, `dedicatedPO`, `workMode`. Admin muestra la moda del ciclo en la tarjeta. `getContextNote` actualizada para valores V3. Commit: `233b13e`
+- **#2** Panel de participación por rol — visible antes del radar en cada tarjeta de equipo. Barra proporcional + badge ✓/⚠ por rol. Semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona). Commit: `a4096e8` + fix `7f5aecf`
+- **#3** Anonimato configurable — selector en pestaña Configuración: anónimo total / semi-anónimo / nominal. Toggle IA (próximamente). Footer sticky en formulario con mensaje adaptado al modo. Campo nombre ocultado/renombrado según modo. Campos `anonymityMode` y `aiEnabled` en `workspaces/{uid}`. Commit: `ffdfbfc`
+
+**Arquitectura IA (Fase 2):** CF callable `analyzeTeamWithClaude` en `functions/index.js`. API Key en Firebase Secret Manager. Output JSON cacheado en `analisis_ia/{teamId}_{ciclo}`. Trigger manual, fallback a `RECS` hardcodeados.
+
 ---
 
 ## Historial de versiones (commits clave)
@@ -518,6 +564,15 @@ Desde el panel admin se puede exportar:
 | `8370eb1` | Feat: historial de reportes compartidos en pestaña Equipos con botón Revocar (#19 V2) |
 | `36bae12` | Feat: umbral de anonimato MIN=3 — pills ⚠, banner advertencia y exclusión en card org (#6 V2) |
 | `1aee758` | Feat: notas del coach por equipo y ciclo — textarea con debounce en `equipos/{id}.notas` (#4 V2) |
+| `a00397d` | Docs: cerrar Fase 4 V2 — #8, #17, #18 completadas; #2 y #15 diferidas |
+| `12e4f4d` | Feat: exportación PPT por equipo con PptxGenJS — 4 slides, captura radar (#17 V2) |
+| `926810d` | Chore: actualizar runtime a Node.js 22 y firebase-functions v7 |
+| `233b13e` | Feat: contexto del equipo en formulario — pantalla intermedia + 4 campos opcionales + moda en admin (#1 V3) |
+| `a4096e8` | Feat: panel de participación por rol con semáforo de validez antes del radar (#2 V3) |
+| `7f5aecf` | Fix: semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona) |
+| `ffdfbfc` | Feat: anonimato configurable y footer de privacidad — 3 modos + toggle IA + footer sticky (#3 V3) |
+| `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
+| `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
 | `8a7c607` | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos |
 | `4d33ea7` | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10) |
