@@ -50,6 +50,131 @@ function exportRaw() {
 
 function exportPDF() { window.print(); }
 
+async function exportPPT(teamId) {
+  if (typeof PptxGenJS === 'undefined') { toast('Librería PPT no disponible'); return; }
+
+  const s = state.teamStats[teamId];
+  if (!s) return;
+
+  const cf           = state.cycleFilter;
+  const selectedRole = state.teamRoleFilter[teamId] || 'Todos';
+  const exOtro       = state.excludeOtro && selectedRole === 'Todos';
+  const ds           = getTeamFilteredStats(teamId, selectedRole, cf, exOtro);
+  if (!ds) { toast('Sin datos para exportar'); return; }
+
+  const teamName   = s.name;
+  const cycleLabel = cf === 'Todos' ? 'Todos los ciclos' : cf;
+  const dateStr    = new Date().toLocaleDateString('es', { day:'2-digit', month:'long', year:'numeric' });
+  const accentHex  = (state.colorAcento || '#1a56db').replace('#', '');
+  const marca      = state.marca || 'Assessment Agile';
+
+  // Recomendaciones
+  const sortedByPct = DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+  const criticalDim = sortedByPct[0] && ds.avgDims[sortedByPct[0].key].pct < 33 ? sortedByPct[0] : null;
+  const below80     = DIMS.filter(d => ds.avgDims[d.key].pct < 80).sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+  const recDims     = below80.length > 0 ? below80 : sortedByPct.slice(0, 4);
+  const teamResps   = state.responses.filter(r => (r.fields.Equipo || []).includes(teamId));
+  const majorityRole = getMajorityRole(teamResps);
+
+  // Radar como imagen
+  const radarCanvas = document.getElementById('radar-' + teamId);
+  const radarImg    = radarCanvas ? radarCanvas.toDataURL('image/png') : null;
+
+  // Planes del equipo
+  const teamPlans = state.plans.filter(p =>
+    p.equipoId === teamId && (cf === 'Todos' || p.ciclo === cf)
+  );
+
+  const pres     = new PptxGenJS();
+  pres.layout    = 'LAYOUT_WIDE';
+  pres.author    = marca;
+  pres.subject   = 'Assessment de Madurez Agile';
+
+  const levelColor = ds.level.color.replace('#', '');
+  const levelBg    = ds.level.bg.replace('#', '');
+
+  // ── Slide 1: Cover ───────────────────────────────────────────
+  const s1 = pres.addSlide();
+  s1.addShape(pres.ShapeType.rect, { x:0, y:0, w:13.33, h:0.7, fill:{ color: accentHex } });
+  s1.addText(marca, { x:0.4, y:0.12, w:10, h:0.46, fontSize:13, color:'FFFFFF', bold:true });
+  s1.addText(teamName, { x:0.7, y:1.4, w:11.93, h:1.4, fontSize:44, bold:true, color:'111827', align:'center' });
+  s1.addText('Assessment de Madurez Agile', { x:0.7, y:2.8, w:11.93, h:0.5, fontSize:18, color:'6b7280', align:'center' });
+  s1.addShape(pres.ShapeType.roundRect, { x:4.67, y:3.5, w:4, h:1.8, fill:{ color: levelBg }, line:{ color: levelColor, width:1.5 }, rectRadius:0.15 });
+  s1.addText(ds.avgTotal + '%', { x:4.67, y:3.6, w:4, h:0.9, fontSize:42, bold:true, color: levelColor, align:'center' });
+  s1.addText(ds.level.label, { x:4.67, y:4.5, w:4, h:0.5, fontSize:16, color: levelColor, align:'center' });
+  s1.addText(`${cycleLabel}  ·  ${ds.count} respuestas  ·  ${dateStr}`, { x:0.7, y:6.4, w:11.93, h:0.4, fontSize:11, color:'9ca3af', align:'center' });
+  s1.addShape(pres.ShapeType.rect, { x:0, y:7.1, w:13.33, h:0.4, fill:{ color: accentHex } });
+
+  // ── Slide 2: Radar + Dimensiones ────────────────────────────
+  const s2 = pres.addSlide();
+  s2.addShape(pres.ShapeType.rect, { x:0, y:0, w:13.33, h:0.55, fill:{ color: accentHex } });
+  s2.addText('Análisis por dimensión', { x:0.3, y:0.1, w:8, h:0.38, fontSize:14, bold:true, color:'FFFFFF' });
+  s2.addText(teamName + '  ·  ' + cycleLabel, { x:8, y:0.1, w:5, h:0.38, fontSize:11, color:'FFFFFF', align:'right' });
+
+  if (radarImg) {
+    s2.addImage({ data: radarImg, x:0.3, y:0.75, w:5.2, h:5.2 });
+  }
+
+  const rightX = 5.9;
+  DIMS.forEach((d, i) => {
+    const pct      = ds.avgDims[d.key].pct;
+    const barW     = Math.max((pct / 100) * 6.8, 0.01);
+    const dimColor = d.color.replace('#', '');
+    const yBase    = 0.85 + i * 0.98;
+    s2.addText(d.label, { x: rightX, y: yBase, w:5, h:0.3, fontSize:10, bold:true, color:'374151' });
+    s2.addText(pct + '%', { x: rightX + 5, y: yBase, w:1.4, h:0.3, fontSize:10, bold:true, color: dimColor, align:'right' });
+    s2.addShape(pres.ShapeType.rect, { x: rightX, y: yBase + 0.33, w:6.8, h:0.28, fill:{ color:'f3f4f6' }, line:{ color:'f3f4f6' } });
+    s2.addShape(pres.ShapeType.rect, { x: rightX, y: yBase + 0.33, w: barW, h:0.28, fill:{ color: dimColor }, line:{ color: dimColor } });
+  });
+
+  // ── Slide 3: Recomendaciones ─────────────────────────────────
+  const s3 = pres.addSlide();
+  s3.addShape(pres.ShapeType.rect, { x:0, y:0, w:13.33, h:0.55, fill:{ color: accentHex } });
+  s3.addText('Recomendaciones', { x:0.3, y:0.1, w:8, h:0.38, fontSize:14, bold:true, color:'FFFFFF' });
+  s3.addText(teamName + '  ·  ' + cycleLabel, { x:8, y:0.1, w:5, h:0.38, fontSize:11, color:'FFFFFF', align:'right' });
+
+  recDims.forEach((d, i) => {
+    const pct      = ds.avgDims[d.key].pct;
+    const dimColor = d.color.replace('#', '');
+    const recText  = getRec(d.key, pct, majorityRole);
+    const isCrit   = criticalDim && d.key === criticalDim.key;
+    const yBase    = 0.8 + i * 1.08;
+    s3.addShape(pres.ShapeType.ellipse, { x:0.3, y: yBase + 0.08, w:0.18, h:0.18, fill:{ color: dimColor }, line:{ color: dimColor } });
+    s3.addText(d.label + (isCrit ? '  ⚠ Crítica' : '') + '  ' + pct + '%', { x:0.6, y: yBase, w:12.4, h:0.32, fontSize:11, bold:true, color: dimColor });
+    s3.addText(recText, { x:0.6, y: yBase + 0.33, w:12.4, h:0.65, fontSize:10, color:'374151' });
+  });
+
+  // ── Slide 4: Plan de acción (si hay planes) ──────────────────
+  if (teamPlans.length > 0) {
+    const STATUS_C = { 'pendiente':{ c:'a05c0a', bg:'fdefd6', l:'Pendiente' }, 'en-curso':{ c:'1a4fd6', bg:'dce6ff', l:'En curso' }, 'completado':{ c:'0d7a52', bg:'d4f0e5', l:'Completado' } };
+    const s4 = pres.addSlide();
+    s4.addShape(pres.ShapeType.rect, { x:0, y:0, w:13.33, h:0.55, fill:{ color: accentHex } });
+    s4.addText('Plan de Acción', { x:0.3, y:0.1, w:8, h:0.38, fontSize:14, bold:true, color:'FFFFFF' });
+    s4.addText(teamName + '  ·  ' + cycleLabel, { x:8, y:0.1, w:5, h:0.38, fontSize:11, color:'FFFFFF', align:'right' });
+    s4.addShape(pres.ShapeType.rect, { x:0.3, y:0.72, w:12.73, h:0.38, fill:{ color: accentHex }, line:{ color: accentHex } });
+    s4.addText('Iniciativa', { x:0.35, y:0.75, w:6, h:0.32, fontSize:10, bold:true, color:'FFFFFF' });
+    s4.addText('Responsable', { x:6.4, y:0.75, w:2.4, h:0.32, fontSize:10, bold:true, color:'FFFFFF' });
+    s4.addText('Estado', { x:8.9, y:0.75, w:1.9, h:0.32, fontSize:10, bold:true, color:'FFFFFF' });
+    s4.addText('Dimensión', { x:10.9, y:0.75, w:2.1, h:0.32, fontSize:10, bold:true, color:'FFFFFF' });
+
+    teamPlans.slice(0, 12).forEach((p, i) => {
+      const st    = STATUS_C[p.estado] || STATUS_C['pendiente'];
+      const yRow  = 1.2 + i * 0.45;
+      const rowBg = i % 2 === 0 ? 'f9fafb' : 'FFFFFF';
+      s4.addShape(pres.ShapeType.rect, { x:0.3, y: yRow, w:12.73, h:0.42, fill:{ color: rowBg }, line:{ color:'e5e7eb' } });
+      s4.addText(p.iniciativa || '—', { x:0.35, y: yRow + 0.05, w:6, h:0.32, fontSize:9.5, color:'111827' });
+      s4.addText(p.responsable || '—', { x:6.4, y: yRow + 0.05, w:2.4, h:0.32, fontSize:9.5, color:'374151' });
+      s4.addShape(pres.ShapeType.roundRect, { x:8.9, y: yRow + 0.08, w:1.6, h:0.25, fill:{ color: st.bg }, line:{ color: st.bg }, rectRadius:0.1 });
+      s4.addText(st.l, { x:8.9, y: yRow + 0.08, w:1.6, h:0.25, fontSize:8.5, bold:true, color: st.c, align:'center' });
+      s4.addText(p.dimension || '—', { x:10.9, y: yRow + 0.05, w:2.1, h:0.32, fontSize:9.5, color:'374151' });
+    });
+  }
+
+  const filename = `${teamName.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '-')}-assessment-${new Date().toISOString().slice(0,10)}.pptx`;
+  toast('Generando PPT…');
+  await pres.writeFile({ fileName: filename });
+}
+
 function exportPlanPDF() {
   const STATUS = {
     'pendiente':  { label:'Pendiente',  color:'#a05c0a', bg:'#fdefd6' },

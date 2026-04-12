@@ -722,6 +722,7 @@ function renderAnalysis() {
             })()}
             <div class="no-print" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:4px;">
               <button class="btn sm secondary" onclick="showDebriefGuide('${tid}','${state.cycleFilter||'Todos'}')">Guía de facilitación</button>
+              <button class="btn sm secondary" onclick="exportPPT('${tid}')">↓ PPT</button>
               <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
             </div>
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
