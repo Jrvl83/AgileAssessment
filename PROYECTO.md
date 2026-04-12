@@ -27,6 +27,7 @@ AssessmentAgile/
 ├── admin.html              # Panel de administración — solo HTML + script tags (34 líneas)
 ├── reporte.html            # Reporte de solo lectura para stakeholders (acceso por token, sin login)
 ├── equipo.html             # Portal público del equipo (acceso por token, ?t=TOKEN, sin login, dinámico)
+├── facilitar.html          # Modo facilitación in-session (requiere login — solo coaches)
 ├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
 ├── seed-data.js            # Script de datos de prueba (pegar en consola del navegador logueado en admin)
 ├── assets/
@@ -65,6 +66,7 @@ PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — roadmap actual con IA int
 |------|---------|--------|
 | `/` y cualquier ruta | `assessment-agile.html` | Requiere `?workspaceId=X` — sin él muestra error |
 | `/admin` | `admin.html` | Requiere login (Firebase Auth) |
+| `/facilitar` | `facilitar.html` | Requiere login — URL canónica: `?workspaceId=X&equipoId=Y[&ciclo=Z]` |
 | `/reporte.html?t=TOKEN` | `reporte.html` | Público, sin login — token con expiración de 30 días |
 | `/equipo.html?t=TOKEN` | `equipo.html` | Público, sin login — token permanente (regenerable desde admin) |
 
@@ -119,9 +121,9 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 |---------|----------------|---------|
 | **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark org si hay ≥2 equipos), delta "+N% org" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
+| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
-| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA (próximamente), guardado en `workspaces/{uid}`. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
+| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA, guardado en `workspaces/{uid}`. **Cadencia de ciclos:** select 1–8 semanas — activa banner de recordatorio cuando pasa ese tiempo sin respuestas. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -349,6 +351,7 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `webhookUrl` | string | URL del endpoint para recibir eventos vía HTTP POST |
 | `anonymityMode` | string | Modo de anonimato: `'full'` (solo rol) / `'semi'` (identificador) / `'nominal'` (nombre visible). Default: `'full'` |
 | `aiEnabled` | boolean | Si está activo, el formulario muestra aviso de uso de IA a los participantes. Default: `false` |
+| `assessmentCadenceWeeks` | number | Semanas de cadencia configurada (1–8). `0` = desactivado. Activa banner de recordatorio en el panel. Default: `0` |
 
 Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
@@ -527,25 +530,31 @@ Desde el panel admin se puede exportar:
 
 ### Plan V3 — En progreso (iniciado 2026-04-12)
 
-9 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
+10 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
 
 | Fase | Mejoras | Estado |
 |------|---------|--------|
 | 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
 | 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | ✅ Completada 2026-04-12 |
-| 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | Pendiente |
-| 4 — Diferenciadores mercado | #8 Benchmark externo cross-workspace, #9 Multi-framework Kanban | Pendiente |
+| 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | ✅ Completada 2026-04-12 |
+| 4 — Visión ejecutiva y cierre del ciclo | #8 Tendencia org por ciclo, #9 Export sesión facilitación | Siguiente |
 
 #### Fase 1 — implementada
 
 - **#1** Pantalla de contexto del equipo en el formulario — 4 campos opcionales (antigüedad Scrum, tamaño, PO dedicado, modalidad) guardados en `respuestas` como `teamAge`, `teamSize`, `dedicatedPO`, `workMode`. Admin muestra la moda del ciclo en la tarjeta. `getContextNote` actualizada para valores V3. Commit: `233b13e`
 - **#2** Panel de participación por rol — visible antes del radar en cada tarjeta de equipo. Barra proporcional + badge ✓/⚠ por rol. Semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona). Commit: `a4096e8` + fix `7f5aecf`
-- **#3** Anonimato configurable — selector en pestaña Configuración: anónimo total / semi-anónimo / nominal. Toggle IA (próximamente). Footer sticky en formulario con mensaje adaptado al modo. Campo nombre ocultado/renombrado según modo. Campos `anonymityMode` y `aiEnabled` en `workspaces/{uid}`. Commit: `ffdfbfc`
+- **#3** Anonimato configurable — selector en pestaña Configuración: anónimo total / semi-anónimo / nominal. Toggle IA. Footer sticky en formulario con mensaje adaptado al modo. Campo nombre ocultado/renombrado según modo. Campos `anonymityMode` y `aiEnabled` en `workspaces/{uid}`. Commit: `ffdfbfc`
 
 #### Fase 2 — implementada
 
 - **#4** Panel de comentarios — `groupCommentsBySection()` en `admin-api.js` agrupa comentarios con rol. `renderCommentsPanel(tid, cycleFilter)` en `admin-render.js`: panel colapsable por sección con tarjetas de rol + texto. Badge de densidad en header de cada sección del histograma. Role label en comentarios inline del detalle. Slide de comentarios agrupado por sección en exportación PPT. Commit: `325f30a`
 - **#10** CF `analyzeTeamWithClaude` — función callable autenticada que verifica ownership y `aiEnabled`. `buildTeamPrompt` agrega scores por dimensión, brechas de percepción (≥25pp), momentum vs ciclo anterior, comentarios con etiqueta de rol (~2k tokens). Llama a `claude-sonnet-4-6` y cachea el resultado JSON en `analisis_ia/{teamId}_{ciclo}`. Detecta respuestas nuevas desde el último análisis. Panel en tarjeta del equipo con 6 secciones: narrativa, foco de sesión, alertas, síntesis de comentarios, agenda borrador 90 min, resumen ejecutivo con botón "Copiar". API Key en Firebase Secret Manager (`ANTHROPIC_API_KEY`). Fallback si la API falla. Commit: `b7c7a00`
+
+#### Fase 3 — implementada
+
+- **#7.1** Link persistente por equipo — QR renombrado de `?teamId=X` a `?equipoId=X`. `assessment-agile.html` lee `equipoId` con fallback a `teamId` para QRs anteriores. Ciclo resuelto dinámicamente desde Firestore. Commit: `42b11b0`
+- **#7.2** Recordatorio de apertura de ciclo — campo `assessmentCadenceWeeks` en workspace. Banner ámbar con ✕ descartable cuando pasan ≥N semanas sin respuestas. Sección "Cadencia de ciclos" en Configuración. Commit: `bdaca2b`
+- **#6** Modo facilitación in-session — nueva página `facilitar.html` (Firebase auth). Slides navegables: portada con scores, slides por dimensión con preguntas de coaching del nivel exacto, slides opcionales de narrativa y foco si hay análisis IA, slide de cierre. Panel de notas del coach colapsable (tecla N). Botón "Facilitar →" en pestaña Equipos. Rewrite `/facilitar` en `firebase.json`. Commit: `f7c953a`
 
 ---
 
@@ -576,6 +585,9 @@ Desde el panel admin se puede exportar:
 | `ffdfbfc` | Feat: anonimato configurable y footer de privacidad — 3 modos + toggle IA + footer sticky (#3 V3) |
 | `325f30a` | Feat: panel de comentarios por sección — groupCommentsBySection, renderCommentsPanel, badge densidad, role label, slide PPT (#4 V3) |
 | `b7c7a00` | Feat: análisis con IA — CF analyzeTeamWithClaude, buildTeamPrompt, caché analisis_ia, panel con 6 secciones (#10 V3) |
+| `42b11b0` | Feat: link persistente por equipo con param equipoId (#7.1 V3) |
+| `bdaca2b` | Feat: recordatorio de apertura de ciclo por cadencia — assessmentCadenceWeeks + banner + sección Configuración (#7.2 V3) |
+| `f7c953a` | Feat: modo facilitación in-session facilitar.html — slides navegables, notas coach, fallback COACHING_QUESTIONS, botón Facilitar → (#6 V3) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |

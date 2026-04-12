@@ -2,7 +2,7 @@
 
 Propuestas para elevar la herramienta de **acompañamiento de coaching** a **instrumento de diagnóstico metodológicamente sólido**, cerrando los gaps identificados desde la perspectiva de un Agile coach que la usa con clientes corporativos reales.
 
-**9 mejoras organizadas en 4 fases.** La IA (Claude API) es un componente dado de la Fase 2 en adelante y redefine cómo se implementan varias de estas mejoras.
+**10 mejoras organizadas en 4 fases.** La IA (Claude API) es un componente dado de la Fase 2 en adelante y redefine cómo se implementan varias de estas mejoras.
 
 ---
 
@@ -12,8 +12,8 @@ Propuestas para elevar la herramienta de **acompañamiento de coaching** a **ins
 |------|---------|---------|-----------|
 | 1 — Credibilidad del dato | Los tres gaps que un cliente corporativo cuestionaría primero | #1, #2, #3 | ✅ Completada 2026-04-12 |
 | 2 — Análisis con IA | Síntesis narrativa que reemplaza la preparación manual del coach | #4, #10 | ✅ Completada 2026-04-12 |
-| 3 — Experiencia de facilitación | Integrar la herramienta en la sesión, no solo en la preparación | #6, #7 | Media-alta — Siguiente |
-| 4 — Diferenciadores de mercado | Features que la colocarían por encima de herramientas enterprise | #8, #9 | Estratégica |
+| 3 — Experiencia de facilitación | Integrar la herramienta en la sesión, no solo en la preparación | #6, #7 | ✅ Completada 2026-04-12 |
+| 4 — Visión ejecutiva y cierre del ciclo | Outputs tangibles y visibilidad para dirección | #8, #9 | Siguiente |
 
 ---
 
@@ -290,140 +290,120 @@ Las recomendaciones estáticas de `RECS` y `RECS_ROLE` siguen funcionando. El pa
 
 ---
 
-## Fase 3 — Experiencia de facilitación
+## Fase 3 — Experiencia de facilitación ✅ Completada 2026-04-12
 
-Con el análisis de IA implementado, la Fase 3 tiene más material para trabajar: la agenda generada por #10 alimenta directamente el modo facilitación.
+Con el análisis de IA implementado, la Fase 3 integra la herramienta directamente en la sesión de debrief con el equipo.
 
 ---
 
-### #6. Modo facilitación in-session
+### #6. Modo facilitación in-session ✅ `f7c953a`
 
-**Contexto del cambio respecto al borrador anterior:**
-Con la IA integrada, las diapositivas de cada dimensión pueden mostrar preguntas de coaching personalizadas para este equipo específico (generadas por #10) en lugar de las preguntas estáticas de `COACHING_QUESTIONS`. El modo facilitación se convierte en el frontend de lo que la IA ya analizó.
+**Solución implementada:**
+Nueva página `facilitar.html` (acceso autenticado) con slides navegables por teclado para guiar la sesión de retroalimentación con el equipo.
 
-**Problema:**
-La guía de facilitación existe como ventana imprimible. Cuando el coach está frente al equipo con pantalla compartida necesita una vista completamente diferente: solo el radar, las preguntas de coaching de la dimensión en curso, sin exponer otros equipos ni datos numéricos crudos al equipo.
+**Estructura de slides:**
+- **Portada:** nombre del equipo, ciclo, score global + nivel de madurez, mini grid con % por dimensión
+- **[Narrativa IA]:** slide opcional con `analisis_ia.narrativa` si hay análisis disponible
+- **6 slides de dimensión:** título de la sección, score + nivel, 3 preguntas de coaching del nivel exacto del equipo (de `COACHING_QUESTIONS`)
+- **[Foco IA]:** slide opcional con `analisis_ia.focusSesion` si hay análisis disponible
+- **Cierre:** pregunta de compromisos del equipo
 
-**Solución:**
-Nueva página `facilitar.html` (acceso autenticado) con dos modos de pantalla simultáneos:
-
-**Pantalla proyectada al equipo:**
-- Slide 1: Radar del equipo (solo figura, sin números), nivel de madurez
-- Slides 2–7: Una por dimensión — barra de score, 2–3 preguntas de coaching (personalizadas si hay análisis IA, estáticas si no)
-- Slide 8: Resumen de acciones creadas en sesión
-
-**Pantalla del coach (ventana principal, no proyectada):**
-- Todo lo anterior más: narrativa de la dimensión (del análisis IA), notas privadas editables, botón "Crear acción" prefilled, contexto de brechas por rol
+**Panel de notas del coach (toggle `N` o botón):**
+- Preguntas de coaching completas para la dimensión actual
+- Alertas de IA para la dimensión (si hay análisis)
+- Tips de facilitación por tipo de slide
+- Para el cierre: `focusSesion`, `agendaSesion` y `sintesisComentarios` del análisis IA
 
 **Control:**
-- Navegación con flechas de teclado
-- La agenda borrador de #10 preordena las dimensiones sugeridas — el coach puede reordenarlas al inicio
+- `←/→` o `PageUp/PageDown` para navegar entre slides
+- `N` para mostrar/ocultar el panel de notas del coach
+- Botón "Facilitar →" en pestaña Equipos del admin (abre nueva pestaña con `?workspaceId=X&equipoId=Y`)
+- Si hay ciclo filtrado activo en el admin, se pasa como `&ciclo=Z`
+- Rewrite `/facilitar` en `firebase.json`
 
-**Impacto para el coach:**
-- Usa la herramienta en la sesión en lugar de exportar a PowerPoint
-- Las acciones se crean en la herramienta durante la sesión, no en un documento aparte
-- Si hay análisis IA, las preguntas de coaching son específicas a la situación del equipo
-
-**Implementación sugerida:**
-- `facilitar.html` con parámetro `?teamId=X&ciclo=Y`, autenticado
-- Lee `analisis_ia/{teamId}_{ciclo}` para las preguntas personalizadas; fallback a `COACHING_QUESTIONS`
-- Estado de slides en `localStorage` (no Firestore — no necesita persistencia)
-- Ventana popup para la pantalla proyectada (misma URL con `?modo=proyeccion`)
-
-**Complejidad:** Alta
-**Dependencias:** #10 enriquece el contenido pero no es bloqueante — funciona con `COACHING_QUESTIONS` estáticas si no hay análisis IA
+**Fallback:** funciona sin análisis IA usando únicamente `COACHING_QUESTIONS` estáticas.
 
 ---
 
-### #7. Automatización básica de ciclos
+### #7. Automatización básica de ciclos ✅ (partes 1 y 2 implementadas)
+
+**Parte 1 — Link persistente por equipo ✅ `42b11b0`**
+URL canónica del QR renombrada de `?teamId=X` a `?equipoId=X` (consistente con Firestore).
+`assessment-agile.html` lee `equipoId` con fallback a `teamId` para QRs anteriores.
+El ciclo se resuelve dinámicamente desde Firestore — el mismo link funciona en cualquier ciclo.
+
+**Parte 2 — Recordatorio de apertura de ciclo ✅ `bdaca2b`**
+Campo `assessmentCadenceWeeks` en `workspaces/{uid}`. Banner ámbar visible entre el tab bar y el contenido cuando han pasado ≥ N semanas sin nuevas respuestas. Descartable por sesión con botón ✕. Sección "Cadencia de ciclos" en pestaña Configuración con select de 1–8 semanas (o Desactivado).
+
+**Parte 3 — Resumen semanal vía webhook: descartada**
+El recordatorio en panel (Parte 2) ya cubre el caso de uso principal con menor complejidad. Un digest semanal requiere Firebase Scheduler y aporta poco valor diferencial sobre lo que ya existe.
+
+---
+
+## Fase 4 — Visión ejecutiva y cierre del ciclo
+
+Features que cierran el loop del ciclo de coaching y producen outputs de alto valor para el coach y para dirección. Prioridad determinada por impacto/esfuerzo — sin dependencias externas ni volumen de datos previo.
+
+---
+
+### #8. Tendencia de madurez org por ciclo
 
 **Problema:**
-El coach tiene que recordar manualmente cuándo abrir un nuevo ciclo, redistribuir el QR, y volver al panel para ver si llegaron respuestas. Con múltiples equipos y clientes simultáneos, esto genera overhead operativo significativo.
+El benchmark interno ya compara equipos entre sí dentro del mismo ciclo (heatmap + radar superpuesto). Lo que falta es la dimensión temporal de la **organización completa**: ¿está mejorando la org en conjunto ciclo a ciclo? El coach no puede mostrar a dirección una curva de progreso sin calcularlo manualmente.
 
 **Solución:**
-Tres automatizaciones independientes, implementables en orden:
+Card "Tendencia org" en la pestaña Análisis, visible cuando hay ≥2 ciclos con datos de ≥2 equipos activos.
 
-1. **Recordatorio de apertura de ciclo:** Cadencia configurable (ej: cada 4 semanas). El panel muestra notificación cuando ha pasado ese tiempo: *"Han pasado 5 semanas desde el último assessment del Equipo Phoenix. ¿Abrir nuevo ciclo?"*
+**Contenido:**
+- Gráfico de líneas (Chart.js, misma librería existente) con el score promedio de todos los equipos por ciclo
+- Una línea por dimensión (mismos colores que `DIM_COLORS`)
+- Badge de tendencia org ↗/→/↘ calculado igual que el momentum por equipo (`calcMomentum`)
+- Delta en puntos desde el primer ciclo hasta el más reciente
 
-2. **Link de respuesta persistente por equipo:** El QR/URL del equipo siempre apunta al ciclo activo. El coach solo abre el ciclo — los participantes usan el mismo link de siempre. Elimina redistribuir el QR cada ciclo.
-
-3. **Resumen semanal vía webhook:** La CF `weeklyDigest` (nueva, reutiliza `dispatchWebhook` ya implementado) envía cada lunes un resumen del estado de todos los equipos: ciclos abiertos, respuestas recibidas, análisis pendientes. El coach lo recibe en Slack o correo.
-
-**Impacto para el coach:**
-- Gestionar 5 equipos simultáneos pasa de caótico a sistemático
-- El link persistente elimina la fricción operativa más frecuente
-- El resumen semanal da visibilidad pasiva — el coach actúa solo cuando hay algo que atender
-
-**Implementación sugerida:**
-- `assessmentCadenceWeeks` en `workspaces/{ownerId}`
-- `assessment-agile.html?workspaceId=X&equipoId=Y` resuelve el ciclo activo en Firestore (sin parámetro `&ciclo=Z`)
-- CF `weeklyDigest` en `functions/index.js`, reutiliza `dispatchWebhook`
-
-**Complejidad:** Media (las tres son independientes — implementar por separado)
-**Dependencias:** V2 #18 (webhooks) ya implementado
-
----
-
-## Fase 4 — Diferenciadores de mercado
-
-Features que colocarían la herramienta por encima de alternativas enterprise. Alta complejidad y requieren volumen de datos o decisiones estratégicas previas.
-
----
-
-### #8. Benchmark externo cross-workspace anónimo
-
-**Problema:**
-El benchmark actual compara un equipo con el promedio de la organización. Si la organización entera está en niveles bajos, el benchmark no ayuda — el equipo "destaca" sobre un promedio malo. El coach no puede decir *"estás en el percentil 60 de equipos Scrum con 1–2 años de adopción"* porque no hay datos externos de referencia.
-
-**Además:** con el análisis de IA activo, el prompt podría incluir percentiles del pool externo como contexto adicional, haciendo la narrativa aún más precisa.
-
-**Solución:**
-Pool de datos anonimizados cross-workspace, opt-in. Cada workspace puede contribuir scores agregados (sin identificadores) a una colección compartida.
-
-**Arquitectura:**
-- `contributeToPool: true/false` en `workspaces/{ownerId}` (opt-in, por defecto false)
-- Al cerrar un ciclo con opt-in activo: CF `contributeToPool` escribe en `pool_agregado` solo scores por dimensión, perfil del equipo, y timestamp trimestral — sin workspace, sin equipo, sin participante
-- `pool_stats` con percentiles pre-calculados por perfil de equipo, actualizada periódicamente
-- Panel de percentiles en el admin solo para workspaces con opt-in activo
-
-**Vista en el panel:**
+**Vista:**
 ```
-Tu equipo vs. pool global (N=847 equipos con perfil similar)
-  Ceremonias:      72% · Percentil 65  ▲ Por encima del promedio
-  Product Backlog: 58% · Percentil 42  → En la media
-  Dev Team:        45% · Percentil 28  ▼ Por debajo del promedio
+Tendencia org — últimos 4 ciclos
+  Ceremonias:    ↗ +12pts  (58% → 70%)
+  Dev Team:      → +2pts   (61% → 63%)
+  Exc. Técnica:  ↘ –5pts   (55% → 50%)
+  ...
 ```
 
-**Impacto para el coach:**
-- Puede contextualizar el score con referencia externa objetiva
-- Conversaciones más ricas con stakeholders: "no estamos mal en abstracto, pero en Dev Team estamos en el percentil 28"
-- Con volumen suficiente, el pool se convierte en activo de datos único en el mercado hispanohablante
+**Implementación:**
+- Nueva función `calcOrgTrend(cycleNames)` en `admin-api.js` — promedia todos los equipos por ciclo
+- Card renderizado en `renderAnalysis()` debajo del heatmap comparativo
+- Reutiliza `initEvolutionTrendChart()` con datos agregados (o nueva instancia canvas)
+- Sin llamadas Firestore adicionales — usa `state.responses` ya cargado
 
-**Complejidad:** Alta
-**Dependencias:** #1 (perfil del equipo para segmentar el pool). Requiere ~50 equipos para que los percentiles sean significativos.
+**Complejidad:** Media
+**Dependencias:** Ninguna nueva — toda la información ya está en `state.responses` y `state.cycles`
 
 ---
 
-### #9. Soporte multi-framework — Kanban como primer paso
+### #9. Resumen exportable de la sesión de facilitación
 
 **Problema:**
-La herramienta se llama "Assessment de Madurez Agile" pero solo mide Scrum. Un equipo Kanban tiene que responder preguntas sobre Sprint Planning y Daily que no aplican. Excluye al 30–40% del mercado que no usa Scrum puro. Diferida en V2 por falta de definición de dimensiones.
-
-**Nota sobre IA:** Con Claude integrado, las preguntas de Kanban podrían tener recomendaciones generadas dinámicamente desde el primer día, sin necesidad de escribir `RECS_KANBAN` hardcodeado. Esto reduce significativamente el esfuerzo de implementación.
+Después de usar `facilitar.html` con el equipo, el coach no tiene un output tangible para dejar al equipo ni para su propio registro. Las preguntas usadas y los compromisos del cierre viven solo en la memoria del room.
 
 **Solución:**
-Selector de framework al inicio del formulario. Primer paso: assessment específico para Kanban.
+Botón "Exportar sesión" en `facilitar.html` que genera una ventana imprimible (mismo patrón que la guía de facilitación existente en el admin).
 
-**Dimensiones propuestas para Kanban:**
-1. **Flujo de trabajo:** Visualización, límites de WIP, gestión de cuellos de botella
-2. **Políticas explícitas:** Definition of Done, criterios de entrada por columna, clases de servicio
-3. **Cadencias:** Replenishment meeting, throughput review, retrospectiva de servicio
-4. **Métricas de flujo:** Cycle time, throughput, CFD, lead time distribution
-5. **Mejora continua:** Kaizen, experimentación, gestión de la deuda
-6. **Orientación al cliente:** Reutilizable desde Scrum sin cambios
+**Contenido del export:**
+- Header: nombre del equipo, ciclo, fecha de la sesión
+- Score global + tabla de scores por dimensión con nivel de cada una
+- Por cada dimensión: título + las 3 preguntas de coaching del nivel del equipo
+- Si hay análisis IA: foco recomendado + agenda sugerida
+- Sección "Compromisos" en blanco (para que el coach anote durante la sesión o imprima y rellene a mano)
+- Footer: generado con Assessment Agile
 
-**Complejidad:** Muy alta — refactoriza el corazón de la herramienta
-**Dependencias:** Requiere diseño de preguntas Kanban antes de implementar. Recomendable como proyecto independiente.
+**Implementación:**
+- Función `printFacilitationSummary()` en `facilitar.html`
+- Abre `window.open()` con HTML construido inline + `window.print()`
+- CSS `@media print` para tipografía limpia, sin fondos de color
+- Botón "↓ Exportar" en la barra de controles, visible solo en modo coach
+
+**Complejidad:** Baja
+**Dependencias:** `facilitar.html` ya implementado — es puro HTML/CSS, sin Firestore adicional
 
 ---
 
@@ -433,7 +413,12 @@ Selector de framework al inicio del formulario. Primer paso: assessment específ
 - Fase 1: #1 → #2 → #3 (el contexto alimenta la participación, que alimenta el anonimato; los tres son prerequisito para que #10 funcione bien)
 - Fase 2: #4 primero (baja complejidad, alto impacto visual) → #10 (requiere #1, #2, #3 completos para máximo valor)
 - Fase 3: #7 → #6 (reducir fricción operativa antes de invertir en la experiencia de facilitación; #6 se enriquece si #10 ya está implementado)
-- Fase 4: #8 (requiere #1) → #9 (proyecto autónomo)
+- Fase 4: #9 primero (baja complejidad, cierra el loop de `facilitar.html`) → #8 (usa datos ya cargados, añade una sola card)
+
+**Features descartadas y razón:**
+- **Benchmark externo cross-workspace (#8 original):** Requiere volumen de datos de múltiples organizaciones para ser estadísticamente útil. Sin ese volumen, los percentiles serían engañosos. Las herramientas como AgilityHealth tardaron años en construir ese pool. Revisitar cuando haya ≥50 organizaciones activas.
+- **Multi-framework Kanban (#9 original):** Cada framework (Kanban, SAFe, LeSS) requiere un modelo de medición propio con preguntas validadas por expertos del framework. No es una adición de features — es reconstruir la herramienta 2–3 veces. Revisitar como proyecto independiente.
+- **Resumen semanal vía webhook (#7 parte 3):** El recordatorio en panel (cadencia configurable) cubre el caso de uso principal. Firebase Scheduler añade complejidad operativa con bajo valor diferencial.
 
 **Tests:**
 - Cada mejora que añada campos a `respuestas` requiere tests en `analysis.test.js`
@@ -441,7 +426,7 @@ Selector de framework al inicio del formulario. Primer paso: assessment específ
 - Mantener los 94 tests actuales pasando en cada PR
 
 **Deploy:**
-CI/CD automático en push a main. Las nuevas Cloud Functions (#10, #7) requieren configurar `ANTHROPIC_API_KEY` en Firebase Secret Manager antes del primer deploy.
+CI/CD automático en push a main. Las Cloud Functions requieren `ANTHROPIC_API_KEY` en Firebase Secret Manager.
 
 **Estimación de costo mensual de IA (referencia):**
 | Escenario | Análisis/mes | Costo estimado |
