@@ -12,7 +12,7 @@ Propuestas para evolucionar la herramienta de **medición** a **acompañamiento 
 |------|---------|---------|--------|
 | 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | ✅ Completada — 2026-04-10 |
 | 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | ✅ Completada — 2026-04-11 |
-| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | 🔄 En curso — #16 ✅ · faltan #11, #12, #14 (#13 bloqueada por SendGrid) |
+| 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | ✅ Completada — 2026-04-11 (#13 diferida por SendGrid) |
 | 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Pendiente |
 
 ---
@@ -284,9 +284,9 @@ Para cada pregunta con alta polarización (ej: >40% de respuestas en los extremo
 
 ---
 
-## Fase 3 — Engagement del equipo
+## Fase 3 — Engagement del equipo ✅ COMPLETADA (2026-04-11)
 
-Involucrar al equipo en el proceso, no solo al coach. La herramienta pasa de ser "del coach" a ser "del equipo y del coach".
+Involucrar al equipo en el proceso, no solo al coach. La herramienta pasa de ser "del coach" a ser "del equipo y del coach". (#13 diferida hasta que haya dominio verificado para SendGrid).
 
 ---
 
@@ -629,10 +629,10 @@ Q1 2027 — Fase 4: Plataforma
 | 7 | Tendencia histórica | 2 | Media | — | ✅ `d507341` |
 | 9 | Índice de momentum | 2 | Media | — | ✅ `0311cff` |
 | 10 | Consistencia por pregunta | 2 | Baja-media | V1 histogramas ✅ | ✅ `0f7c479` |
-| 11 | Portal de equipo | 3 | Alta | — | Pendiente |
-| 12 | Estados por equipo | 3 | Media | #11 | Pendiente |
-| 13 | Recordatorios de ciclo | 3 | Media | SendGrid | Pendiente |
-| 14 | Preguntas personalizables | 3 | Alta | — | Pendiente |
+| 11 | Portal de equipo | 3 | Alta | — | ✅ `c517c11` |
+| 12 | Estados por equipo | 3 | Media | #11 | ✅ `3d0906b` |
+| 13 | Recordatorios de ciclo | 3 | Media | SendGrid | ⏸ Diferida (sin dominio) |
+| 14 | Preguntas personalizables | 3 | Alta | — | ✅ `82dc6fc` |
 | 16 | White-label básico | 3 | Media | — | ✅ `352b690` |
 | 2 | Modo facilitación | 4 | Alta | #1 | Pendiente |
 | 8 | Benchmarking | 4 | Media-alta | Volumen datos | Pendiente |
