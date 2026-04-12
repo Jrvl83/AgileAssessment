@@ -118,6 +118,25 @@ body {
 .n-empty { font-size:12px; color:rgba(255,255,255,.2); font-style:italic; }
 .kbd { background:rgba(255,255,255,.1); border-radius:3px; padding:1px 5px; font-size:10px; font-family:monospace; color:rgba(255,255,255,.4); }
 
+/* Action form (cierre slide) */
+.action-section { margin-top:28px; border-top:1.5px solid var(--border); padding-top:22px; }
+.action-toggle { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; border-radius:var(--radius-sm); border:1.5px solid var(--accent); background:var(--accent-light); color:var(--accent); font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+.action-toggle:hover { background:#c8d9ff; }
+.action-form { margin-top:16px; display:flex; flex-direction:column; gap:12px; background:var(--surface-2); border-radius:var(--radius); padding:18px 20px; }
+.af-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.af-field { display:flex; flex-direction:column; gap:5px; }
+.af-field label { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); }
+.af-field input, .af-field select { border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 10px; font-size:13px; font-family:inherit; color:var(--ink); background:white; outline:none; }
+.af-field input:focus, .af-field select:focus { border-color:var(--accent); }
+.af-save { align-self:flex-end; padding:9px 20px; border-radius:var(--radius-sm); background:var(--accent); color:white; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+.af-save:disabled { opacity:.5; cursor:default; }
+.action-list { margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+.action-item { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border-radius:var(--radius-sm); background:#f0faf3; border:1.5px solid #c3e8cc; }
+.action-check { color:#2d9b52; font-size:14px; flex-shrink:0; margin-top:1px; }
+.action-text { flex:1; }
+.action-text strong { font-size:13px; color:var(--ink); display:block; margin-bottom:2px; }
+.action-text span { font-size:11px; color:var(--ink-faint); }
+
 /* Loading / error */
 .loading-screen { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:10px; }
 .loading-screen p { font-size:14px; color:rgba(255,255,255,.35); }
@@ -150,6 +169,11 @@ let currentUser = null, loginErr = '', loading = true;
 let teamId = '', teamName = '', cicloNombre = '', workspaceId = '';
 let slides = [], currentSlide = 0, coachMode = true;
 let aiData = null, dimScores = {}, globalPct = null, responseCount = 0;
+
+// Action form state (cierre slide)
+let showActionForm = false;
+let sessionActions = [];
+let actionSaving = false;
 
 // ── Render ──────────────────────────────────────────────────────────
 function render() {
@@ -293,10 +317,65 @@ function buildAiSlide(title, text) {
 }
 
 function buildCierre() {
+  const dimOptions = DIMS.map(d =>
+    `<option value="${e(d.key)}">${e(d.label)}</option>`
+  ).join('');
+
+  const formHtml = showActionForm ? `
+    <div class="action-form">
+      <div class="af-field">
+        <label>Iniciativa / acción</label>
+        <input id="af-iniciativa" type="text" placeholder="Ej: Definir Sprint Goal con el equipo el próximo lunes" maxlength="200"/>
+      </div>
+      <div class="af-row">
+        <div class="af-field">
+          <label>Responsable</label>
+          <input id="af-responsable" type="text" placeholder="Nombre o rol"/>
+        </div>
+        <div class="af-field">
+          <label>Fecha objetivo</label>
+          <input id="af-fecha" type="date"/>
+        </div>
+      </div>
+      <div class="af-row">
+        <div class="af-field">
+          <label>Dimensión</label>
+          <select id="af-dimension">
+            <option value="">— Sin dimensión —</option>
+            ${dimOptions}
+          </select>
+        </div>
+        <div class="af-field" style="justify-content:flex-end">
+          <button class="af-save" id="af-btn" onclick="saveAction()" ${actionSaving?'disabled':''}>
+            ${actionSaving ? 'Guardando…' : '✓ Guardar acción'}
+          </button>
+        </div>
+      </div>
+    </div>` : '';
+
+  const actionListHtml = sessionActions.length ? `
+    <div class="action-list">
+      ${sessionActions.map(a => `
+        <div class="action-item">
+          <span class="action-check">✓</span>
+          <div class="action-text">
+            <strong>${e(a.iniciativa)}</strong>
+            <span>${e(a.responsable||'Sin responsable')}${a.fechaObjetivo ? ' · ' + a.fechaObjetivo : ''}${a.dimension ? ' · ' + e(a.dimLabel||a.dimension) : ''}</span>
+          </div>
+        </div>`).join('')}
+    </div>` : '';
+
   return `<div class="s-eyebrow">Cierre de sesión</div>
     <h2 class="s-h2">Compromisos del equipo</h2>
     <div class="cierre-q">¿Cuál es la acción más importante que el equipo puede comprometerse a hacer antes del próximo Sprint?</div>
-    <p style="font-size:14px;color:var(--ink-faint);margin-top:18px;line-height:1.7">Cada persona nombra un compromiso concreto. El Scrum Master los captura en el Plan de Acción.</p>`;
+    <p style="font-size:14px;color:var(--ink-faint);margin-top:18px;line-height:1.7">Cada persona nombra un compromiso concreto. Captúralos directamente en el Plan de Acción.</p>
+    <div class="action-section">
+      <button class="action-toggle" onclick="toggleActionForm()">
+        ${showActionForm ? '✕ Cancelar' : '+ Nueva acción'}
+      </button>
+      ${formHtml}
+      ${actionListHtml}
+    </div>`;
 }
 
 // ── Notes builders ──────────────────────────────────────────────────
@@ -356,6 +435,58 @@ function buildCierreNotes() {
   return `${foco}${agenda}${sintesis}${fallback}`;
 }
 
+// ── Action form ─────────────────────────────────────────────────────
+function toggleActionForm() {
+  showActionForm = !showActionForm;
+  render();
+  if (showActionForm) {
+    // Focus the first field after render
+    setTimeout(() => {
+      const el = document.getElementById('af-iniciativa');
+      if (el) el.focus();
+    }, 50);
+  }
+}
+
+async function saveAction() {
+  const iniciativa = (document.getElementById('af-iniciativa').value || '').trim();
+  if (!iniciativa) {
+    document.getElementById('af-iniciativa').focus();
+    return;
+  }
+  const responsable = (document.getElementById('af-responsable').value || '').trim();
+  const fechaObjetivo = document.getElementById('af-fecha').value || '';
+  const dimension = document.getElementById('af-dimension').value || '';
+  const dimLabel = dimension ? (DIMS.find(d => d.key === dimension) || {}).label || dimension : '';
+
+  actionSaving = true;
+  render();
+
+  const planData = {
+    equipoId: teamId,
+    equipoNombre: teamName || teamId,
+    iniciativa,
+    responsable,
+    fechaObjetivo,
+    estado: 'pendiente',
+    ciclo: cicloNombre || '',
+    dimension,
+    ownerId: workspaceId || currentUser.uid,
+    fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    await db.collection('planes').add(planData);
+    sessionActions.push({ iniciativa, responsable, fechaObjetivo, dimension, dimLabel });
+    showActionForm = false;
+  } catch(err) {
+    console.error('Error al guardar acción:', err);
+    alert('No se pudo guardar la acción. Verifica tu conexión.');
+  }
+  actionSaving = false;
+  render();
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────
 function e(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -386,6 +517,8 @@ function toggleCoach() { coachMode = !coachMode; render(); }
 
 function attachKb() {
   document.onkeydown = (ev) => {
+    const tag = (ev.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
     if (['ArrowRight','ArrowDown','PageDown'].includes(ev.key)) { navigate(1);  ev.preventDefault(); }
     if (['ArrowLeft', 'ArrowUp',  'PageUp'  ].includes(ev.key)) { navigate(-1); ev.preventDefault(); }
     if (ev.key === 'n' || ev.key === 'N') { toggleCoach(); }
