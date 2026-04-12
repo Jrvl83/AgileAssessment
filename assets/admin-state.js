@@ -66,6 +66,7 @@ const state = {
   anonymityMode:          'full',
   aiEnabled:              false,
   aiAnalysis:             {},
+  aiContext:              {},
   assessmentCadenceWeeks: 0,
   cadenceBannerDismissed: false
 };

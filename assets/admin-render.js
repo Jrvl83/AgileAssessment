@@ -43,14 +43,24 @@ function toggleTeamComments(tid) {
 }
 
 // ── Análisis con IA ───────────────────────────────────────────────
+// Actualiza el contexto del coach sin disparar re-render (evita perder el foco en el textarea)
+function updateAiCtx(key, val) {
+  state.aiContext = { ...state.aiContext, [key]: val };
+}
+
 async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
   const cf  = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
+  const contextoCoach = (state.aiContext[key] || '').trim();
   setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: true, data: null, error: null } } });
 
   try {
     const fn     = fns.httpsCallable('analyzeTeamWithClaude');
-    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf });
+    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach });
+    // Pre-cargar contexto guardado para que el textarea lo muestre en futuros renders
+    if (result.data && result.data.data && result.data.data.contextoCoach) {
+      state.aiContext = { ...state.aiContext, [key]: result.data.data.contextoCoach };
+    }
     setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, ...result.data } } });
   } catch (e) {
     setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, data: null, error: e.message || 'Error al analizar' } } });
@@ -1039,6 +1049,9 @@ function renderAnalysis() {
                 : hasData && aiEntry.newResponsesCount > 0 ? `Actualizar (${aiEntry.newResponsesCount} nueva${aiEntry.newResponsesCount !== 1 ? 's' : ''})`
                 : hasData    ? 'Regenerar'
                 : 'Analizar con IA';
+              const ctxVal = (state.aiContext[aiKey] !== undefined
+                ? state.aiContext[aiKey]
+                : (aiEntry && aiEntry.data && aiEntry.data.contextoCoach) || '');
               return `
               <div class="no-print" style="border:1.5px solid #1a4fd6;border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0f5ff;">
@@ -1053,6 +1066,17 @@ function renderAnalysis() {
                       background:${btnDisabled?'transparent':'#1a4fd6'};">
                     ${btnLabel}
                   </button>
+                </div>
+                <div style="padding:10px 14px;border-top:1px solid #dce6ff;background:#f8fbff;">
+                  <label style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:5px;">
+                    Contexto para el análisis <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span>
+                  </label>
+                  <textarea
+                    rows="2"
+                    placeholder="Ej: El equipo cambió de Scrum Master hace 3 semanas. Están bajo presión de un deadline externo en mayo."
+                    oninput="updateAiCtx('${aiKey}', this.value)"
+                    style="width:100%;border:1.5px solid #dce6ff;border-radius:6px;padding:7px 10px;font-size:12px;font-family:inherit;color:var(--ink);background:white;resize:vertical;outline:none;min-height:52px;"
+                  >${e(ctxVal)}</textarea>
                 </div>
                 ${(hasData || isLoading || hasError) ? `
                 <div style="padding:12px 14px;border-top:1px solid #dce6ff;">
