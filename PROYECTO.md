@@ -539,7 +539,7 @@ Desde el panel admin se puede exportar:
 | 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
 | 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | ✅ Completada 2026-04-12 |
 | 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | ✅ Completada 2026-04-12 |
-| 4 — Flujo operacional, calidad y visión ejecutiva | #8 Tendencia org, #9 Export sesión, #11 Acciones en facilitar, #12 Contexto IA, #13 Respuestas rápidas, #14 Cierre ciclo | ✅ Completada 2026-04-12 |
+| 4 — Flujo operacional, calidad y visión ejecutiva | #8 Tendencia org, #9 Export sesión, #11 Acciones en facilitar, #12 Contexto IA, #12b Imágenes IA (visión), #13 Respuestas rápidas, #14 Cierre ciclo | ✅ Completada 2026-04-12 |
 
 #### Fase 1 — implementada
 
@@ -562,6 +562,7 @@ Desde el panel admin se puede exportar:
 
 - **#11** Acciones desde facilitar.html — formulario en slide de cierre: iniciativa, responsable, fecha, dimensión. Guarda en `planes` con `ownerId=workspaceId`. Lista en-sesión acumulativa visible. Atajos de teclado deshabilitados en inputs. Commit: `2e28f6f`
 - **#12** Contexto adicional para análisis IA — textarea "Contexto para el análisis" en el panel IA del admin. Se pasa como `contextoCoach` a la CF, se prepende al prompt de Claude, y se persiste en `analisis_ia/{cacheKey}`. Commit: `53c0dab`
+- **#12b** Subida de imágenes para análisis IA — `handleImageUpload` + `removeImage` en `admin-render.js`. Máx. 3 PNG/JPG · 2 MB c/u. Base64 vía `FileReader`. CF construye `content` mixto (bloques `image` + `text`) para la API de visión de Claude. Las imágenes no se almacenan. Commit: `086b41f`
 - **#13** Detección de respuestas rápidas — `startedAt` al entrar a primera sección. Si `completionSeconds < 180`, guarda `flaggedFast: true` en `respuestas`. Badge ⚡ en panel de participación del admin. Commit: `628db46`
 - **#9** Export sesión facilitación — botón "↓ Exportar" en `facilitar.html`. Ventana imprimible: header equipo/ciclo/score, preguntas de coaching por dimensión (grid 2 cols), acciones acordadas en sesión, sección de compromisos en blanco. Commit: `a601164`
 - **#14** Cierre formal del ciclo — botón "⊘ Cerrar ciclo" en fila de filtros. Modal con stats (respuestas, equipos, equipos sin respuesta). Llama a `toggleCycle` que marca `activo:false`, sincroniza portales y dispara webhook. Commit: `bb4f87b`
@@ -605,6 +606,7 @@ Desde el panel admin se puede exportar:
 | `a601164` | Feat: exportar sesión de facilitación — ventana imprimible con preguntas coaching, acciones y compromisos (#9 V3) |
 | `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
 | `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
+| `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |

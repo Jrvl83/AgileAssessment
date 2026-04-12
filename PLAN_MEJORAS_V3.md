@@ -424,6 +424,31 @@ A continuación, los datos del equipo...
 
 ---
 
+### #12b. Subida de imágenes (gráficos) para análisis con IA ✅ `086b41f`
+
+**Problema:**
+mammoth.js no puede extraer los gráficos binarios DrawingML incrustados en un DOCX. El coach puede tener capturas de pantalla de gráficos externos (Jira, burndown, velocity) que son relevantes para el análisis pero que no pueden incluirse vía documento.
+
+**Solución:**
+Subida directa de imágenes PNG/JPG. El coach toma screenshots y las adjunta en el panel IA. Claude las analiza con su API de visión nativa e integra el hallazgo en la narrativa.
+
+**Límites:**
+- Máx. 3 imágenes por análisis
+- Máx. 2 MB por imagen
+- Las imágenes no se almacenan — solo se usan en el prompt de la llamada
+
+**Implementación:**
+- `handleImageUpload(key, input)` — lee archivos con `FileReader`, convierte a base64, valida tamaño, guarda en `state.aiImages[key]`
+- `removeImage(key, index)` — elimina imagen y re-renderiza
+- UI en el panel IA: sección "Imágenes (gráficos)" debajo del DOCX, botón "Añadir imagen", miniaturas con nombre y botón ✕ individual
+- `callAnalyzeTeamWithClaude` pasa `{ data, mediaType }[]` a la CF (sin nombre ni size)
+- CF: cuando hay imágenes, construye `content` como array mixto — bloques `image` + bloque `text` con instrucción y prompt principal. Sin imágenes: string plano (comportamiento previo)
+
+**Complejidad:** Baja-media
+**Dependencias:** CF `analyzeTeamWithClaude` ya implementada
+
+---
+
 ### #13. Detección de respuestas rápidas ✅ `628db46`
 
 **Problema:**
