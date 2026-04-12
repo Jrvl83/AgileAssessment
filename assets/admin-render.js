@@ -417,6 +417,17 @@ function renderQuestionDetail(tid, selectedRole) {
     return `<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin respuestas para este filtro.</div>`;
   }
 
+  // Calcular promedio % por dimensión para detectar inconsistencias score-comentario
+  const _dimAvgPcts = {};
+  DIMS.forEach(d => {
+    const sum = teamResps.reduce((a, r) => a + (r.fields[d.field] || 0), 0);
+    _dimAvgPcts[d.key] = teamResps.length ? Math.round((sum / teamResps.length / d.max) * 100) : 0;
+  });
+  const _commentRisks = detectCommentRisk(teamResps, _dimAvgPcts);
+  // Detectar si la mayoría del equipo es no-software
+  const _nonTechCount = teamResps.filter(r => r.fields.TeamType === 'knowledge').length;
+  const _isNonTechTeam = teamResps.length > 0 && _nonTechCount > teamResps.length / 2;
+
   return SECTIONS.map(sec => {
     const dim = DIMS.find(d => d.key === sec.id);
     const color = dim ? dim.color : '#374151';
@@ -469,6 +480,18 @@ function renderQuestionDetail(tid, selectedRole) {
         </span>`
       : '';
 
+    const riskBadge = _commentRisks[sec.id]
+      ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;
+          padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;"
+          title="Score alto pero comentarios con señales de alerta — revisar comentarios">⚠ Señal oculta</span>`
+      : '';
+
+    const nonTechBadge = (sec.id === 'tecnico' && _isNonTechTeam)
+      ? `<span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:9px;font-weight:700;
+          padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;"
+          title="Equipo no-software: preguntas de calidad de proceso">No-software</span>`
+      : '';
+
     const commentsHtml = secCommentItems.length > 0 ? `
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${color}20;">
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
@@ -487,7 +510,7 @@ function renderQuestionDetail(tid, selectedRole) {
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;
           letter-spacing:0.06em;margin-bottom:10px;padding-bottom:5px;
           border-bottom:2px solid ${color}25;">
-          ${sec.title}${commentBadge}
+          ${sec.title}${commentBadge}${riskBadge}${nonTechBadge}
         </div>
         ${questions}
         ${commentsHtml}
@@ -1157,10 +1180,20 @@ function renderAnalysis() {
 
         // Guardar datos del radar para inicializar Chart.js después del render
         window._radarData = window._radarData || {};
-        const orgBenchmark = compData.length >= 2
-          ? DIMS.map(d => Math.round(compData.reduce((sum, s) => sum + s.avgDims[d.key].pct, 0) / compData.length))
+        const teamObj = state.teams.find(t => t.id === tid);
+        const teamCat = teamObj ? teamObj.category || '' : '';
+        const catCompData = teamCat
+          ? compData.filter(s => ((state.teams.find(t => t.id === s.id) || {}).category || '') === teamCat)
+          : [];
+        const hasCatBenchmark = teamCat && catCompData.length >= 2;
+        const benchmarkPool = hasCatBenchmark ? catCompData : compData;
+        const catOrgAvg = hasCatBenchmark
+          ? Math.round(catCompData.reduce((a, s) => a + s.avgTotal, 0) / catCompData.length)
+          : orgAvg;
+        const radarBenchmark = benchmarkPool.length >= 2
+          ? DIMS.map(d => Math.round(benchmarkPool.reduce((sum, s) => sum + s.avgDims[d.key].pct, 0) / benchmarkPool.length))
           : null;
-        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: orgBenchmark };
+        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: radarBenchmark };
 
         const recsExpanded      = !!state.teamRecsExpanded[tid];
         const detailExpanded    = !!state.teamDetailExpanded[tid];
@@ -1210,17 +1243,19 @@ function renderAnalysis() {
                   if (!parts.length) return '';
                   return `<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">${parts.join(' · ')}</div>`;
                 })()}
+                ${teamCat ? `<div style="margin-top:3px;"><span style="background:#f3f4f6;color:#374151;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;">${teamCat}</span></div>` : ''}
               </div>
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>
                 <span class="tac-level" style="background:${ds.level.bg};color:${ds.level.color}">${ds.level.label}</span>
                 ${(() => {
-                  if (orgBenchmark && compData.length >= 2) {
-                    const delta = ds.avgTotal - orgAvg;
+                  if (radarBenchmark && benchmarkPool.length >= 2) {
+                    const delta = ds.avgTotal - catOrgAvg;
                     const sign  = delta > 0 ? '+' : '';
                     const color = delta > 0 ? '#0d7a52' : delta < 0 ? '#c0282a' : '#6b7280';
+                    const benchLabel = hasCatBenchmark ? teamCat.toLowerCase() : 'org';
                     return `<div style="font-size:10px;color:${color};margin-top:2px;text-align:right;font-weight:600;"
-                      title="vs. promedio org (${orgAvg}%)">${sign}${delta}% org</div>`;
+                      title="vs. promedio ${benchLabel} (${catOrgAvg}%)">${sign}${delta}% ${benchLabel}</div>`;
                   }
                   return '';
                 })()}
@@ -1875,6 +1910,13 @@ function renderTeams() {
               <div class="team-row-name">${t.name}${ownerLabel}</div>
               <span class="team-count-badge">${count} respuesta${count !== 1 ? 's' : ''}</span>
               <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
+              <select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;color:${t.category ? 'var(--ink)' : 'var(--ink-faint)'};background:#fff;cursor:pointer;flex-shrink:0;"
+                onchange="saveTeamCategory('${t.id}',this.value)" title="Categoría del equipo para benchmark segmentado">
+                <option value="">Categoría…</option>
+                ${['Software','Conocimiento','Operaciones','Otro'].map(cat =>
+                  `<option value="${cat}" ${t.category===cat?'selected':''}>${cat}</option>`
+                ).join('')}
+              </select>
               <div style="display:flex;gap:6px;">
                 <button class="btn sm" onclick="showQR('${t.id}','${esc}')">QR</button>
                 <button class="btn sm" onclick="openFacilitar('${t.id}')" title="Abrir modo facilitación para este equipo">Facilitar →</button>

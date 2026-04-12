@@ -466,6 +466,7 @@ let scrumTime = "";  // legacy — ya no se recolecta en la UI
 let teamAge = "";    // "< 3 meses" | "3–12 meses" | "1–2 años" | "> 2 años"
 let dedicatedPO = ""; // "Sí" | "No" | "Compartido"
 let workMode = "";   // "Presencial" | "Híbrido" | "Totalmente remoto"
+let teamType = '';   // "Sí" | "No" — adapta preguntas de Excelencia Técnica
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
 let startedAt = null;  // timestamp (ms) cuando el participante inicia la primera sección
 let briefingTexto = "";
@@ -586,6 +587,7 @@ async function submitResults() {
       teamSize: teamSize || '',
       dedicatedPO: dedicatedPO || '',
       workMode: workMode || '',
+      teamType: teamType === 'No' ? 'knowledge' : 'software',
       ...scoreFields,
       scoreTotalPct: pct,
       nivel: level.label,
@@ -611,13 +613,14 @@ function calcResults() {
   const ov = wsConfig.questionOverrides || {};
   SECTIONS.forEach(sec => {
     let s=0, m=0;
-    sec.questions.forEach((q,qi)=>{
+    const _qs = (sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions) ? sec.altQuestions : sec.questions;
+    _qs.forEach((q,qi)=>{
       const qKey = `${sec.id}_${qi}`;
       if ((ov[qKey] || {}).disabled) return; // excluir preguntas desactivadas
       m += 3;
       s += (answers[qKey] || 0);
     });
-    if (m === 0) m = sec.questions.length * 3; // fallback (no debería pasar)
+    if (m === 0) m = _qs.length * 3; // fallback (no debería pasar)
     dims[sec.id]={ score:s, max:m, pct:Math.round(s/m*100), name:sec.title };
     total+=s; max+=m;
   });
@@ -738,12 +741,15 @@ function renderSection() {
   const cqs = (wsConfig.customQuestions || {})[sec.id] || [];
 
   // Preguntas estándar activas (no desactivadas)
-  const activeQs = sec.questions.map((q, qi) => ({ q, qi }))
+  // Para la sección técnica: usar altQuestions si el equipo declaró ser no-software
+  const _secQs = (sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions) ? sec.altQuestions : sec.questions;
+  const activeQs = _secQs.map((q, qi) => ({ q, qi }))
     .filter(({ qi }) => !((ov[`${sec.id}_${qi}`] || {}).disabled));
 
   // Total de preguntas estándar activas en todo el formulario
   const totalQ = SECTIONS.reduce((a, s) => {
-    return a + s.questions.filter((_, qi) => !((ov[`${s.id}_${qi}`] || {}).disabled)).length;
+    const _qs = (s.id === 'tecnico' && teamType === 'No' && s.altQuestions) ? s.altQuestions : s.questions;
+    return a + _qs.filter((_, qi) => !((ov[`${s.id}_${qi}`] || {}).disabled)).length;
   }, 0);
   const answered = Object.keys(answers).length;
   const pct = Math.round(answered / totalQ * 100);
@@ -797,7 +803,7 @@ function renderSection() {
     </div>
     <div class="section-chip">${sec.tag}<span class="role-tag">${sec.role}</span></div>
     <div class="section-title">${sec.title}</div>
-    <div class="section-desc">${sec.desc}</div>
+    <div class="section-desc">${(sec.id === 'tecnico' && teamType === 'No' && sec.altDesc) ? sec.altDesc : sec.desc}${sec.id === 'tecnico' && teamType === 'No' ? ' <span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:4px;vertical-align:middle;">Equipo no-software</span>' : ''}</div>
     ${getSectionNote(sec.role, role)}
     ${qs}
     ${customQHtml}
@@ -846,7 +852,13 @@ function renderContext() {
   return `
     <div class="intro">
       <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Contexto del equipo</div>
-      <p style="font-size:15px;color:var(--ink-muted);margin-bottom:28px;line-height:1.65;">Estas 4 preguntas son opcionales. Ayudan a interpretar los resultados con más precisión. Puedes saltarlas.</p>
+      <p style="font-size:15px;color:var(--ink-muted);margin-bottom:28px;line-height:1.65;">Estas preguntas ayudan a personalizar el assessment. La primera adapta la sección Excelencia Técnica a tu tipo de equipo.</p>
+      <div class="field-group">
+        <label>¿El equipo trabaja en desarrollo de software? <span style="background:#eef2ff;color:#1a4fd6;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:6px;">Adapta las preguntas técnicas</span></label>
+        <div class="role-opts" style="flex-wrap:wrap;margin-top:6px;">
+          ${['Sí','No'].map(o => `<button class="role-btn ${teamType===o?'selected':''}" onclick="teamType='${o}';render()">${o}</button>`).join('')}
+        </div>
+      </div>
       ${pillGroup('¿Cuánto tiempo lleva el equipo trabajando con Scrum?',
         ['< 3 meses','3–12 meses','1–2 años','> 2 años'], teamAge, 'teamAge')}
       ${pillGroup('¿Cuántas personas hay en el equipo?',
@@ -866,7 +878,7 @@ function pickCustom(cqId,val) { customAnswers[cqId]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; render(); }
+function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; teamType=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';

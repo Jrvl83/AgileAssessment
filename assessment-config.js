@@ -60,6 +60,15 @@ const SECTIONS = [
   {
     id:"tecnico", tag:"Sección 5 de 6", title:"Excelencia técnica",
     desc:"Prácticas de ingeniería que sostienen la agilidad y la calidad de entrega", role:"Dev Team",
+    altDesc:"Calidad y mejora continua del proceso en equipos de trabajo de conocimiento",
+    altQuestions:[
+      { text:"¿El equipo revisa entre pares el trabajo antes de considerarlo terminado?",
+        opts:["Rara vez o nunca; el trabajo se entrega sin revisión","Se revisa a veces pero sin criterios claros","La mayoría del trabajo pasa por revisión de pares","Revisión sistemática con criterios de calidad compartidos"] },
+      { text:"¿El equipo tiene criterios de aceptación claros para sus entregables?",
+        opts:["Los entregables no tienen criterios de calidad definidos","Hay criterios informales pero inconsistentes","La mayoría de entregables tiene criterios antes de empezar","Criterios claros acordados en equipo; guían cada entregable"] },
+      { text:"¿El equipo gestiona activamente los problemas de proceso (retrabajos, inconsistencias, flujos rotos)?",
+        opts:["No se reconoce ni se habla de problemas de proceso","Se reconoce pero no se prioriza ni se aborda","Se identifican y se abordan esporádicamente","La mejora del proceso es parte del ritmo habitual del equipo"] }
+    ],
     questions:[
       { text:"¿El equipo tiene integración continua (CI) que detecta errores automáticamente?",
         opts:["No hay CI; el build es manual o esporádico","CI configurado pero con fallos frecuentes no resueltos","CI estable; los fallos se resuelven antes de continuar","CI + CD; despliegues automatizados frecuentes y fiables"] },

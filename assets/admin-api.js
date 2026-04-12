@@ -95,6 +95,23 @@ function groupCommentsBySection(teamResps) {
   }).filter(s => s.comments.length > 0);
 }
 
+// Detecta inconsistencias score-comentario: sección con score alto pero comentarios con términos de riesgo
+// Retorna { [secId]: boolean } — true = señal oculta detectada
+const COMMENT_RISK_TERMS = ['teatro','vacía','vacío','nadie','no funciona','no se usa','rara vez','nunca','solo de nombre','obligados','forzado','forzada','no sirve','inútil'];
+
+function detectCommentRisk(teamResps, dimAvgPcts) {
+  const risks = {};
+  SECTIONS.forEach(sec => {
+    const pct = dimAvgPcts[sec.id] !== undefined ? dimAvgPcts[sec.id] : 0;
+    if (pct < 67) { risks[sec.id] = false; return; }
+    const allComments = teamResps
+      .map(r => ((r.fields.Comments || {})[sec.id] || '').toLowerCase())
+      .join(' ');
+    risks[sec.id] = allComments.length > 0 && COMMENT_RISK_TERMS.some(t => allComments.includes(t));
+  });
+  return risks;
+}
+
 // Calcula el momentum de mejora: delta promedio por ciclo en los últimos n ciclos
 // Retorna { avg, cycles, direction } o null si hay menos de 2 ciclos con datos
 function calcMomentum(tid, role, n) {
@@ -279,7 +296,8 @@ async function fetchAllData() {
     state.teams = tSnap.docs.map(d => ({
       id: d.id, name: d.data().nombre, active: !!d.data().activo,
       ownerId: d.data().ownerId || null,
-      notas: d.data().notas || {}
+      notas: d.data().notas || {},
+      category: d.data().category || ''
     })).sort((a, b) => a.name.localeCompare(b.name));
 
     const teamIds = new Set(state.teams.map(t => t.id));
@@ -307,7 +325,8 @@ async function fetchAllData() {
             Answers: r.answers || {},
             Comments: r.comments || {},
             FlaggedFast: r.flaggedFast || false,
-            CompletionSeconds: r.completionSeconds || null
+            CompletionSeconds: r.completionSeconds || null,
+            TeamType: r.teamType || ''
           }
         };
       })
@@ -380,6 +399,15 @@ async function toggleActive(id, name, current) {
     toast(current ? `"${name}" desactivado` : `"${name}" activado`);
     await fetchAllData();
   } catch(e) { toast('Error de conexión'); }
+}
+
+async function saveTeamCategory(teamId, category) {
+  try {
+    await db.collection('equipos').doc(teamId).update({ category: category || firebase.firestore.FieldValue.delete() });
+    const t = state.teams.find(t => t.id === teamId);
+    if (t) t.category = category || '';
+    setState({});
+  } catch(e) { toast('Error al guardar categoría'); }
 }
 
 async function deleteTeam(id, name) {
@@ -753,7 +781,8 @@ function startLiveResponseCount() {
             Answers: r.answers || {},
             Comments: r.comments || {},
             FlaggedFast: r.flaggedFast || false,
-            CompletionSeconds: r.completionSeconds || null
+            CompletionSeconds: r.completionSeconds || null,
+            TeamType: r.teamType || ''
           }
         };
       })
