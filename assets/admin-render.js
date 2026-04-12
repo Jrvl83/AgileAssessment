@@ -139,24 +139,38 @@ function initRadarCharts() {
     const existing = Chart.getChart(canvas);
     if (existing) existing.destroy();
 
-    const values = window._radarData[tid].values;
+    const { values, benchmark } = window._radarData[tid];
+
+    const datasets = [{
+      label: 'Equipo',
+      data: values,
+      backgroundColor: 'rgba(26, 86, 219, 0.10)',
+      borderColor:     'rgba(26, 86, 219, 0.75)',
+      borderWidth: 2,
+      pointBackgroundColor: colors,
+      pointBorderColor:     '#fff',
+      pointBorderWidth: 1.5,
+      pointRadius: 4,
+      pointHoverRadius: 5,
+    }];
+
+    if (benchmark) {
+      datasets.push({
+        label: 'Promedio org',
+        data: benchmark,
+        backgroundColor: 'transparent',
+        borderColor:     'rgba(107, 114, 128, 0.50)',
+        borderWidth: 1.5,
+        borderDash: [4, 3],
+        pointRadius: 0,
+        pointHoverRadius: 3,
+        pointHoverBackgroundColor: 'rgba(107, 114, 128, 0.7)',
+      });
+    }
 
     new Chart(canvas, {
       type: 'radar',
-      data: {
-        labels,
-        datasets: [{
-          data: values,
-          backgroundColor: 'rgba(26, 86, 219, 0.10)',
-          borderColor:     'rgba(26, 86, 219, 0.75)',
-          borderWidth: 2,
-          pointBackgroundColor: colors,
-          pointBorderColor:     '#fff',
-          pointBorderWidth: 1.5,
-          pointRadius: 4,
-          pointHoverRadius: 5,
-        }]
-      },
+      data: { labels, datasets },
       options: {
         responsive: true,
         maintainAspectRatio: true,
@@ -605,7 +619,10 @@ function renderAnalysis() {
 
         // Guardar datos del radar para inicializar Chart.js después del render
         window._radarData = window._radarData || {};
-        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct) };
+        const orgBenchmark = compData.length >= 2
+          ? DIMS.map(d => Math.round(compData.reduce((sum, s) => sum + s.avgDims[d.key].pct, 0) / compData.length))
+          : null;
+        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: orgBenchmark };
 
         const recsExpanded   = !!state.teamRecsExpanded[tid];
         const detailExpanded = !!state.teamDetailExpanded[tid];
@@ -646,6 +663,16 @@ function renderAnalysis() {
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>
                 <span class="tac-level" style="background:${ds.level.bg};color:${ds.level.color}">${ds.level.label}</span>
+                ${(() => {
+                  if (orgBenchmark && compData.length >= 2) {
+                    const delta = ds.avgTotal - orgAvg;
+                    const sign  = delta > 0 ? '+' : '';
+                    const color = delta > 0 ? '#0d7a52' : delta < 0 ? '#c0282a' : '#6b7280';
+                    return `<div style="font-size:10px;color:${color};margin-top:2px;text-align:right;font-weight:600;"
+                      title="vs. promedio org (${orgAvg}%)">${sign}${delta}% org</div>`;
+                  }
+                  return '';
+                })()}
                 ${(() => {
                   const m = calcMomentum(tid, selectedRole);
                   if (!m) return '';
