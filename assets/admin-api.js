@@ -14,10 +14,14 @@ function calcDispersion(pctArr) {
 
 // Detecta preguntas polarizadas: respuestas concentradas en ambos extremos (0 y 3)
 // counts = [c0, c1, c2, c3] — frecuencia de cada valor de respuesta
+// Requiere que cada extremo represente al menos el 20% del total para evitar
+// falsos positivos cuando hay un solo outlier en un extremo.
 function isPolarized(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   if (total < 3) return false;
-  return counts[0] > 0 && counts[3] > 0 && (counts[0] + counts[3]) / total >= 0.5;
+  return counts[0] / total >= 0.2
+      && counts[3] / total >= 0.2
+      && (counts[0] + counts[3]) / total >= 0.5;
 }
 
 // Detecta brechas de percepción entre roles por dimensión

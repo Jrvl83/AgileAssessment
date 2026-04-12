@@ -66,6 +66,16 @@ describe('isPolarized', () => {
   test('false con counts vacío (sin respuestas)', () => {
     expect(isPolarized([0, 0, 0, 0])).toBe(false);
   });
+
+  test('false cuando un extremo es outlier (<20% del total)', () => {
+    // 1 en 0 (outlier), 11 en 3 — el equipo está alineado, no dividido
+    expect(isPolarized([1, 0, 1, 11])).toBe(false);
+  });
+
+  test('true cuando ambos extremos representan ≥20% del total', () => {
+    // 3 en 0, 4 en 3, 3 en medios → c0=30%, c3=40%, extremos=70%
+    expect(isPolarized([3, 1, 2, 4])).toBe(true);
+  });
 });
 
 // ── getMajorityRole ───────────────────────────────────────────────
