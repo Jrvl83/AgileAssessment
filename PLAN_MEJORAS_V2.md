@@ -13,7 +13,7 @@ Propuestas para evolucionar la herramienta de **medición** a **acompañamiento 
 | 1 — Quick wins | Completar lo que ya casi está | #4, #5, #6, #19, #20 | ✅ Completada — 2026-04-10 |
 | 2 — Core coaching | Funcionalidades que definen una herramienta de coaching | #1, #3, #7, #9, #10 | ✅ Completada — 2026-04-11 |
 | 3 — Engagement | Involucrar al equipo, no solo al coach | #11, #12, #13, #14, #16 | ✅ Completada — 2026-04-11 (#13 diferida por SendGrid) |
-| 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | Pendiente |
+| 4 — Plataforma | Features enterprise y diferenciadores de mercado | #2, #8, #15, #17, #18 | ✅ Completada — 2026-04-12 (#2 y #15 diferidas) |
 
 ---
 
@@ -424,9 +424,19 @@ Estos valores se leen del workspace al cargar el formulario y el reporte compart
 
 ---
 
-## Fase 4 — Plataforma y diferenciadores de mercado
+## Fase 4 — Plataforma y diferenciadores de mercado ✅ COMPLETADA (2026-04-12)
 
 Features de mayor complejidad que posicionan la herramienta como alternativa real a las soluciones enterprise.
+**#2 diferida** — el reporte compartible cubre el caso de uso de debriefing en sala.
+**#15 diferida** — fuera de scope actual; requiere definición de dimensiones Kanban.
+
+| # | Mejora | Commit |
+|---|--------|--------|
+| #8 | Benchmark org en radar por equipo | `e4915bc` |
+| #18 | Webhooks configurables por workspace | `76ac19a` |
+| #17 | Exportación PPT por equipo | `12e4f4d` |
+| #2 | Modo facilitación | ⏭ diferido |
+| #15 | Variante Kanban | ⏭ diferido |
 
 ---
 
@@ -634,8 +644,8 @@ Q1 2027 — Fase 4: Plataforma
 | 13 | Recordatorios de ciclo | 3 | Media | SendGrid | ⏸ Diferida (sin dominio) |
 | 14 | Preguntas personalizables | 3 | Alta | — | ✅ `82dc6fc` |
 | 16 | White-label básico | 3 | Media | — | ✅ `352b690` |
-| 2 | Modo facilitación | 4 | Alta | #1 | Pendiente |
-| 8 | Benchmarking | 4 | Media-alta | Volumen datos | Pendiente |
-| 15 | Variante Kanban | 4 | Alta | #14 | Pendiente |
-| 17 | Exportación a presentación | 4 | Alta | — | Pendiente |
-| 18 | Webhooks e integraciones | 4 | Alta | Cloud Functions ✅ | Pendiente |
+| 2 | Modo facilitación | 4 | Alta | #1 | ⏭ Diferida (cubierto por reporte compartible) |
+| 8 | Benchmarking interno | 4 | Media | — | ✅ `e4915bc` |
+| 15 | Variante Kanban | 4 | Alta | #14 | ⏭ Diferida (fuera de scope actual) |
+| 17 | Exportación a presentación | 4 | Alta | — | ✅ `12e4f4d` |
+| 18 | Webhooks e integraciones | 4 | Alta | Cloud Functions ✅ | ✅ `76ac19a` |

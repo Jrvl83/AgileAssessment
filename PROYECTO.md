@@ -11,7 +11,7 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 | Frontend | HTML / CSS / JavaScript (Vanilla SPA) |
 | Base de datos | Firebase Firestore |
 | Auth | Firebase Authentication (email + contraseña) |
-| Backend | Firebase Cloud Functions (Node.js 20) |
+| Backend | Firebase Cloud Functions (Node.js 22) |
 | Hosting | Firebase Hosting |
 | Idioma | Español |
 
@@ -34,7 +34,7 @@ AssessmentAgile/
 │   ├── admin-state.js      # Firebase init + variables de estado globales
 │   ├── admin-api.js        # Funciones Firestore + helpers de cálculo, estadísticas y generateReport
 │   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR, showReportLink
-│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF
+│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF, exportPPT
 │   └── admin-auth.js       # login, logout, onAuthStateChanged
 ├── firebase.json           # Configuración de hosting, firestore y functions
 ├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
@@ -51,8 +51,8 @@ AssessmentAgile/
 │   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (50 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
-│   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin
-│   └── package.json        # Dependencias: firebase-admin, firebase-functions
+│   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam
+│   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22)
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 nuevas mejoras en 4 fases — roadmap Q2 2026 – Q1 2027
@@ -109,11 +109,11 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark org si hay ≥2 equipos), delta "+N% org" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
 | **Equipos** | Todos | Alta, baja y activación de equipos; botón QR por equipo; editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
-| **Configuración** | Todos | Editor de preguntas del assessment por sección: desactivar preguntas (excluidas del scoring), editar texto de preguntas existentes, agregar preguntas personalizadas (hasta 3 por sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` |
+| **Configuración** | Todos | Webhook configurable por workspace (URL + botón "Probar"); eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. Editor de preguntas del assessment por sección: desactivar preguntas (excluidas del scoring), editar texto de preguntas existentes, agregar preguntas personalizadas (hasta 3 por sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
