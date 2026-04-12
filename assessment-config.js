@@ -45,14 +45,16 @@ const SECTIONS = [
   },
   {
     id:"transparencia", tag:"Sección 4 de 6", title:"Transparencia, inspección y adaptación",
-    desc:"Adhesión a los pilares empíricos del proceso", role:"PO + Dev Team",
+    desc:"Adhesión a los pilares empíricos del proceso", role:"PO + Dev Team + SM",
     questions:[
       { text:"¿El equipo y stakeholders tienen visibilidad real del progreso y los impedimentos?",
         opts:["La información está fragmentada o desactualizada","Hay visibilidad parcial en algunas áreas","Buena visibilidad, con algunas brechas","Transparencia total; el Scrum Board refleja la realidad"] },
       { text:"¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?",
         opts:["El plan no cambia una vez iniciado el Sprint","Adaptaciones mínimas, generalmente al final","Adaptaciones frecuentes con base en la evidencia","Inspección y adaptación continua; el plan es una guía viva"] },
       { text:"¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?",
-        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"] }
+        opts:["Rara vez se manifiestan en las interacciones","Algunos valores están presentes de forma inconsistente","La mayoría de valores se practican habitualmente","Los valores son parte de la cultura del equipo"] },
+      { text:"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?",
+        opts:["Los impedimentos no se identifican o permanecen bloqueados varias semanas sin dueño","Se mencionan en el Daily pero nadie los escala; el equipo los asume como parte del trabajo","La mayoría se escalan y se resuelven, aunque algunos quedan sin seguimiento","Los impedimentos se identifican, escalan y resuelven sistemáticamente antes de que bloqueen el Sprint Goal"] }
     ]
   },
   {
@@ -92,7 +94,7 @@ const DIMS = [
   { key:'eventos',       label:'Ceremonias',        max:12, color:'#1a4fd6', field:'Score Eventos',       storeKey:'scoreEventos' },
   { key:'backlog',       label:'Product Backlog',    max:9,  color:'#0d7a52', field:'Score Backlog',        storeKey:'scoreBacklog' },
   { key:'devteam',       label:'Dev Team',           max:12, color:'#a05c0a', field:'Score Dev Team',       storeKey:'scoreDevTeam' },
-  { key:'transparencia', label:'Transparencia',      max:9,  color:'#7c3aed', field:'Score Transparencia',  storeKey:'scoreTransparencia' },
+  { key:'transparencia', label:'Transparencia',      max:12, color:'#7c3aed', field:'Score Transparencia',  storeKey:'scoreTransparencia' },
   { key:'tecnico',       label:'Exc. Técnica',       max:9,  color:'#0891b2', field:'Score Técnico',        storeKey:'scoreTecnico' },
   { key:'cliente',       label:'Orient. Cliente',    max:9,  color:'#db2777', field:'Score Cliente',        storeKey:'scoreCliente' }
 ];
@@ -103,32 +105,38 @@ const RECS = {
   eventos: [
     "Las ceremonias no se realizan de forma consistente. Establecer el ritmo básico: Sprint Planning con Goal claro, Daily de 15 minutos orientado al objetivo y Sprint Review con stakeholders reales. Sin eventos regulares no hay empirismo posible.",
     "Las ceremonias ocurren pero sin el propósito correcto. Trabajar en la calidad del Sprint Goal — debe ser retador y guiar cada decisión del Sprint. El Daily debe adaptarse al plan, no ser un reporte de estado.",
-    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint."
+    "Buena base en ceremonias. Profundizar en que el Sprint Goal alinee realmente con stakeholders y en que la Retro produzca mejoras rastreables de sprint a sprint.",
+    "Las ceremonias son de alta calidad y el equipo las domina. El reto ahora es evolucionar el Sprint Goal hacia hipótesis de negocio medibles y que la Retro genere experimentos sistémicos, no solo mejoras de proceso. Explorar OKRs a nivel de sprint para conectar el trabajo diario con el impacto estratégico."
   ],
   backlog: [
     "El Product Backlog no cumple su función. Definir un Product Goal claro y ordenar los ítems por valor de negocio. Sin priorización real el equipo no puede decidir qué construir primero.",
     "El backlog existe pero la priorización no refleja valor real. Invertir en refinamiento regular donde el PO trabaje con el equipo para definir criterios de aceptación antes de cada Sprint Planning.",
-    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento."
+    "Buena gestión del backlog. Explorar técnicas de priorización por valor (WSJF, Kano) y asegurar que el Product Goal guíe activamente cada decisión de refinamiento.",
+    "La gestión del backlog es una fortaleza. El siguiente nivel es conectar cada Sprint con outcomes medibles: ¿cuánto de lo entregado cambió el comportamiento del usuario? Explorar Continuous Discovery, hypothesis-driven development y JTBD para que el backlog refleje aprendizajes de producto, no solo funcionalidades."
   ],
   devteam: [
     "El equipo no se autoorganiza y depende de asignación externa. Establecer una Definition of Done y empoderar al equipo para que decida cómo lograr el Sprint Goal sin dirección externa.",
     "Hay autoorganización parcial con dependencias frecuentes. Mapear las dependencias externas y planificar cómo internalizar esas habilidades para entregar valor completo.",
-    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable."
+    "El equipo tiene buena autonomía. Implementar límites de WIP para maximizar el flujo y asegurar que cada Sprint produzca un Increment completamente integrado y potencialmente entregable.",
+    "El equipo es autónomo y entrega con consistencia. La evolución ahora es hacia métricas de flujo — lead time, cycle time y DORA metrics — para identificar cuellos de botella sistémicos. Explorar Team Topologies para optimizar las interacciones con otros equipos y reducir la carga cognitiva del sistema."
   ],
   transparencia: [
     "La transparencia es muy baja. Empezar con un Scrum Board visible y actualizado en tiempo real. Sin visibilidad compartida no es posible inspeccionar ni adaptar el proceso.",
     "Hay visibilidad parcial pero los impedimentos no fluyen bien. Trabajar en identificar y escalar impedimentos rápidamente, y en que la Retro genere compromisos concretos y medibles.",
-    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos."
+    "Buena transparencia. Evolucionar hacia métricas de flujo (burndown, velocity, cycle time) para proyecciones más predictibles y retrospectivas basadas en datos.",
+    "La transparencia es total y el empirismo está integrado. El siguiente reto es que los artefactos Scrum evolucionen hacia herramientas de decisión estratégica: el Product Goal como hipótesis de negocio medible, y las métricas de flujo como lenguaje común con la organización para informar decisiones de cartera de producto."
   ],
   tecnico: [
     "El equipo no tiene prácticas de ingeniería que soporten la agilidad. Sin CI ni pruebas automatizadas, entregar valor con frecuencia es arriesgado. Empezar definiendo una DoD que incluya pruebas básicas y configurar un pipeline de CI mínimo.",
     "Hay prácticas técnicas parciales. Aumentar la cobertura de pruebas en las áreas de mayor riesgo y estabilizar el CI para que los fallos sean visibles inmediatamente. Incluir la deuda técnica en el backlog y priorizarla como cualquier otro ítem de valor.",
-    "Buena base técnica. Evolucionar hacia CD (despliegue continuo) y gestión proactiva de la deuda técnica como parte del refinamiento regular y de la Definition of Done."
+    "Buena base técnica. Evolucionar hacia CD (despliegue continuo) y gestión proactiva de la deuda técnica como parte del refinamiento regular y de la Definition of Done.",
+    "La excelencia técnica es real. El siguiente nivel es hacerla visible: medir DORA metrics (deployment frequency, lead time for changes, MTTR, change fail rate) como indicadores de capacidad organizacional. Explorar platform engineering para reducir la carga cognitiva del equipo y habilitar experimentación continua de producto sin fricción técnica."
   ],
   cliente: [
     "El equipo construye sin validar con usuarios reales. Establecer al menos contacto mínimo: incluir usuarios en Sprint Reviews o hacer una entrevista mensual. Sin feedback real, el equipo optimiza suposiciones en lugar de valor.",
     "El contacto con el cliente es esporádico. Definir métricas de negocio claras para cada Product Goal y revisar su evolución en cada Sprint Review. La validación de hipótesis debería guiar la priorización del backlog.",
-    "Buena orientación al cliente. Evolucionar hacia un modelo de experimentación explícito: definir hipótesis, medir impacto y ajustar la estrategia del producto en función de los datos reales."
+    "Buena orientación al cliente. Evolucionar hacia un modelo de experimentación explícito: definir hipótesis, medir impacto y ajustar la estrategia del producto en función de los datos reales.",
+    "La orientación al cliente es un activo diferencial. Institucionalizar el descubrimiento continuo: entrevistas semanales, Opportunity Solution Trees (Teresa Torres) y un Product Goal expresado como outcome medible con métricas de validación claras. El backlog debería ser la historia viva de los aprendizajes del equipo sobre el problema del cliente."
   ]
 };
 
@@ -137,96 +145,114 @@ const RECS_ROLE = {
     tecnico: [
       "El equipo no puede entregar con frecuencia porque la base técnica no lo soporta. Como PO, exige que la Definition of Done incluya pruebas automatizadas básicas — sin esto, cada Increment acumula riesgo oculto que frena la velocidad futura.",
       "Las prácticas técnicas son parciales. Asegúrate de que la deuda técnica tenga visibilidad en el backlog y sea priorizada regularmente, no solo cuando hay una crisis. Un equipo técnicamente sano entrega más valor con menos riesgo.",
-      "Buena base técnica. Trabaja con el equipo para conectar las métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal."
+      "Buena base técnica. Trabaja con el equipo para conectar las métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal.",
+      "La capacidad técnica del equipo es una ventaja competitiva. Trabaja con ellos para conectar las DORA metrics con tu roadmap: un equipo que puede desplegar múltiples veces al día puede experimentar y aprender a una velocidad que ningún documento de especificación puede capturar."
     ],
     cliente: [
       "El equipo no valida con usuarios reales. Tu primera prioridad es facilitar ese acceso: organiza entrevistas de usuario, invita clientes reales a Sprint Reviews y comparte insights con el equipo. Sin feedback real, el backlog es especulación.",
       "El contacto con el cliente es ocasional. Define métricas de outcome claras (retención, adopción, NPS) y revísalas en cada Sprint Review. El valor entregado se mide en el comportamiento del usuario, no en features completadas.",
-      "Excelente orientación al cliente. Evoluciona hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos y ajuste del Product Goal basado en aprendizajes reales del mercado."
+      "Excelente orientación al cliente. Evoluciona hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos y ajuste del Product Goal basado en aprendizajes reales del mercado.",
+      "La orientación al cliente es tu fortaleza más valiosa. Institucionaliza el descubrimiento continuo: entrevistas semanales, Opportunity Solution Trees y un Product Goal expresado como hipótesis de negocio con métricas de validación. El backlog debería ser la historia de los aprendizajes del equipo sobre el problema del cliente, no un inventario de funcionalidades."
     ],
     eventos: [
       "El Sprint Goal no existe o no guía las decisiones del Sprint. Como PO, tu primera prioridad es definir un objetivo de negocio claro y medible para cada Sprint. Sin Sprint Goal, el equipo no puede priorizar ni rechazar trabajo durante el Sprint.",
       "El Sprint Goal existe pero no conecta con el Product Goal. Trabaja en que cada Sprint Goal sea un paso concreto hacia el Product Goal. En la Sprint Review, enfoca la conversación en valor de negocio validado, no solo en funcionalidades demostradas.",
-      "Buena práctica de ceremonias. Profundiza en que cada Sprint Review sea una sesión de inspección y adaptación del Product Backlog basada en feedback real de stakeholders y métricas de negocio."
+      "Buena práctica de ceremonias. Profundiza en que cada Sprint Review sea una sesión de inspección y adaptación del Product Backlog basada en feedback real de stakeholders y métricas de negocio.",
+      "Las ceremonias funcionan perfectamente. Eleva la calidad del Sprint Goal: que sea una hipótesis de negocio con métricas de validación claras que el equipo pueda inspeccionar durante el Sprint. La Sprint Review debería responder siempre la pregunta: ¿validamos o refutamos nuestra hipótesis este Sprint?"
     ],
     backlog: [
       "El Product Backlog no cumple su función. Define un Product Goal inspirador y ordena el backlog por valor de negocio. Empieza escribiendo User Stories con criterios de aceptación claros — sin esto el equipo no puede comprometerse en el Sprint Planning.",
       "La priorización no refleja valor real. Implementa refinamiento regular donde trabajes con el equipo definiendo criterios de aceptación antes del Sprint Planning. Evalúa WSJF o Kano para priorizar con datos de negocio.",
-      "Buena gestión del backlog. Conecta cada ítem explícitamente con el Product Goal y explora Impact Mapping u OKRs para asegurar que cada Sprint entrega valor estratégico, no solo funcionalidad."
+      "Buena gestión del backlog. Conecta cada ítem explícitamente con el Product Goal y explora Impact Mapping u OKRs para asegurar que cada Sprint entrega valor estratégico, no solo funcionalidad.",
+      "La gestión del backlog es tu fortaleza. El siguiente nivel es conectar explícitamente cada Sprint con outcomes medibles: ¿cuánto de lo entregado cambió el comportamiento del usuario? Explora hypothesis-driven development y OKRs de producto para que el backlog sea un mapa de aprendizajes, no una lista de funcionalidades."
     ],
     devteam: [
       "El equipo no puede autoorganizarse sin contexto de negocio. Estate disponible durante el Sprint para aclarar dudas rápidamente — tu accesibilidad es crítica para que el equipo tome decisiones sin esperar.",
       "Hay dependencias que frenan al equipo. Revisa si las User Stories llegan al Sprint Planning con suficiente detalle y criterios claros. Trabaja con el Scrum Master para eliminar las dependencias externas que el equipo no puede resolver solo.",
-      "Buena colaboración con el equipo. Involúcrate en definir la Definition of Done para que refleje los criterios de calidad que el negocio realmente necesita, no solo los criterios técnicos."
+      "Buena colaboración con el equipo. Involúcrate en definir la Definition of Done para que refleje los criterios de calidad que el negocio realmente necesita, no solo los criterios técnicos.",
+      "El equipo es completamente autónomo. Tu palanca de mayor impacto ahora es el contexto estratégico: compartir los datos de uso real, las métricas de negocio y el roadmap de aprendizajes para que el equipo tome decisiones técnicas alineadas con el valor real que hay que entregar."
     ],
     transparencia: [
       "La transparencia del producto es baja. El Product Backlog debe ser visible a todos los stakeholders. Define métricas sencillas de progreso hacia el Product Goal para poder inspeccionar si el equipo va por buen camino.",
       "Hay visibilidad parcial. Mejora compartiendo el Product Goal activamente en cada Sprint Review y conectando el Sprint Backlog con los objetivos de negocio para que los stakeholders entiendan el valor que se está creando.",
-      "Excelente transparencia. Evoluciona hacia métricas de outcome (impacto en el negocio) en lugar de output (funcionalidades entregadas) para demostrar el valor real del trabajo del equipo."
+      "Excelente transparencia. Evoluciona hacia métricas de outcome (impacto en el negocio) en lugar de output (funcionalidades entregadas) para demostrar el valor real del trabajo del equipo.",
+      "La transparencia es total. Evoluciona los artefactos Scrum hacia herramientas de comunicación estratégica: el Product Goal como hipótesis de negocio medible, las métricas de outcome visibles para toda la organización. El objetivo es que el backlog cuente la historia del aprendizaje del producto, no solo el historial de entregas."
     ]
   },
   'Dev Team': {
     tecnico: [
       "La base técnica frena la agilidad del equipo. Empezad definiendo una Definition of Done que incluya pruebas automatizadas y configurando CI para que los errores se detecten en minutos, no en días. Sin esto, cada Sprint acumula deuda que tarde o temprano bloquea al equipo.",
       "Hay prácticas técnicas pero son inconsistentes. Aumentad la cobertura de tests en las partes más críticas y estableced el hábito de refactorizar durante cada Sprint. La deuda técnica debe rastrearse visiblemente en el backlog, no gestionarse en silencio.",
-      "Excelente base técnica. Avanzad hacia despliegue continuo y gestión explícita de la deuda técnica en el refinamiento. Medir DORA metrics (lead time, deployment frequency, MTTR) os dará datos para seguir mejorando."
+      "Excelente base técnica. Avanzad hacia despliegue continuo y gestión explícita de la deuda técnica en el refinamiento. Medir DORA metrics (lead time, deployment frequency, MTTR) os dará datos para seguir mejorando.",
+      "La excelencia técnica es vuestra fortaleza. El siguiente nivel es hacerla visible hacia la organización: medir DORA metrics y conectar deployment frequency con la capacidad del equipo para experimentar y aprender. Un equipo que despliega múltiples veces al día puede invalidar una hipótesis antes de que se convierta en deuda de producto."
     ],
     cliente: [
       "El equipo construye sin ver el impacto en los usuarios. Pedid al PO que comparta métricas de uso y organice al menos una sesión de observación de usuarios por trimestre. Entender el problema real cambia cómo se toman decisiones técnicas.",
       "El contacto con el cliente es esporádico. Involucrarse en las entrevistas de usuario y en las Sprint Reviews con stakeholders reales. Cuando el equipo entiende el 'para quién' y el 'por qué', las decisiones técnicas mejoran significativamente.",
-      "Gran orientación al cliente. Conectad las métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. Un sistema técnicamente excelente que no resuelve el problema del usuario no genera valor."
+      "Gran orientación al cliente. Conectad las métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. Un sistema técnicamente excelente que no resuelve el problema del usuario no genera valor.",
+      "La orientación al cliente es genuina. El siguiente nivel es incorporar métricas de experiencia de usuario en vuestras decisiones técnicas — performance, fiabilidad y accesibilidad como parte de la DoD — y participar activamente en el descubrimiento continuo para que el equipo co-diseñe el espacio del problema con el PO."
     ],
     eventos: [
       "Las ceremonias no generan valor para el equipo. Apropiáos del Daily: 15 minutos orientados al Sprint Goal, no un reporte de tareas al Scrum Master. El Sprint Planning debe terminar con un plan co-creado que el equipo crea factible.",
       "Las ceremonias ocurren pero son rituales vacíos. En el Daily, preguntad: ¿estamos en camino al Sprint Goal, hay algo que nos bloquea? En la Retro, generad 1-2 compromisos concretos con dueño y revisad su cumplimiento en la siguiente.",
-      "Buena práctica. Profundizad en que la Retro genere mejoras sistémicas (proceso, técnica, colaboración) y en que el Sprint Review sea una conversación real con stakeholders sobre el valor entregado."
+      "Buena práctica. Profundizad en que la Retro genere mejoras sistémicas (proceso, técnica, colaboración) y en que el Sprint Review sea una conversación real con stakeholders sobre el valor entregado.",
+      "Las ceremonias son de alta calidad. El siguiente nivel es la facilitación distribuida: que el equipo sea capaz de conducir sus propios eventos sin necesitar al SM como facilitador, y que la Retro evolucione hacia experimentos sistémicos con hipótesis medibles y revisión explícita de resultados."
     ],
     backlog: [
       "El equipo llega al Sprint Planning sin entender los ítems. Exigid sesiones de refinamiento regulares con el PO donde podáis hacer preguntas técnicas, identificar riesgos y estimar con confianza antes de comprometerse.",
       "La participación en el refinamiento es irregular. Involucrarse activamente: si una User Story llega al Sprint Planning sin criterios de aceptación claros, es legítimo no aceptarla. El equipo co-crea el Sprint Backlog.",
-      "Buena participación en el backlog. Avanzad en conectar cada User Story con el 'por qué' de negocio para que el equipo pueda tomar mejores decisiones técnicas durante el Sprint."
+      "Buena participación en el backlog. Avanzad en conectar cada User Story con el 'por qué' de negocio para que el equipo pueda tomar mejores decisiones técnicas durante el Sprint.",
+      "La participación en el backlog es excelente. El siguiente nivel es co-diseñar el espacio del problema con el PO: entender las hipótesis de negocio detrás de cada ítem y proponer alternativas técnicas que validen las mismas hipótesis con menor esfuerzo o mayor aprendizaje."
     ],
     devteam: [
       "El equipo depende de asignación externa. Empezad por definir una Definition of Done que todos validen. Cada miembro debe poder trabajar en cualquier tarea del Sprint — la autoorganización requiere responsabilidad colectiva.",
       "Hay autoorganización parcial y silos de especialización. Rotad tareas, implementad pair programming o code reviews para distribuir el conocimiento. Las dependencias externas frecuentes deben mapearse y eliminarse.",
-      "Excelente autonomía. Implementad límites de WIP para reducir el multitasking y maximizar el flujo. Medir el cycle time ayuda a identificar cuellos de botella y hacer proyecciones más fiables."
+      "Excelente autonomía. Implementad límites de WIP para reducir el multitasking y maximizar el flujo. Medir el cycle time ayuda a identificar cuellos de botella y hacer proyecciones más fiables.",
+      "El equipo opera con autonomía real. El siguiente nivel es la mejora continua basada en datos: lead time, cycle time y deployment frequency como palancas para identificar cuellos de botella sistémicos. Explorar Team Topologies para optimizar las interacciones con otros equipos y reducir la carga cognitiva del sistema."
     ],
     transparencia: [
       "El Scrum Board no refleja la realidad. Cada miembro es responsable de actualizarlo en tiempo real. Sin visibilidad compartida el equipo no puede colaborar ni identificar impedimentos antes de que bloqueen el Sprint Goal.",
       "La visibilidad existe pero los impedimentos no se escalan a tiempo. Cread el hábito de levantar impedimentos en el Daily antes de que bloqueen el Sprint. El Scrum Master os ayuda a eliminarlos, pero primero deben ser visibles.",
-      "Gran transparencia. Incorporad métricas de flujo (burndown, velocity, cycle time) para hacer retrospectivas basadas en datos y proyecciones más predictibles para los stakeholders."
+      "Gran transparencia. Incorporad métricas de flujo (burndown, velocity, cycle time) para hacer retrospectivas basadas en datos y proyecciones más predictibles para los stakeholders.",
+      "La transparencia es total. El siguiente nivel es usar los datos para influir en la organización: compartid métricas de flujo con stakeholders en lenguaje de negocio y co-cread con el PO dashboards de outcome que demuestren el valor generado, no solo el trabajo realizado."
     ]
   },
   'Scrum Master': {
     tecnico: [
       "Las prácticas técnicas débiles son un impedimento sistémico. Facilita la conversación sobre la DoD incluyendo criterios de calidad técnica. Conecta con el equipo técnico para entender las dependencias e impedimentos estructurales que frenan la velocidad.",
       "Hay prácticas técnicas pero el equipo no las prioriza sistemáticamente. Ayuda a hacer visible la deuda técnica en el backlog y facilita la conversación con el PO para que sea priorizada. Un equipo con deuda técnica no controlada no puede ser predecible.",
-      "Buena base técnica. Trabaja con el equipo en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para que las conversaciones de mejora se basen en datos objetivos."
+      "Buena base técnica. Trabaja con el equipo en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para que las conversaciones de mejora se basen en datos objetivos.",
+      "La excelencia técnica del equipo es sólida. Tu palanca ahora es sistémica: conectar las DORA metrics con los objetivos de negocio y facilitar conversaciones con la organización sobre cómo la capacidad técnica del equipo habilita mayor velocidad de aprendizaje de producto."
     ],
     cliente: [
       "El equipo está desconectado del impacto de su trabajo. Facilita sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final. Sin esta conexión, el equipo optimiza procesos en lugar de valor.",
       "Hay contacto esporádico con el cliente. Trabaja con el PO para establecer métricas de outcome en el Definition of Done conceptual del Sprint. Cuando el equipo ve el impacto de su trabajo, la motivación y la calidad de las decisiones mejoran.",
-      "Excelente orientación al cliente. Facilita la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debería informar tanto la mejora del proceso como la estrategia del producto."
+      "Excelente orientación al cliente. Facilita la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debería informar tanto la mejora del proceso como la estrategia del producto.",
+      "El equipo tiene contacto directo y continuo con los usuarios. Tu rol ahora es facilitar que ese aprendizaje se integre estructuralmente en el proceso: que las Retros incluyan insights de usuario y que el equipo comparta un mapa de oportunidades actualizado con el PO. El descubrimiento continuo debería ser tan natural como el Daily."
     ],
     eventos: [
       "Las ceremonias no tienen el propósito correcto. Facilita sesiones de formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos, no solo con una lista de tareas.",
       "Las ceremonias ocurren pero son superficiales. Mejora la calidad de facilitación: usa técnicas para que el Daily sea del equipo (no dirigido al SM) y que la Retro genere compromisos medibles con dueño.",
-      "Buenas ceremonias. Enfócate en que el equipo sea autónomo en la facilitación — tu objetivo es hacer que los eventos fluyan bien sin necesitarte como facilitador permanente."
+      "Buenas ceremonias. Enfócate en que el equipo sea autónomo en la facilitación — tu objetivo es hacer que los eventos fluyan bien sin necesitarte como facilitador permanente.",
+      "Las ceremonias son de alta calidad. Tu objetivo ahora es hacerte prescindible como facilitador: que el equipo conduzca sus propios eventos con plena propiedad. Dedica tu energía a facilitar conversaciones sistémicas sobre cómo el sistema de trabajo del equipo puede evolucionar más allá de los eventos Scrum."
     ],
     backlog: [
       "El PO y el equipo no colaboran en el backlog. Facilita la relación: organiza las primeras sesiones de refinamiento, ayuda al PO a escribir User Stories con criterios claros y al equipo a estimar con confianza.",
       "El refinamiento ocurre pero podría ser más efectivo. Observa las sesiones e identifica dónde se generan malentendidos. Educa al PO en técnicas de escritura de historias y al equipo en estimación relativa.",
-      "Buena gestión del backlog. Apoya al PO en conectar el backlog con métricas de valor y explora con el equipo técnicas de priorización avanzadas como WSJF o Cost of Delay."
+      "Buena gestión del backlog. Apoya al PO en conectar el backlog con métricas de valor y explora con el equipo técnicas de priorización avanzadas como WSJF o Cost of Delay.",
+      "La relación PO-equipo es excelente. Tu palanca ahora es estratégica: facilitar que el equipo conecte el trabajo con los outcomes de negocio, apoyar al PO en técnicas de discovery continuo y asegurarte de que el backlog refleje aprendizajes reales del mercado, no solo solicitudes de stakeholders."
     ],
     devteam: [
       "El equipo no se autoorganiza. Crea espacios seguros para que tome decisiones: empieza con que el equipo elija sus propias tareas en el Sprint Planning. Identifica y elimina las dependencias externas que impiden la autonomía.",
       "Hay autoorganización parcial. Mapea las dependencias externas e impedimentos sistémicos que frenan al equipo. Trabajar con la organización para eliminarlos es tu palanca de mayor impacto como SM.",
-      "Buen nivel de autoorganización. Trabaja en métricas de equipo (velocity, predictibilidad) y ayúdales a evolucionar la DoD para incrementar la calidad del Increment continuamente."
+      "Buen nivel de autoorganización. Trabaja en métricas de equipo (velocity, predictibilidad) y ayúdales a evolucionar la DoD para incrementar la calidad del Increment continuamente.",
+      "El equipo tiene plena autonomía y entrega con consistencia. Tu rol evoluciona hacia el nivel organizacional: remover impedimentos sistémicos, facilitar la interacción con otros equipos y representar las necesidades del equipo en conversaciones de diseño organizacional."
     ],
     transparencia: [
       "La transparencia es el pilar más urgente. Establece un Scrum Board visible y forma al equipo en la importancia de actualizarlo. Sin artefactos que reflejen la realidad, la inspección y adaptación son imposibles.",
       "Hay visibilidad parcial. Trabaja en que los impedimentos sean visibles antes de que escalen: crea un registro de impedimentos visible y da seguimiento a su resolución — esto genera confianza en el proceso.",
-      "Gran transparencia. Evoluciona hacia un dashboard de métricas de flujo que permita conversaciones basadas en datos con stakeholders y decisiones de mejora más informadas en la Retro."
+      "Gran transparencia. Evoluciona hacia un dashboard de métricas de flujo que permita conversaciones basadas en datos con stakeholders y decisiones de mejora más informadas en la Retro.",
+      "La transparencia interna es excelente. El siguiente nivel es la transparencia hacia la organización: ayudar al equipo a comunicar su valor en términos de outcomes medibles, facilitar conversaciones de OKRs entre el equipo y la dirección, y asegurarte de que los artefactos Scrum evolucionan hacia herramientas de decisión estratégica."
     ]
   }
 };
@@ -403,7 +429,7 @@ function getContextNote(dim, pct, tamano, tiempoScrum) {
 function getLevel(pct) { return LEVELS.find(l => pct <= l.max) || LEVELS[LEVELS.length - 1]; }
 
 function getRec(dim, pct, role) {
-  const idx = pct <= 33 ? 0 : pct <= 66 ? 1 : 2;
+  const idx = pct <= 33 ? 0 : pct <= 66 ? 1 : pct <= 82 ? 2 : 3;
   if (role && RECS_ROLE[role] && RECS_ROLE[role][dim]) return RECS_ROLE[role][dim][idx];
   return RECS[dim][idx];
 }

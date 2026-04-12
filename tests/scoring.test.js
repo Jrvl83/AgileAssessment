@@ -43,6 +43,17 @@ describe('getRec', () => {
     expect(getRec('devteam', 66, null)).not.toBe(getRec('devteam', 67, null));
   });
 
+  test('pct = 82 usa índice 2, pct = 83 usa índice 3 (Avanzado)', () => {
+    expect(getRec('eventos', 82, null)).not.toBe(getRec('eventos', 83, null));
+  });
+
+  test('pct = 100 retorna recomendación de nivel Avanzado (índice 3)', () => {
+    const r83  = getRec('backlog', 83, null);
+    const r100 = getRec('backlog', 100, null);
+    expect(r83).toBe(r100); // mismo índice 3
+    expect(r83).not.toBe(getRec('backlog', 80, null)); // distinto de índice 2
+  });
+
   test('rec con rol difiere de rec genérica', () => {
     const generic = getRec('eventos', 20, null);
     const po      = getRec('eventos', 20, 'Product Owner');
@@ -51,12 +62,12 @@ describe('getRec', () => {
     expect(sm).not.toBe(generic);
   });
 
-  test('todos los roles/dims retornan string no vacío', () => {
+  test('todos los roles/dims retornan string no vacío en los 4 niveles', () => {
     const dims  = ['eventos', 'backlog', 'devteam', 'transparencia', 'tecnico', 'cliente'];
     const roles = [null, 'Product Owner', 'Dev Team', 'Scrum Master'];
     dims.forEach(dim => {
       roles.forEach(role => {
-        [20, 50, 80].forEach(pct => {
+        [20, 50, 75, 90].forEach(pct => {
           const rec = getRec(dim, pct, role);
           expect(typeof rec).toBe('string');
           expect(rec.length).toBeGreaterThan(0);
