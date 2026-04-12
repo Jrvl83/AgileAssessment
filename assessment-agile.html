@@ -511,8 +511,8 @@ async function loadTeams() {
   } catch(e) {
     cicloNombre = '';
   }
-  // Pre-seleccionar equipo desde URL param (QR code)
-  const presetId = params.get('teamId');
+  // Pre-seleccionar equipo desde URL param (QR code) — equipoId es el nombre canónico; teamId por compat con QRs anteriores
+  const presetId = params.get('equipoId') || params.get('teamId');
   if (presetId) {
     const found = teams.find(t => t.id === presetId);
     if (found) { teamId = found.id; teamName = found.name; }

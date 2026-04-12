@@ -1780,7 +1780,7 @@ function showExistingPortal(teamId, teamName) {
 
 // ── QR Code ──────────────────────────────────────────────────────
 function showQR(teamId, teamName) {
-  const url = window.location.origin + '/?teamId=' + teamId + '&workspaceId=' + state.currentUser.uid;
+  const url = window.location.origin + '/?workspaceId=' + state.currentUser.uid + '&equipoId=' + teamId;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
   modal.innerHTML = `
