@@ -13,7 +13,7 @@ Propuestas para elevar la herramienta de **acompañamiento de coaching** a **ins
 | 1 — Credibilidad del dato | Los tres gaps que un cliente corporativo cuestionaría primero | #1, #2, #3 | ✅ Completada 2026-04-12 |
 | 2 — Análisis con IA | Síntesis narrativa que reemplaza la preparación manual del coach | #4, #10 | ✅ Completada 2026-04-12 |
 | 3 — Experiencia de facilitación | Integrar la herramienta en la sesión, no solo en la preparación | #6, #7 | ✅ Completada 2026-04-12 |
-| 4 — Visión ejecutiva y cierre del ciclo | Outputs tangibles y visibilidad para dirección | #8, #9 | Siguiente |
+| 4 — Flujo operacional, calidad del dato y visión ejecutiva | Outputs tangibles, integridad del dato, cierre formal | #8, #9, #11, #12, #13, #14 | ✅ Completada 2026-04-12 |
 
 ---
 
@@ -340,25 +340,201 @@ El recordatorio en panel (Parte 2) ya cubre el caso de uso principal con menor c
 
 ---
 
-## Fase 4 — Visión ejecutiva y cierre del ciclo
+## Fase 4 — Flujo operacional, calidad del dato y visión ejecutiva ✅ Completada 2026-04-12
 
-Features que cierran el loop del ciclo de coaching y producen outputs de alto valor para el coach y para dirección. Prioridad determinada por impacto/esfuerzo — sin dependencias externas ni volumen de datos previo.
+Seis mejoras ordenadas por impacto/esfuerzo.
+
+| Orden | Feature | Impacto | Esfuerzo | Estado |
+|-------|---------|---------|---------|--------|
+| 1 | **#11** Acciones desde facilitar.html | Cierra el loop más importante del flujo | Bajo | ✅ `2e28f6f` |
+| 2 | **#12** Contexto adicional para análisis IA | Mejora calidad narrativa notablemente | Bajo | ✅ `53c0dab` |
+| 3 | **#13** Detección de respuestas rápidas | Protege integridad del dato | Bajo | ✅ `628db46` |
+| 4 | **#9** Export sesión de facilitación | Output tangible de cada sesión | Bajo | ✅ `a601164` |
+| 5 | **#14** Cierre formal del ciclo | Elimina overhead operativo masivo | Medio | ✅ `bb4f87b` |
+| 6 | **#8** Tendencia org por ciclo | Visibilidad ejecutiva longitudinal | Medio | ✅ `ab81706` |
 
 ---
 
-### #8. Tendencia de madurez org por ciclo
+### #11. Crear acciones desde facilitar.html ✅ `2e28f6f`
 
 **Problema:**
-El benchmark interno ya compara equipos entre sí dentro del mismo ciclo (heatmap + radar superpuesto). Lo que falta es la dimensión temporal de la **organización completa**: ¿está mejorando la org en conjunto ciclo a ciclo? El coach no puede mostrar a dirección una curva de progreso sin calcularlo manualmente.
+Es el gap más crítico del flujo actual. El coach guía la sesión, el equipo genera compromisos en el slide de cierre — y esos compromisos desaparecen. El coach termina la sesión, cierra la pestaña de `facilitar.html`, y tiene que ir al panel admin a reconstruir de memoria lo que se acordó. En la práctica, muchas acciones simplemente no se capturan.
+
+**Solución:**
+Formulario de creación rápida de acciones directamente en el slide de cierre de `facilitar.html`. Las acciones se guardan en la colección `planes` de Firestore con los mismos campos que el Plan de Acción del admin.
+
+**Diseño del formulario (en el slide de cierre):**
+```
+[+ Nueva acción]
+Iniciativa: ________________________
+Responsable: ____________  Fecha: _______
+Dimensión: [select]   Estado: Pendiente
+[Guardar acción]
+
+Acciones creadas esta sesión:
+✓ "Definir Sprint Goal con el equipo el próximo lunes" — Dev Team — 2026-04-20
+✓ "Revisar DoD en la próxima Retro" — Dev Team — 2026-04-27
+```
+
+**Implementación:**
+- Función `createActionFromFacilitator(data)` en `facilitar.html` — escribe en `planes/{id}` con `equipoId`, `ciclo`, `ownerId` del URL param `workspaceId`
+- Lista inline de acciones creadas en sesión (solo en memoria, desaparece al cerrar pestaña)
+- `ownerId` = `workspaceId` del URL — no requiere lookup adicional
+- El campo dimensión usa el mismo `select` de DIMS que el admin
+
+**Complejidad:** Baja
+**Dependencias:** `facilitar.html` ya tiene Firebase init. Solo añade un formulario y una escritura Firestore.
+
+---
+
+### #12. Contexto adicional para el análisis IA ✅ `53c0dab`
+
+**Problema:**
+El prompt a Claude recibe scores, brechas, momentum y comentarios — pero no sabe nada del contexto organizacional que explica esos datos. Un equipo con transparencia en caída puede estar en una reestructuración corporativa, haber cambiado de Scrum Master, o estar bajo presión de un deadline externo. Sin ese contexto, la narrativa IA es correcta pero genérica.
+
+**Solución:**
+Campo de texto opcional "Contexto para el análisis" que el coach completa antes de hacer clic en "Analizar con IA". Se incluye al inicio del prompt, antes de los datos estructurados.
+
+**Diseño:**
+```
+Contexto para el análisis (opcional)
+┌─────────────────────────────────────────────────┐
+│ Ej: "El equipo acaba de incorporar 2 personas   │
+│ nuevas. El SM lleva solo 6 semanas en el rol.   │
+│ Hay presión de dirección por un release en mayo."│
+└─────────────────────────────────────────────────┘
+[Analizar con IA →]
+```
+
+**Dónde:**
+- Textarea en el panel "Análisis con IA" de la tarjeta del equipo, visible solo cuando `aiEnabled = true`
+- Se persiste en `analisis_ia/{teamId}_{ciclo}` como campo `contextoCoach` junto al resultado
+- Se muestra en el panel de resultados junto al timestamp ("Analizado con contexto del coach")
+
+**En el prompt:**
+```
+CONTEXTO DEL COACH:
+{contextoCoach}
+
+A continuación, los datos del equipo...
+```
+
+**Complejidad:** Baja
+**Dependencias:** CF `analyzeTeamWithClaude` ya implementada — solo añade un parámetro al callable y una línea al prompt.
+
+---
+
+### #13. Detección de respuestas rápidas ✅ `628db46`
+
+**Problema:**
+En culturas corporativas con presión de cumplimiento, algunos participantes completan el assessment en 60–90 segundos marcando opciones al azar sin leer las preguntas. El coach no tiene forma de detectarlo. Esas respuestas sesgan los promedios y generan narrativas IA incorrectas.
+
+**Solución:**
+Registrar el tiempo de inicio y el tiempo de envío. Si el total es menor a un umbral razonable, marcar la respuesta como "posiblemente apresurada" — sin bloquear el envío ni identificar al participante.
+
+**Umbral:** 3 minutos (180 segundos) para 20 preguntas + campos de contexto = 9 segundos por pregunta mínimo. Es conservador — no penaliza a lectores rápidos.
+
+**Implementación:**
+- Timestamp `startedAt` al entrar a la primera sección (en memoria, no Firestore)
+- Al enviar: si `elapsed < 180s`, guardar `completionSeconds` y `flaggedFast: true` en `respuestas`
+- En el panel admin: badge ⚡ discreto en la lista de respuestas del ciclo con tooltip "Completada en menos de 3 minutos"
+- No afecta el scoring ni el análisis IA — solo es información para el coach
+
+**Lo que NO hace:**
+- No bloquea el envío
+- No muestra el badge al participante
+- No excluye la respuesta automáticamente
+- El coach decide si incluirla o no en su lectura
+
+**Complejidad:** Baja
+**Dependencias:** Ninguna
+
+---
+
+### #9. Resumen exportable de la sesión de facilitación ✅ `a601164`
+
+**Problema:**
+Después de usar `facilitar.html`, el coach no tiene un output tangible del trabajo realizado. Sin una referencia física o digital del contenido de la sesión, la continuidad entre sesiones depende de la memoria.
+
+**Solución:**
+Botón "↓ Exportar sesión" en la barra de controles de `facilitar.html`, visible solo en modo coach. Genera una ventana imprimible con el contenido de la sesión.
+
+**Contenido del export:**
+- Header: nombre del equipo, ciclo, fecha
+- Score global + tabla de scores por dimensión con nivel de cada una
+- Por cada dimensión: título, score y las 3 preguntas de coaching usadas
+- Si hay análisis IA: foco recomendado y agenda sugerida
+- Sección "Compromisos acordados" con las acciones creadas en sesión (de #11, si existen) o espacio en blanco para anotar
+- Footer discreto: "Generado con Assessment Agile"
+
+**Implementación:**
+- Función `printFacilitationSummary()` en `facilitar.html`
+- `window.open()` con HTML construido inline + `window.print()`
+- CSS `@media print`: tipografía limpia en negro sobre blanco, sin fondos de color, página A4
+
+**Complejidad:** Baja
+**Dependencias:** `facilitar.html` ya implementado. Si #11 está implementado, incluye las acciones en el export.
+
+---
+
+### #14. Cierre formal del ciclo ✅ `bb4f87b`
+
+**Problema:**
+Cerrar un ciclo hoy es desactivar el toggle en la pestaña Equipos. No ocurre nada más: no se bloquean nuevas respuestas, no se genera un resumen, no se notifica al equipo, no se dispara el webhook `ciclo.cerrado` con los datos finales. El coach tiene que hacer todo eso manualmente en pasos separados — o simplemente no lo hace.
+
+Con 5+ equipos activos y ciclos cada 4 semanas, este overhead es el principal motivo por el que el flujo de trabajo se vuelve caótico.
+
+**Solución:**
+Botón "Cerrar ciclo" en la pestaña Equipos (o en el header del ciclo activo en Análisis) que ejecuta en secuencia:
+
+1. **Bloquea nuevas respuestas** para ese ciclo — `activo: false` en el documento del ciclo
+2. **Sincroniza el portal** de cada equipo del workspace con los datos finales del ciclo
+3. **Dispara webhook** `ciclo.cerrado` con: nombre del ciclo, número de equipos, número de respuestas, scores promedio por dimensión
+4. **Muestra resumen** en un modal: equipos evaluados, total de respuestas, score org promedio, % cambio vs. ciclo anterior
+
+**Modal de confirmación (antes de cerrar):**
+```
+Cerrar ciclo "Q2 2026"
+──────────────────────────────
+Equipos con respuestas:  4 de 5
+Respuestas totales:      23
+Score org promedio:      67% (Maduro)
+Cambio vs. Q1 2026:      ↗ +4pts
+
+⚠ Equipo Beta — 0 respuestas este ciclo
+
+[Cerrar ciclo igualmente]   [Cancelar]
+```
+
+**Nuevo ciclo:**
+Después del cierre, ofrecer "Abrir siguiente ciclo" con nombre sugerido (detección de patrón: Q2 → Q3, Sprint 5 → Sprint 6).
+
+**Implementación:**
+- Función `closeCycle(cycleId)` en `admin-api.js`
+- Llama a `syncPortalData()` para todos los equipos (ya implementado)
+- Dispara CF `dispatchWebhook` con evento `ciclo.cerrado` (CF ya implementada)
+- Modal de confirmación en `admin-render.js`
+- Sugerencia de nombre del siguiente ciclo con regex de patrones comunes (Q1→Q2, Sprint N→Sprint N+1)
+
+**Complejidad:** Media
+**Dependencias:** `syncPortalData()`, `dispatchWebhook` — ambas ya implementadas. Solo orquesta lo que existe.
+
+---
+
+### #8. Tendencia de madurez org por ciclo ✅ `ab81706`
+
+**Problema:**
+El benchmark interno compara equipos dentro del mismo ciclo (heatmap + radar). Lo que falta es la dimensión temporal de la **organización completa**: ¿está mejorando la org en conjunto ciclo a ciclo? Sin esto, el coach no puede mostrar a dirección una curva de progreso sin calcularlo manualmente en Excel.
 
 **Solución:**
 Card "Tendencia org" en la pestaña Análisis, visible cuando hay ≥2 ciclos con datos de ≥2 equipos activos.
 
 **Contenido:**
-- Gráfico de líneas (Chart.js, misma librería existente) con el score promedio de todos los equipos por ciclo
-- Una línea por dimensión (mismos colores que `DIM_COLORS`)
-- Badge de tendencia org ↗/→/↘ calculado igual que el momentum por equipo (`calcMomentum`)
-- Delta en puntos desde el primer ciclo hasta el más reciente
+- Gráfico de líneas (Chart.js) con el score promedio de todos los equipos activos por ciclo
+- Una línea por dimensión con `DIM_COLORS`
+- Badge org ↗/→/↘ calculado igual que `calcMomentum` por equipo
+- Delta en puntos entre primer y último ciclo disponible
+- Tooltip en cada punto: "Q2 2026 · 4 equipos · 23 respuestas"
 
 **Vista:**
 ```
@@ -370,40 +546,13 @@ Tendencia org — últimos 4 ciclos
 ```
 
 **Implementación:**
-- Nueva función `calcOrgTrend(cycleNames)` en `admin-api.js` — promedia todos los equipos por ciclo
-- Card renderizado en `renderAnalysis()` debajo del heatmap comparativo
-- Reutiliza `initEvolutionTrendChart()` con datos agregados (o nueva instancia canvas)
-- Sin llamadas Firestore adicionales — usa `state.responses` ya cargado
+- `calcOrgTrend(cycleNames)` en `admin-api.js` — agrupa `state.responses` por ciclo, promedia todos los equipos
+- Card en `renderAnalysis()` debajo del heatmap comparativo, visible solo con ≥2 ciclos
+- Nueva instancia `<canvas>` con `window._orgTrendData` (mismo patrón que `_evolTrendData`)
+- Sin llamadas Firestore adicionales — todo está en `state.responses`
 
 **Complejidad:** Media
-**Dependencias:** Ninguna nueva — toda la información ya está en `state.responses` y `state.cycles`
-
----
-
-### #9. Resumen exportable de la sesión de facilitación
-
-**Problema:**
-Después de usar `facilitar.html` con el equipo, el coach no tiene un output tangible para dejar al equipo ni para su propio registro. Las preguntas usadas y los compromisos del cierre viven solo en la memoria del room.
-
-**Solución:**
-Botón "Exportar sesión" en `facilitar.html` que genera una ventana imprimible (mismo patrón que la guía de facilitación existente en el admin).
-
-**Contenido del export:**
-- Header: nombre del equipo, ciclo, fecha de la sesión
-- Score global + tabla de scores por dimensión con nivel de cada una
-- Por cada dimensión: título + las 3 preguntas de coaching del nivel del equipo
-- Si hay análisis IA: foco recomendado + agenda sugerida
-- Sección "Compromisos" en blanco (para que el coach anote durante la sesión o imprima y rellene a mano)
-- Footer: generado con Assessment Agile
-
-**Implementación:**
-- Función `printFacilitationSummary()` en `facilitar.html`
-- Abre `window.open()` con HTML construido inline + `window.print()`
-- CSS `@media print` para tipografía limpia, sin fondos de color
-- Botón "↓ Exportar" en la barra de controles, visible solo en modo coach
-
-**Complejidad:** Baja
-**Dependencias:** `facilitar.html` ya implementado — es puro HTML/CSS, sin Firestore adicional
+**Dependencias:** Ninguna nueva
 
 ---
 

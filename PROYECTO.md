@@ -387,6 +387,8 @@ Acceso: lectura pública (formulario lo lee sin login), escritura solo por el pr
 | `answers` | object | Respuestas individuales por pregunta (`{secId}_{qi}` → valor 0–3) |
 | `comments` | object | Comentarios abiertos por sección (sectionId → string, opcional) |
 | `customAnswers` | object | Respuestas a preguntas personalizadas del workspace (no afectan el scoring) |
+| `completionSeconds` | number | Segundos entre inicio de primera sección y envío (V3, opcional) |
+| `flaggedFast` | boolean | `true` si `completionSeconds < 180` — posible respuesta apresurada (V3, opcional) |
 | `fecha` | timestamp | Timestamp del servidor al momento del envío |
 
 #### `planes`
@@ -528,7 +530,7 @@ Desde el panel admin se puede exportar:
 
 ---
 
-### Plan V3 — En progreso (iniciado 2026-04-12)
+### Plan V3 — COMPLETO ✅ (2026-04-12)
 
 10 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
 
@@ -537,7 +539,7 @@ Desde el panel admin se puede exportar:
 | 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
 | 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | ✅ Completada 2026-04-12 |
 | 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | ✅ Completada 2026-04-12 |
-| 4 — Visión ejecutiva y cierre del ciclo | #8 Tendencia org por ciclo, #9 Export sesión facilitación | Siguiente |
+| 4 — Flujo operacional, calidad y visión ejecutiva | #8 Tendencia org, #9 Export sesión, #11 Acciones en facilitar, #12 Contexto IA, #13 Respuestas rápidas, #14 Cierre ciclo | ✅ Completada 2026-04-12 |
 
 #### Fase 1 — implementada
 
@@ -555,6 +557,15 @@ Desde el panel admin se puede exportar:
 - **#7.1** Link persistente por equipo — QR renombrado de `?teamId=X` a `?equipoId=X`. `assessment-agile.html` lee `equipoId` con fallback a `teamId` para QRs anteriores. Ciclo resuelto dinámicamente desde Firestore. Commit: `42b11b0`
 - **#7.2** Recordatorio de apertura de ciclo — campo `assessmentCadenceWeeks` en workspace. Banner ámbar con ✕ descartable cuando pasan ≥N semanas sin respuestas. Sección "Cadencia de ciclos" en Configuración. Commit: `bdaca2b`
 - **#6** Modo facilitación in-session — nueva página `facilitar.html` (Firebase auth). Slides navegables: portada con scores, slides por dimensión con preguntas de coaching del nivel exacto, slides opcionales de narrativa y foco si hay análisis IA, slide de cierre. Panel de notas del coach colapsable (tecla N). Botón "Facilitar →" en pestaña Equipos. Rewrite `/facilitar` en `firebase.json`. Commit: `f7c953a`
+
+#### Fase 4 — implementada
+
+- **#11** Acciones desde facilitar.html — formulario en slide de cierre: iniciativa, responsable, fecha, dimensión. Guarda en `planes` con `ownerId=workspaceId`. Lista en-sesión acumulativa visible. Atajos de teclado deshabilitados en inputs. Commit: `2e28f6f`
+- **#12** Contexto adicional para análisis IA — textarea "Contexto para el análisis" en el panel IA del admin. Se pasa como `contextoCoach` a la CF, se prepende al prompt de Claude, y se persiste en `analisis_ia/{cacheKey}`. Commit: `53c0dab`
+- **#13** Detección de respuestas rápidas — `startedAt` al entrar a primera sección. Si `completionSeconds < 180`, guarda `flaggedFast: true` en `respuestas`. Badge ⚡ en panel de participación del admin. Commit: `628db46`
+- **#9** Export sesión facilitación — botón "↓ Exportar" en `facilitar.html`. Ventana imprimible: header equipo/ciclo/score, preguntas de coaching por dimensión (grid 2 cols), acciones acordadas en sesión, sección de compromisos en blanco. Commit: `a601164`
+- **#14** Cierre formal del ciclo — botón "⊘ Cerrar ciclo" en fila de filtros. Modal con stats (respuestas, equipos, equipos sin respuesta). Llama a `toggleCycle` que marca `activo:false`, sincroniza portales y dispara webhook. Commit: `bb4f87b`
+- **#8** Tendencia org por ciclo — `calcOrgTrend()` en `admin-api.js`. Gráfico de líneas Chart.js visible en Análisis con ≥2 ciclos y ≥2 equipos. Badge de delta total ↗/→/↘. Tooltip por ciclo con respuestas y equipos. Commit: `ab81706`
 
 ---
 
@@ -588,6 +599,12 @@ Desde el panel admin se puede exportar:
 | `42b11b0` | Feat: link persistente por equipo con param equipoId (#7.1 V3) |
 | `bdaca2b` | Feat: recordatorio de apertura de ciclo por cadencia — assessmentCadenceWeeks + banner + sección Configuración (#7.2 V3) |
 | `f7c953a` | Feat: modo facilitación in-session facilitar.html — slides navegables, notas coach, fallback COACHING_QUESTIONS, botón Facilitar → (#6 V3) |
+| `2e28f6f` | Feat: crear acciones del Plan de Acción desde facilitar.html — formulario slide de cierre, guarda en planes Firestore (#11 V3) |
+| `53c0dab` | Feat: contexto adicional para análisis IA — textarea contextoCoach, prepende al prompt de Claude, persiste en analisis_ia (#12 V3) |
+| `628db46` | Feat: detección de respuestas rápidas — startedAt + flaggedFast:true si <180s, badge ⚡ en participación (#13 V3) |
+| `a601164` | Feat: exportar sesión de facilitación — ventana imprimible con preguntas coaching, acciones y compromisos (#9 V3) |
+| `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
+| `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
 | `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
