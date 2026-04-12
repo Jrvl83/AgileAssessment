@@ -598,7 +598,7 @@ function renderAnalysis() {
 
         const recs = lowDims.length
           ? lowDims.map(d => {
-              const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, ds.tamano, ds.tiempoScrum);
+              const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, (ds.ctx && ds.ctx.teamSize) || ds.tamano, (ds.ctx && ds.ctx.teamAge) || ds.tiempoScrum);
               const isCrit   = criticalDim && d.key === criticalDim.key;
               const recKey   = tid + '_' + d.key;
               state.recTexts[recKey] = `${d.label}: ` + getRec(d.key, ds.avgDims[d.key].pct, roleForRec);
@@ -659,6 +659,18 @@ function renderAnalysis() {
               <div>
                 <div class="tac-name">${s.name}</div>
                 <div class="tac-meta">${ds.count} respuesta${ds.count !== 1 ? 's' : ''}${selectedRole !== 'Todos' ? ' · ' + selectedRole : ''}${ds.dispersion && ds.dispersion.overall ? `<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;margin-left:6px;background:${ds.dispersion.overall.align.bg};color:${ds.dispersion.overall.align.color};">Alineación ${ds.dispersion.overall.align.label}</span>` : ''}${countBadge}</div>
+                ${(() => {
+                  const c = ds.ctx;
+                  if (!c) return '';
+                  const parts = [
+                    c.teamSize   ? c.teamSize + ' personas'   : null,
+                    c.teamAge    ? c.teamAge + ' con Scrum'   : null,
+                    c.dedicatedPO ? 'PO ' + (c.dedicatedPO === 'Sí' ? 'dedicado' : c.dedicatedPO === 'No' ? 'no dedicado' : 'compartido') : null,
+                    c.workMode   || null
+                  ].filter(Boolean);
+                  if (!parts.length) return '';
+                  return `<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">${parts.join(' · ')}</div>`;
+                })()}
               </div>
               <div class="tac-score">
                 <div class="tac-score-num" style="color:${ds.level.color}">${ds.avgTotal}%</div>

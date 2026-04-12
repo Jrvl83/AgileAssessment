@@ -446,7 +446,10 @@ let participantName = "";
 let submitStatus = "";   // "" | "sending" | "ok" | "error"
 let cicloNombre = "";
 let teamSize = "";   // "1-5" | "6-9" | "10+"
-let scrumTime = "";  // "<6m" | "6-18m" | ">18m"
+let scrumTime = "";  // legacy — ya no se recolecta en la UI
+let teamAge = "";    // "< 3 meses" | "3–12 meses" | "1–2 años" | "> 2 años"
+let dedicatedPO = ""; // "Sí" | "No" | "Compartido"
+let workMode = "";   // "Presencial" | "Híbrido" | "Totalmente remoto"
 let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
 let briefingTexto = "";
 let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
@@ -554,8 +557,12 @@ async function submitResults() {
       participante: participantName.trim() || 'Anónimo',
       rol: role,
       ciclo: cicloFinal,
-      tamanoEquipo: teamSize || '',
-      tiempoScrum: scrumTime || '',
+      tamanoEquipo: '',
+      tiempoScrum: '',
+      teamAge: teamAge || '',
+      teamSize: teamSize || '',
+      dedicatedPO: dedicatedPO || '',
+      workMode: workMode || '',
       ...scoreFields,
       scoreTotalPct: pct,
       nivel: level.label,
@@ -608,6 +615,7 @@ function render() {
   if(screen==='loading') app.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--ink-faint);font-size:15px;">Cargando…</div>';
   else if(screen==='briefing') app.innerHTML = renderBriefing();
   else if(screen==='intro') app.innerHTML = renderIntro();
+  else if(screen==='context') app.innerHTML = renderContext();
   else if(screen==='section') app.innerHTML = renderSection();
   else app.innerHTML = renderResults();
   app.classList.remove('fade-in');
@@ -647,20 +655,6 @@ function renderIntro() {
         </div>
         ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
         ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${cicloNombre}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(e){ return ''; } })()}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
-        <div class="field-group" style="margin-bottom:0;">
-          <label>Tamaño del equipo <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-            ${["1–5","6–9","10+"].map(s=>`<button class="role-btn ${teamSize===s?'selected':''}" onclick="teamSize='${s}';render()" style="flex:1;min-width:48px;">${s}</button>`).join('')}
-          </div>
-        </div>
-        <div class="field-group" style="margin-bottom:0;">
-          <label>Tiempo usando Scrum <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-            ${["<6 meses","6–18 meses",">18 meses"].map(t=>`<button class="role-btn ${scrumTime===t?'selected':''}" onclick="scrumTime='${t}';render()" style="flex:1;min-width:60px;font-size:11px;">${t}</button>`).join('')}
-          </div>
-        </div>
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
         <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
@@ -791,13 +785,42 @@ function renderResults() {
 }
 
 function setRole(r) { role=r; render(); }
-function startAssessment() { if(role && teamId){ screen='section'; currentSection=0; render(); } }
+function startAssessment() { if(role && teamId){ screen='context'; render(); } }
+function startContext() { screen='section'; currentSection=0; render(); }
+
+function renderContext() {
+  function pillGroup(label, opts, current, setter) {
+    return `<div class="field-group">
+      <label>${label} <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
+      <div class="role-opts" style="flex-wrap:wrap;margin-top:6px;">
+        ${opts.map(o => `<button class="role-btn ${current===o?'selected':''}" onclick="${setter}='${o}';render()">${o}</button>`).join('')}
+      </div>
+    </div>`;
+  }
+  return `
+    <div class="intro">
+      <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Contexto del equipo</div>
+      <p style="font-size:15px;color:var(--ink-muted);margin-bottom:28px;line-height:1.65;">Estas 4 preguntas son opcionales. Ayudan a interpretar los resultados con más precisión. Puedes saltarlas.</p>
+      ${pillGroup('¿Cuánto tiempo lleva el equipo trabajando con Scrum?',
+        ['< 3 meses','3–12 meses','1–2 años','> 2 años'], teamAge, 'teamAge')}
+      ${pillGroup('¿Cuántas personas hay en el equipo?',
+        ['3–5','6–8','9+'], teamSize, 'teamSize')}
+      ${pillGroup('¿El Product Owner tiene dedicación exclusiva a este equipo?',
+        ['Sí','No','Compartido'], dedicatedPO, 'dedicatedPO')}
+      ${pillGroup('¿Cómo trabaja el equipo?',
+        ['Presencial','Híbrido','Totalmente remoto'], workMode, 'workMode')}
+      <div class="nav" style="border-top:none;padding-top:0;margin-top:8px;">
+        <button class="btn" onclick="screen='intro';render()">← Volver</button>
+        <button class="btn primary" onclick="startContext()">Comenzar assessment →</button>
+      </div>
+    </div>`;
+}
 function pick(key,val) { answers[key]=val; render(); }
 function pickCustom(cqId,val) { customAnswers[cqId]=val; render(); }
 function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
 function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; render(); }
+function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; render(); }
 function fallbackCopy(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';

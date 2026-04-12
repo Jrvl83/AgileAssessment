@@ -156,14 +156,27 @@ function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   });
   dispersion.overall = calcDispersion(filtered.map(r => r.fields['Score Total %'] || 0));
   const tamanoCount = {}, scrumTimeCount = {};
+  const teamAgeCount = {}, teamSizeCount = {}, dedicatedPOCount = {}, workModeCount = {};
   filtered.forEach(r => {
     const t = r.fields['Tamaño Equipo'], s = r.fields['Tiempo Scrum'];
     if (t) tamanoCount[t] = (tamanoCount[t] || 0) + 1;
     if (s) scrumTimeCount[s] = (scrumTimeCount[s] || 0) + 1;
+    const ta = r.fields['Team Age'], ts = r.fields['Team Size'];
+    const dp = r.fields['Dedicated PO'], wm = r.fields['Work Mode'];
+    if (ta) teamAgeCount[ta] = (teamAgeCount[ta] || 0) + 1;
+    if (ts) teamSizeCount[ts] = (teamSizeCount[ts] || 0) + 1;
+    if (dp) dedicatedPOCount[dp] = (dedicatedPOCount[dp] || 0) + 1;
+    if (wm) workModeCount[wm] = (workModeCount[wm] || 0) + 1;
   });
   const tamano = Object.entries(tamanoCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
   const tiempoScrum = Object.entries(scrumTimeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion, tamano, tiempoScrum };
+  const ctx = {
+    teamAge:    Object.entries(teamAgeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    teamSize:   Object.entries(teamSizeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    dedicatedPO: Object.entries(dedicatedPOCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    workMode:   Object.entries(workModeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+  };
+  return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion, tamano, tiempoScrum, ctx };
 }
 
 function computeStats() {
@@ -274,6 +287,10 @@ async function fetchAllData() {
             Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
             'Tamaño Equipo': r.tamanoEquipo || '',
             'Tiempo Scrum': r.tiempoScrum || '',
+            'Team Age': r.teamAge || '',
+            'Team Size': r.teamSize || '',
+            'Dedicated PO': r.dedicatedPO || '',
+            'Work Mode': r.workMode || '',
             Answers: r.answers || {},
             Comments: r.comments || {}
           }
@@ -681,6 +698,10 @@ function startLiveResponseCount() {
             Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
             'Tamaño Equipo': r.tamanoEquipo || '',
             'Tiempo Scrum': r.tiempoScrum || '',
+            'Team Age': r.teamAge || '',
+            'Team Size': r.teamSize || '',
+            'Dedicated PO': r.dedicatedPO || '',
+            'Work Mode': r.workMode || '',
             Answers: r.answers || {},
             Comments: r.comments || {}
           }

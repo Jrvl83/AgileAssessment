@@ -378,17 +378,24 @@ function detectPatterns(dimScores) {
 
 function getContextNote(dim, pct, tamano, tiempoScrum) {
   if (!tamano && !tiempoScrum) return null;
-  if (tiempoScrum === '<6 meses' && pct < 70)
+  // Antigüedad Scrum — valores legacy (tiempoScrum) y V3 (teamAge)
+  const isNew = tiempoScrum === '<6 meses' || tiempoScrum === '< 3 meses' || tiempoScrum === '3–12 meses';
+  const isMid = tiempoScrum === '6–18 meses' || tiempoScrum === '1–2 años';
+  const isOld = tiempoScrum === '>18 meses' || tiempoScrum === '> 2 años';
+  if (isNew && pct < 70)
     return 'Equipo nuevo: priorizar cadencia básica y rituales antes de optimizar.';
-  if (tiempoScrum === '>18 meses' && pct < 50)
+  if (isOld && pct < 50)
     return 'Más de 18 meses con Scrum en este nivel sugiere impedimentos sistémicos o resistencia estructural que conviene abordar explícitamente.';
-  if (tiempoScrum === '6–18 meses' && pct < 40)
+  if (isMid && pct < 40)
     return 'Con 6–18 meses en Scrum, este nivel puede indicar falta de apoyo organizacional o coaching insuficiente.';
-  if (tamano === '10+' && dim === 'eventos' && pct < 70)
+  // Tamaño — valores legacy y V3
+  const isBig   = tamano === '10+' || tamano === '9+';
+  const isSmall = tamano === '1–5' || tamano === '3–5';
+  if (isBig && dim === 'eventos' && pct < 70)
     return 'Equipo grande: la coordinación a escala requiere estructura explícita en los eventos Scrum.';
-  if (tamano === '10+' && dim === 'devteam' && pct < 60)
+  if (isBig && dim === 'devteam' && pct < 60)
     return 'Equipo grande: la autoorganización es más compleja; considerar sub-equipos o acuerdos explícitos de trabajo.';
-  if (tamano === '1–5' && dim === 'devteam' && pct < 60)
+  if (isSmall && dim === 'devteam' && pct < 60)
     return 'Equipo pequeño: la cross-funcionalidad es crítica para evitar que una sola persona sea cuello de botella.';
   return null;
 }
