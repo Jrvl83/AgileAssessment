@@ -2,7 +2,7 @@
 
 Mejoras identificadas en el análisis del 2026-04-12 realizado desde la perspectiva de un Agile coach experto usando la herramienta con clientes corporativos reales. El objetivo de este plan es cerrar los gaps metodológicos que un coach o cliente sofisticado puede detectar en la primera sesión de debrief.
 
-**9 mejoras en 3 niveles de prioridad.**
+**9 mejoras en 3 niveles de prioridad — completado 2026-04-12.**
 
 ---
 
@@ -10,15 +10,15 @@ Mejoras identificadas en el análisis del 2026-04-12 realizado desde la perspect
 
 | Prioridad | Mejoras | Estado |
 |-----------|---------|--------|
-| Alta | #A Perspectiva SM · #B Nivel Avanzado · #C Pregunta impedimentos | ✅ Completada 2026-04-12 |
-| Media | #D No aplica técnico · #E Alerta inconsistencia score-comentario · #F Benchmark segmentado | ⏳ Pendiente |
-| Baja | #G Salud del equipo · #H Ponderación preguntas · #I Guía de llenado individual | ⏳ Pendiente |
+| Alta | #A Perspectiva SM · #B Nivel Avanzado · #C Pregunta impedimentos | ✅ Completada 2026-04-12 `4c2f8ad` |
+| Media | #D No aplica técnico · #E Alerta inconsistencia score-comentario · #F Benchmark segmentado | ✅ Completada 2026-04-12 `6b34da4` |
+| Baja | #G Salud del equipo · #H Ponderación preguntas · #I Guía de llenado individual | ✅ Completada 2026-04-12 `cb5dafc` |
 
 ---
 
-## Prioridad Alta — completada ✅
+## Prioridad Alta — completada ✅ `4c2f8ad`
 
-### #A. Perspectiva propia del Scrum Master ✅ `4c2f8ad`
+### #A. Perspectiva propia del Scrum Master ✅
 
 **Problema:**
 `RECS_ROLE` tenía entradas para Product Owner y Dev Team con recomendaciones diferenciadas por rol. El SM respondía el assessment pero recibía recomendaciones genéricas en lugar de perspectivas orientadas a su rol como facilitador y servant leader.
@@ -30,7 +30,7 @@ Mejoras identificadas en el análisis del 2026-04-12 realizado desde la perspect
 
 ---
 
-### #B. 4ª recomendación para el nivel Avanzado ✅ `4c2f8ad`
+### #B. 4ª recomendación para el nivel Avanzado ✅
 
 **Problema:**
 `getRec` usaba `idx = pct <= 33 ? 0 : pct <= 66 ? 1 : 2`. Los equipos en nivel Avanzado (83–100%) recibían las mismas recomendaciones que los Maduros (66–82%). Un equipo con 3 años de Scrum y score de 90% leía recomendaciones sobre "establecer ceremonias básicas".
@@ -43,7 +43,7 @@ Mejoras identificadas en el análisis del 2026-04-12 realizado desde la perspect
 
 ---
 
-### #C. Pregunta sobre gestión de impedimentos ✅ `4c2f8ad`
+### #C. Pregunta sobre gestión de impedimentos ✅
 
 **Problema:**
 La gestión de impedimentos es el indicador más discriminante de la madurez de un SM y de la salud del sistema Scrum. No había ninguna pregunta que la capturara. Un equipo con ceremonias perfectas puede colapsar por impedimentos crónicos sin resolución.
@@ -67,104 +67,94 @@ Opciones conductuales (0–3 pts):
 
 ---
 
-## Prioridad Media — pendiente ⏳
+## Prioridad Media — completada ✅ `6b34da4`
 
-### #D. Flag "dimensión no aplica" para Excelencia Técnica
+### #D. Flag "dimensión no aplica" para Excelencia Técnica ✅
 
 **Problema:**
 Equipos de marketing agile, legal, finanzas o research usan Scrum pero no tienen CI/CD ni pruebas automatizadas. Para ellos, las 3 preguntas de Excelencia Técnica siempre darán 0 y bajarán el score total artificialmente. No hay mecanismo para indicar que la dimensión no aplica a su contexto.
 
-**Solución propuesta:**
-- Selector en la pantalla de inicio del formulario: *"¿El equipo trabaja en desarrollo de software?"* (Sí / No)
-- Si "No": la sección de Excelencia Técnica se sustituye por 3 preguntas alternativas sobre gestión de calidad del trabajo de conocimiento (revisiones entre pares, criterios de aceptación de entregables, gestión de la deuda de proceso)
-- En el admin: badge "No-tech" en la tarjeta del equipo, excluir del benchmark de Excelencia Técnica org-wide si hay mezcla de tipos
-
-**Complejidad:** Media
-**Dependencias:** Añadir campo `teamType` en `respuestas`; actualizar `SECTIONS` con rama condicional; actualizar `DIMS` para que el max de técnico sea dinámico
-
----
-
-### #E. Alerta de inconsistencia score-comentario
-
-**Problema:**
-Un equipo puede dar score 3 en todas las preguntas de Ceremonias y dejar comentarios como "las retros son un teatro" o "nadie entiende el Goal". Esa contradicción es la señal más valiosa que busca un coach experto, pero la herramienta no la detecta ni alerta. Los comentarios solo son visibles si el coach abre el panel manualmente.
-
-**Solución propuesta:**
-Función `detectCommentRisk(teamResps, dimScores)` en `admin-api.js`:
-- Si score promedio de una sección es ≥ 2 (67%+) pero existe algún comentario con términos de riesgo definidos (`['teatro', 'vacía', 'nadie', 'no funciona', 'no se usa', 'rara vez', 'nunca', 'solo de nombre', 'obligados', 'forzado']`) → badge ⚠ en el header de la sección del histograma
-- Alternativamente: delegar la detección a Claude si el análisis IA está activado, añadiendo una sección `riesgosOcultos` al JSON de salida
-- El badge debe ser discreto (no alarmista) y redirigir al panel de comentarios al hacer clic
-
-**Complejidad:** Baja (detección por keywords) / Media (via IA)
-**Dependencias:** Ninguna para la versión con keywords
+**Solución implementada:**
+- Selector "¿El equipo trabaja en desarrollo de software?" (Sí / No) en la pantalla de contexto del formulario. Badge "Adapta las preguntas técnicas" junto al selector.
+- Si "No": la sección de Excelencia Técnica muestra 3 preguntas alternativas sobre gestión de calidad del trabajo de conocimiento (revisiones entre pares, criterios de aceptación de entregables, deuda de proceso)
+- Las preguntas alternativas usan las mismas keys (`tecnico_0/1/2`) — scoring e histogramas del admin funcionan sin modificación
+- Campo `teamType` guardado en `respuestas` ('software' | 'knowledge' — vacío = no especificado)
+- En el admin: badge "No-software" (azul) en el header de la sección Excelencia Técnica en el panel de detalle por pregunta
 
 ---
 
-### #F. Segmentación del benchmark por tipo de equipo
+### #E. Alerta de inconsistencia score-comentario ✅
 
 **Problema:**
-El radar comparativo y el delta "+N% org" mezclan equipos de naturalezas diferentes (producto software, operaciones, marketing agile). Comparar un equipo de software con uno de conocimiento produce un benchmark engañoso, especialmente en Excelencia Técnica y Dev Team.
+Un equipo puede dar score 3 en todas las preguntas de Ceremonias y dejar comentarios como "las retros son un teatro" o "nadie entiende el Goal". Esa contradicción es la señal más valiosa que busca un coach experto, pero la herramienta no la detecta ni alerta.
 
-**Solución propuesta:**
-- Campo `teamCategory` en `equipos` (Software / Conocimiento / Operaciones / Otro)
-- El benchmark org en el radar solo incluye equipos de la misma categoría
-- Badge de categoría en la tarjeta del equipo
-- En el heatmap comparativo: agrupación visual por categoría con separador
-
-**Complejidad:** Baja-media
-**Dependencias:** Ninguna crítica; retrocompatible (sin categoría = categoría por defecto)
+**Solución implementada:**
+Función `detectCommentRisk(teamResps, dimAvgPcts)` en `admin-api.js` (versión keywords, sin IA):
+- Si el porcentaje promedio de una dimensión es ≥ 67% pero existe algún comentario con términos de riesgo → badge ⚠ "Señal oculta" (ámbar) en el header de la sección en el panel de detalle
+- Términos de riesgo: `['teatro','vacía','vacío','nadie','no funciona','no se usa','rara vez','nunca','solo de nombre','obligados','forzado','forzada','no sirve']`
+- El badge es discreto y no bloquea el flujo — solo llama la atención del coach
 
 ---
 
-## Prioridad Baja — pendiente ⏳
-
-### #G. Preguntas opcionales de salud del equipo
+### #F. Segmentación del benchmark por tipo de equipo ✅
 
 **Problema:**
-La seguridad psicológica (Amy Edmondson) es el predictor más fuerte de la adopción real de los valores Scrum: coraje para dar feedback en la Retro, apertura para revelar impedimentos, compromiso real vs. cumplimiento formal. Un equipo con scores altos en todas las dimensiones técnicas de Scrum puede seguir siendo disfuncional si la confianza es baja.
+El radar comparativo mezclaba equipos de naturalezas diferentes. Comparar un equipo de software con uno de conocimiento produce un benchmark engañoso, especialmente en Excelencia Técnica y Dev Team.
 
-**Solución propuesta:**
-Sección opcional al final del formulario (solo si el workspace la activa en Configuración):
-- 2–3 preguntas de escala sobre seguridad psicológica y dinámica de equipo
-- No afectan el score principal de madurez Scrum — generan un `teamHealthScore` independiente
-- En el admin: badge de salud en la tarjeta + input adicional al prompt de análisis IA
-- Ejemplo de preguntas:
+**Solución implementada:**
+- Campo `category` en colección `equipos` (Software / Conocimiento / Operaciones / Otro)
+- Selector de categoría por equipo en la pestaña Equipos del admin
+- El benchmark org en el radar solo incluye equipos de la misma categoría si hay ≥2 equipos en ella; si no, usa el benchmark org completo como fallback
+- Badge de categoría en la tarjeta del equipo en Análisis
+- El delta "% org" en el header muestra el nombre de la categoría cuando aplica el benchmark segmentado
+
+---
+
+## Prioridad Baja — completada ✅ `cb5dafc`
+
+### #G. Preguntas opcionales de salud del equipo ✅
+
+**Problema:**
+La seguridad psicológica (Amy Edmondson) es el predictor más fuerte de la adopción real de los valores Scrum. Un equipo con scores altos en todas las dimensiones técnicas de Scrum puede seguir siendo disfuncional si la confianza es baja.
+
+**Solución implementada:**
+Sección opcional al final del formulario (activable por workspace en Configuración):
+- 3 preguntas de escala sobre seguridad psicológica:
   - *"¿El equipo se siente seguro para dar feedback crítico en la Retro sin consecuencias negativas?"*
   - *"¿Los errores se tratan como oportunidades de aprendizaje, no como fallos individuales?"*
-
-**Complejidad:** Media
-**Dependencias:** Toggle en `workspaces/{id}` — retrocompatible
-
----
-
-### #H. Ponderación de preguntas fundacionales
-
-**Problema:**
-Actualmente cada pregunta vale lo mismo (0–3 pts). La pregunta sobre Sprint Goal vale igual que la de WIP limits. Metodológicamente, los fundamentos de Scrum (Sprint Goal, DoD, empirismo) son prerequisito del resto. Un equipo que falla en los fundamentos pero tiene buenas prácticas de optimización obtiene un score inflado.
-
-**Solución propuesta:**
-Sistema de pesos en `SECTIONS.questions`: campo `weight` (por defecto 1.0, puede ser 1.5 para preguntas fundacionales):
-- Preguntas fundacionales (weight 1.5): Sprint Goal, Definition of Done, Product Goal, valores Scrum
-- Preguntas de optimización (weight 1.0): WIP limits, DORA metrics, Continuous Discovery
-- `calcResults()` en el formulario multiplica el valor de respuesta por `q.weight || 1`
-
-**Complejidad:** Media — requiere recalibrar umbrales de madurez con datos reales
-**Dependencias:** Cambio de scoring → rompe comparabilidad con datos históricos. Implementar solo con ciclo nuevo
+  - *"¿Los miembros del equipo pueden plantear problemas o preocupaciones sin temor a represalias?"*
+- Genera `teamHealthScore` independiente (0–100%), no afecta el score de madurez Scrum
+- Respuestas guardadas en `healthAnswers` separado
+- En el admin: badge de salud en la tarjeta de equipo (Alta ≥70% / Media ≥40% / Baja <40%)
+- Toggle "Activar preguntas de salud del equipo" en pestaña Configuración
 
 ---
 
-### #I. Guía de llenado individual en el formulario
+### #H. Ponderación de preguntas fundacionales ✅
 
 **Problema:**
-Si el coach facilita la sesión de llenado del assessment, las respuestas tienden hacia lo que el equipo cree que el coach quiere ver (sesgo del facilitador). La herramienta asume llenado individual y asíncrono, pero no hay ninguna instrucción que lo indique.
+Actualmente cada pregunta valía lo mismo (0–3 pts). La pregunta sobre Sprint Goal valía igual que la de WIP limits. Los fundamentos de Scrum son prerequisito del resto — un equipo que falla en los fundamentos pero tiene buenas prácticas de optimización obtenía un score inflado.
 
-**Solución propuesta:**
-- Texto en la pantalla de inicio del formulario (debajo del nombre y rol): *"Este assessment está diseñado para completarse de forma individual, sin coordinarlo con tus compañeros. Tus respuestas son anónimas y no hay respuestas correctas o incorrectas."*
-- Si el workspace tiene `anonymityMode !== 'full'`, adaptar el mensaje al modo correspondiente
-- Opcionalmente: un campo de nota en la pestaña Configuración del admin para que el coach personalice este texto
+**Solución implementada:**
+Campo `weight` en `SECTIONS.questions` (por defecto 1.0):
+- Preguntas fundacionales con `weight: 1.5`: Sprint Goal (eventos_0), Product Goal (backlog_2), Definition of Done (devteam_1), valores Scrum (transparencia_2)
+- `calcResults()` en el formulario aplica el peso: `wSum += (answers[qKey] || 0) * w`
+- **Normalización:** el score se normaliza de vuelta a la escala `DIMS.max` original: `score = Math.round(wSum / wMax * dimMax)`. Esto preserva la comparabilidad con datos históricos — los scores almacenados siguen en el rango 0–12/9 original
+- Sin breaking change en datos históricos ni en los 96 tests existentes
 
-**Complejidad:** Muy baja
-**Dependencias:** Ninguna
+---
+
+### #I. Guía de llenado individual en el formulario ✅
+
+**Problema:**
+Si el coach facilita la sesión de llenado en grupo, las respuestas tienden hacia lo que el equipo cree que el coach quiere ver (sesgo del facilitador). La herramienta asumía llenado individual y asíncrono, pero no lo indicaba.
+
+**Solución implementada:**
+- Bloque de guía en la pantalla de inicio del formulario, adaptado al `anonymityMode`:
+  - **Anónimo total:** *"Para obtener resultados útiles, responde de forma individual, sin coordinar con tus compañeros. Tus respuestas son completamente anónimas."*
+  - **Semi-anónimo / Nominal:** adapta el mensaje al modo configurado, manteniendo el foco en la independencia de las respuestas
+- Campo `guidanceText` en `workspaces`: si el coach lo personaliza desde Configuración, reemplaza el texto por defecto
+- Complejidad de implementación: muy baja
 
 ---
 
@@ -175,7 +165,7 @@ Las recomendaciones que aparecen en las tarjetas de equipo (`RECS`, `RECS_ROLE`)
 Esta arquitectura es intencional:
 - Las recomendaciones hardcodeadas son instantáneas, sin costo de API y funcionan sin crédito disponible
 - El análisis IA no reemplaza las recomendaciones — las complementa con contexto cruzado entre dimensiones, evolución, comentarios y perfil del equipo
-- Cambiar las recomendaciones a IA generativa añadiría latencia y costo sin beneficio proporcional, ya que el texto de una sola dimensión aislada tiene poco contexto para que Claude aporte más que el texto estático
+- Cambiar las recomendaciones a IA generativa añadiría latencia y costo sin beneficio proporcional
 
 ---
 
@@ -183,3 +173,6 @@ Esta arquitectura es intencional:
 
 ### Breaking change en scoring de Transparencia (commit `4c2f8ad`)
 `DIMS.transparencia.max` cambió de 9 a 12. Los datos históricos mostrarán transparencia con un máximo efectivo de 75% en lugar de 100%. Los porcentajes totales almacenados en `respuestas.scoreTotalPct` son comparables entre sí (calculados dinámicamente), pero los scores de dimensión de transparencia anteriores al cambio serán relativamente más bajos en la vista de evolución. **Acción recomendada:** abrir un nuevo ciclo para que las comparaciones en el gráfico de evolución sean válidas.
+
+### Sin breaking change en scoring general (commit `cb5dafc`)
+El sistema de ponderación de #H normaliza los scores de vuelta a la escala `DIMS.max` original — los valores almacenados en Firestore (`scoreEventos`, `scoreDevTeam`, etc.) siguen en su rango histórico. Los 96 tests del scoring pasan sin modificación. Los datos de ciclos anteriores son comparables directamente con los nuevos en la vista de Evolución.

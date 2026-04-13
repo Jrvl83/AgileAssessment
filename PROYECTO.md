@@ -58,7 +58,7 @@ AssessmentAgile/
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
 PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — completado 2026-04-12
-PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento
+PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento (completo)
 ```
 
 ### Routing (firebase.json)
@@ -94,10 +94,15 @@ Pantalla de contexto del equipo (opcional, todos los campos saltables)
   → ¿Cómo trabaja el equipo? (Presencial / Híbrido / Totalmente remoto)
     ↓
 6 secciones del assessment (una por dimensión)
-  → 3–4 preguntas por sección
+  → 3–4 preguntas por sección (Excelencia Técnica muestra preguntas alternativas si teamType=No-software)
   → 4 opciones de respuesta por pregunta (radio buttons)
   → Comentario abierto opcional por sección
   → Navegación con botones Anterior / Siguiente
+    ↓
+[Si el workspace tiene teamHealthEnabled=true]
+Pantalla de salud del equipo (opcional)
+  → 3 preguntas de seguridad psicológica
+  → Score independiente del assessment Scrum
   → Footer sticky con mensaje de privacidad (adaptado al modo de anonimato)
     ↓
 Pantalla de resultados
@@ -120,11 +125,11 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark org si hay ≥2 equipos), delta "+N% org" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables, histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark — org o por categoría si hay ≥2 equipos de la misma categoría), delta "+N% org/categoría" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables (4 niveles: Inicial/En desarrollo/Maduro/Avanzado), histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas) y badge ⚠ "Señal oculta" (inconsistencia score-comentario), badge "No-software" en Excelencia Técnica si el equipo usa preguntas alternativas, badge de salud del equipo (Alta/Media/Baja si `teamHealthEnabled`), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
+| **Equipos** | Todos | Alta, baja y activación de equipos; selector de categoría (Software/Conocimiento/Operaciones/Otro); botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
-| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA, guardado en `workspaces/{uid}`. **Cadencia de ciclos:** select 1–8 semanas — activa banner de recordatorio cuando pasa ese tiempo sin respuestas. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
+| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA, guardado en `workspaces/{uid}`. **Salud del equipo:** toggle para activar las 3 preguntas opcionales de seguridad psicológica al final del formulario. **Guía de llenado:** textarea para personalizar el mensaje de independencia de respuestas en el formulario. **Cadencia de ciclos:** select 1–8 semanas — activa banner de recordatorio cuando pasa ese tiempo sin respuestas. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
 | **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
 
 #### Flujo para dar acceso a un cliente
@@ -151,11 +156,15 @@ El assessment mide madurez en 6 dimensiones:
 | 1 | **Ceremonias** | Calidad y valor de los eventos Scrum | PO + Dev Team | 4 | 12 pts |
 | 2 | **Product Backlog** | Gestión del Product Backlog por el PO | Product Owner | 3 | 9 pts |
 | 3 | **Dev Team** | Autoorganización y entrega técnica | Dev Team | 4 | 12 pts |
-| 4 | **Transparencia** | Inspección, adaptación y pilares empíricos | PO + Dev Team | 3 | 9 pts |
-| 5 | **Excelencia Técnica** | CI/CD, pruebas automatizadas, deuda técnica | Dev Team | 3 | 9 pts |
+| 4 | **Transparencia** | Inspección, adaptación, impedimentos y pilares empíricos | PO + Dev Team | 4 | 12 pts |
+| 5 | **Excelencia Técnica** | CI/CD, pruebas automatizadas, deuda técnica (o equivalentes de conocimiento) | Dev Team | 3 | 9 pts |
 | 6 | **Orientación al Cliente** | Contacto con usuarios, métricas de valor | PO + Dev Team | 3 | 9 pts |
 
-**Total:** 20 preguntas — puntaje máximo: **60 puntos**
+**Total:** 21 preguntas — puntaje máximo: **63 puntos**
+
+> ⚠ **Nota V4:** Transparencia pasó de 3 a 4 preguntas en 2026-04-12 (max 9 → 12). Datos anteriores mostrarán transparencia con máx. efectivo 75%. Iniciar un nuevo ciclo para comparaciones válidas.
+>
+> **Excelencia Técnica (equipos no-software):** si el participante indica que su equipo no trabaja en desarrollo de software, la sección muestra 3 preguntas alternativas sobre calidad del trabajo de conocimiento. Las keys de respuesta son idénticas (`tecnico_0/1/2`) — el scoring no cambia.
 
 ---
 
@@ -170,11 +179,21 @@ Cada pregunta tiene 4 opciones ordenadas de menor a mayor madurez:
 | 3 | 2 | Práctica parcialmente establecida |
 | 4 | 3 | Práctica consolidada y generando valor |
 
+**Ponderación de preguntas fundacionales (V4):**
+
+Cuatro preguntas tienen `weight: 1.5` (fundamentos de Scrum):
+- Sprint Goal (Ceremonias P1)
+- Product Goal (Product Backlog P3)
+- Definition of Done (Dev Team P2)
+- Valores Scrum (Transparencia P3)
+
+El peso se aplica al calcular el score: `wSum += respuesta × weight`. El resultado se normaliza de vuelta a la escala `DIMS.max` para mantener comparabilidad histórica: `score = Math.round(wSum / wMax × dimMax)`.
+
 **Cálculo del puntaje:**
 
 ```
-% Dimensión  = (suma de puntos de dimensión / máximo de dimensión) × 100
-% Total      = (suma total de puntos / 60) × 100
+% Dimensión  = (suma ponderada normalizada / máximo de dimensión) × 100
+% Total      = (suma total normalizada / 63) × 100
 ```
 
 ---
@@ -248,76 +267,84 @@ Cada pregunta tiene 4 opciones ordenadas de menor a mayor madurez:
 **P14. ¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?**
 - Rara vez se manifiestan en las interacciones → Algunos valores están presentes de forma inconsistente → La mayoría de valores se practican habitualmente → Los valores son parte de la cultura del equipo
 
+**P15. ¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?** *(V4 — nueva)*
+- Los impedimentos no se identifican o permanecen bloqueados varias semanas sin dueño → Se mencionan en el Daily pero nadie los escala; el equipo los asume como parte del trabajo → La mayoría se escalan y se resuelven, aunque algunos quedan sin seguimiento → Los impedimentos se identifican, escalan y resuelven sistemáticamente antes de que bloqueen el Sprint Goal
+
 ---
 
 #### Sección 5 de 6 — Excelencia técnica
 
-**P15. ¿El equipo tiene integración continua (CI) que detecta errores automáticamente?**
+> Para equipos que no trabajan en desarrollo de software (teamType = No-software), esta sección muestra preguntas alternativas sobre gestión de calidad del trabajo de conocimiento. Los resultados se almacenan con las mismas keys (`tecnico_0/1/2`).
+
+**P16. ¿El equipo tiene integración continua (CI) que detecta errores automáticamente?** *(P15 en versiones anteriores a V4)*
 - No hay CI; el build es manual o esporádico → CI configurado pero con fallos frecuentes no resueltos → CI estable; los fallos se resuelven antes de continuar → CI + CD; despliegues automatizados frecuentes y fiables
 
-**P16. ¿El equipo tiene pruebas automatizadas que generan confianza para hacer cambios?**
+**P17. ¿El equipo tiene pruebas automatizadas que generan confianza para hacer cambios?** *(P16 en versiones anteriores a V4)*
 - Sin pruebas automatizadas → Algunas pruebas pero con cobertura muy baja → Buena cobertura en áreas críticas del sistema → Suite sólida de pruebas; se refactoriza y despliega con confianza
 
-**P17. ¿El equipo gestiona activamente la deuda técnica?**
+**P18. ¿El equipo gestiona activamente la deuda técnica?** *(P17 en versiones anteriores a V4)*
 - No se reconoce ni se habla de deuda técnica → Se reconoce pero nunca se prioriza → Se incluye en el backlog y se prioriza con criterio → Se gestiona como parte del refinamiento y de la Definition of Done
 
 ---
 
 #### Sección 6 de 6 — Orientación al cliente
 
-**P18. ¿El equipo tiene contacto directo con usuarios o clientes reales?**
+**P19. ¿El equipo tiene contacto directo con usuarios o clientes reales?** *(P18 en versiones anteriores a V4)*
 - Nunca; todo pasa a través del PO o Management → Raramente, solo en demos formales → Ocasionalmente en Sprint Reviews o entrevistas puntuales → Regularmente; el equipo valida hipótesis directamente con usuarios
 
-**P19. ¿El equipo mide si lo que entrega genera valor real para el negocio o el usuario?**
+**P20. ¿El equipo mide si lo que entrega genera valor real para el negocio o el usuario?** *(P19 en versiones anteriores a V4)*
 - No se mide impacto; solo se cuentan features entregadas → Hay algunas métricas de negocio pero no se revisan con regularidad → Seguimiento de métricas clave por producto en cada Sprint Review → Cultura de experimentación: hipótesis → medición → aprendizaje
 
-**P20. ¿El equipo entiende el 'por qué' de negocio detrás de cada ítem del backlog?**
+**P21. ¿El equipo entiende el 'por qué' de negocio detrás de cada ítem del backlog?** *(P20 en versiones anteriores a V4)*
 - Rara vez se explica el propósito de negocio de los ítems → A veces, cuando se pregunta explícitamente → El PO explica el valor esperado en el refinamiento → El equipo cuestiona y co-diseña la solución basado en el problema real
 
 ---
 
 ### Recomendaciones por rol
 
-Las recomendaciones se generan automáticamente según el **puntaje de cada dimensión** y el **rol del participante**. Hay 3 rangos de recomendación por dimensión:
+Las recomendaciones se generan automáticamente según el **puntaje de cada dimensión** y el **rol del participante**. Hay 4 rangos de recomendación por dimensión (desde V4):
 
-| Rango | Etiqueta |
-|-------|----------|
-| 0 – 33% | Básico |
-| 34 – 66% | Intermedio |
-| 67 – 100% | Avanzado |
+| Rango | Nivel | idx |
+|-------|-------|-----|
+| 0 – 33% | Inicial | 0 |
+| 34 – 66% | En desarrollo | 1 |
+| 67 – 82% | Maduro | 2 |
+| 83 – 100% | Avanzado | 3 |
+
+`getRec(dim, pct, role)` → `idx = pct<=33 ? 0 : pct<=66 ? 1 : pct<=82 ? 2 : 3`
 
 #### Product Owner
 
-| Dimensión | 0–33% | 34–66% | 67–100% |
-|-----------|-------|--------|---------|
-| Ceremonias | El Sprint Goal no existe o no guía las decisiones. Definir un objetivo de negocio claro y medible para cada Sprint. | El Sprint Goal existe pero no conecta con el Product Goal. Trabajar en que cada Sprint Goal sea un paso concreto hacia el Product Goal. | Profundizar en que cada Sprint Review sea una sesión de inspección/adaptación del Product Backlog basada en feedback real y métricas. |
-| Product Backlog | Definir Product Goal inspirador; escribir User Stories con criterios de aceptación claros. | Implementar refinamiento regular; evaluar WSJF o Kano para priorización por valor. | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs para entrega estratégica. |
-| Dev Team | Estar disponible durante el Sprint para clarificaciones rápidas — la accesibilidad del PO es crítica. | Asegurar que las User Stories lleguen al Sprint Planning con suficiente detalle. Trabajar con el SM para eliminar dependencias externas. | Involucrarse en la DoD para que refleje los criterios de calidad que el negocio realmente necesita. |
-| Transparencia | Hacer el Product Backlog visible a todos. Definir métricas simples de progreso hacia el Product Goal. | Compartir activamente el Product Goal en cada Sprint Review; conectar Sprint Backlog con objetivos de negocio. | Rastrear métricas de outcome (impacto en negocio), no solo output (features entregadas). |
-| Exc. Técnica | Exigir que la DoD incluya pruebas automatizadas básicas — sin esto cada Increment acumula riesgo oculto. | Asegurar que la deuda técnica tenga visibilidad en el backlog y se priorice regularmente, no solo en crisis. | Conectar métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal. |
-| Orient. Cliente | Facilitar acceso a usuarios reales: organizar entrevistas, invitar clientes a Sprint Reviews. Sin feedback real, el backlog es especulación. | Definir métricas de outcome claras (retención, adopción, NPS) y revisarlas en cada Sprint Review. | Evolucionar hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos, ajuste del Product Goal con datos reales. |
+| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
+|-----------|-----------------|------------------------|-----------------|---------------------|
+| Ceremonias | El Sprint Goal no existe o no guía las decisiones. Definir un objetivo de negocio claro y medible para cada Sprint. | El Sprint Goal existe pero no conecta con el Product Goal. Trabajar en que cada Sprint Goal sea un paso concreto hacia el Product Goal. | Profundizar en que cada Sprint Review sea una sesión de inspección/adaptación del Product Backlog basada en feedback real y métricas. | Eleva la calidad del Sprint Goal: que sea una hipótesis de negocio con métricas de validación claras que el equipo pueda inspeccionar durante el Sprint. |
+| Product Backlog | Definir Product Goal inspirador; escribir User Stories con criterios de aceptación claros. | Implementar refinamiento regular; evaluar WSJF o Kano para priorización por valor. | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs para entrega estratégica. | Conectar cada Sprint con outcomes medibles. Explorar hypothesis-driven development: el backlog como mapa de aprendizajes, no inventario de funcionalidades. |
+| Dev Team | Estar disponible durante el Sprint para clarificaciones rápidas — la accesibilidad del PO es crítica. | Asegurar que las User Stories lleguen al Sprint Planning con suficiente detalle. Trabajar con el SM para eliminar dependencias externas. | Involucrarse en la DoD para que refleje los criterios de calidad que el negocio realmente necesita. | El equipo es completamente autónomo. Tu palanca es el contexto estratégico: compartir métricas de uso y roadmap de aprendizajes para que el equipo tome decisiones técnicas alineadas con el valor real. |
+| Transparencia | Hacer el Product Backlog visible a todos. Definir métricas simples de progreso hacia el Product Goal. | Compartir activamente el Product Goal en cada Sprint Review; conectar Sprint Backlog con objetivos de negocio. | Rastrear métricas de outcome (impacto en negocio), no solo output (features entregadas). | Evoluciona los artefactos Scrum hacia herramientas de comunicación estratégica. El Product Goal como hipótesis medible; métricas de outcome visibles para toda la organización. |
+| Exc. Técnica | Exigir que la DoD incluya pruebas automatizadas básicas — sin esto cada Increment acumula riesgo oculto. | Asegurar que la deuda técnica tenga visibilidad en el backlog y se priorice regularmente, no solo en crisis. | Conectar métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal. | Conecta las DORA metrics con tu roadmap: un equipo que despliega múltiples veces al día puede experimentar y aprender a una velocidad que ningún documento de especificación puede capturar. |
+| Orient. Cliente | Facilitar acceso a usuarios reales: organizar entrevistas, invitar clientes a Sprint Reviews. Sin feedback real, el backlog es especulación. | Definir métricas de outcome claras (retención, adopción, NPS) y revisarlas en cada Sprint Review. | Evolucionar hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos, ajuste del Product Goal con datos reales. | Institucionaliza el descubrimiento continuo: Opportunity Solution Trees, Product Goal como hipótesis de negocio. El backlog debería ser la historia de los aprendizajes del equipo sobre el problema del cliente. |
 
 #### Dev Team
 
-| Dimensión | 0–33% | 34–66% | 67–100% |
-|-----------|-------|--------|---------|
-| Ceremonias | Apropiarse del Daily (15 min orientados al Sprint Goal); co-crear el Sprint Plan. | En el Daily, preguntar si se está en camino al Sprint Goal. En la Retro, generar 1–2 compromisos concretos con dueño. | Profundizar en que la Retro genere mejoras sistémicas; que el Sprint Review sea una conversación real sobre el valor entregado. |
-| Product Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos antes de comprometerse. | Involucrarse activamente: rechazar Stories sin criterios de aceptación claros en el Sprint Planning. | Conectar Stories con el "por qué" de negocio para tomar mejores decisiones técnicas durante el Sprint. |
-| Dev Team | Definir DoD que todos validen; distribuir el conocimiento. Cada miembro debe poder trabajar en cualquier tarea. | Rotar tareas, implementar pair programming, mapear y eliminar dependencias externas frecuentes. | Implementar límites de WIP; medir cycle time; mejorar el flujo para mayor predictibilidad. |
-| Transparencia | Mantener el Scrum Board actualizado en tiempo real. Sin visibilidad compartida no hay inspección posible. | Escalar impedimentos en el Daily antes de que bloqueen el Sprint Goal. | Incorporar métricas de flujo (burndown, velocity, cycle time) para retrospectivas basadas en datos. |
-| Exc. Técnica | Definir DoD con pruebas automatizadas y configurar CI mínimo. Sin esto, entregar con frecuencia es arriesgado. | Aumentar cobertura de tests en áreas críticas; estabilizar CI; incluir deuda técnica en el backlog como ítem de valor. | Evolucionar hacia CD y gestión proactiva de deuda técnica. Medir DORA metrics para seguir mejorando. |
-| Orient. Cliente | Pedir al PO que comparta métricas de uso y organice sesiones de observación de usuarios. Entender el problema real mejora las decisiones técnicas. | Involucrarse en entrevistas de usuario y Sprint Reviews con stakeholders reales. | Conectar métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. |
+| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
+|-----------|-----------------|------------------------|-----------------|---------------------|
+| Ceremonias | Apropiarse del Daily (15 min orientados al Sprint Goal); co-crear el Sprint Plan. | En el Daily, preguntar si se está en camino al Sprint Goal. En la Retro, generar 1–2 compromisos concretos con dueño. | Profundizar en que la Retro genere mejoras sistémicas; que el Sprint Review sea una conversación real sobre el valor entregado. | Facilitación distribuida: que el equipo conduzca sus propios eventos sin necesitar al SM. La Retro debe evolucionar hacia experimentos sistémicos con hipótesis medibles y revisión de resultados. |
+| Product Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos antes de comprometerse. | Involucrarse activamente: rechazar Stories sin criterios de aceptación claros en el Sprint Planning. | Conectar Stories con el "por qué" de negocio para tomar mejores decisiones técnicas durante el Sprint. | Co-diseñar el espacio del problema con el PO: entender las hipótesis de negocio y proponer alternativas técnicas que validen las mismas hipótesis con menor esfuerzo o mayor aprendizaje. |
+| Dev Team | Definir DoD que todos validen; distribuir el conocimiento. Cada miembro debe poder trabajar en cualquier tarea. | Rotar tareas, implementar pair programming, mapear y eliminar dependencias externas frecuentes. | Implementar límites de WIP; medir cycle time; mejorar el flujo para mayor predictibilidad. | Mejora continua basada en datos: lead time, cycle time y deployment frequency. Explorar Team Topologies para optimizar interacciones y reducir carga cognitiva del sistema. |
+| Transparencia | Mantener el Scrum Board actualizado en tiempo real. Sin visibilidad compartida no hay inspección posible. | Escalar impedimentos en el Daily antes de que bloqueen el Sprint Goal. | Incorporar métricas de flujo (burndown, velocity, cycle time) para retrospectivas basadas en datos. | Usar los datos para influir en la organización: compartir métricas de flujo en lenguaje de negocio y co-crear con el PO dashboards de outcome que demuestren valor generado, no solo trabajo realizado. |
+| Exc. Técnica | Definir DoD con pruebas automatizadas y configurar CI mínimo. Sin esto, entregar con frecuencia es arriesgado. | Aumentar cobertura de tests en áreas críticas; estabilizar CI; incluir deuda técnica en el backlog como ítem de valor. | Evolucionar hacia CD y gestión proactiva de deuda técnica. Medir DORA metrics para seguir mejorando. | La excelencia técnica es vuestra fortaleza. Hacerla visible hacia la organización: conectar deployment frequency con capacidad de experimentar. Un equipo que despliega múltiples veces al día puede invalidar una hipótesis antes de que se convierta en deuda de producto. |
+| Orient. Cliente | Pedir al PO que comparta métricas de uso y organice sesiones de observación de usuarios. | Involucrarse en entrevistas de usuario y Sprint Reviews con stakeholders reales. | Conectar métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. | Incorporar métricas de experiencia de usuario en decisiones técnicas (performance, fiabilidad, accesibilidad como parte de la DoD) y participar activamente en el descubrimiento continuo. |
 
 #### Scrum Master
 
-| Dimensión | 0–33% | 34–66% | 67–100% |
-|-----------|-------|--------|---------|
-| Ceremonias | Facilitar formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos. | Mejorar calidad de facilitación; que el Daily sea del equipo (no dirigido al SM); que la Retro genere compromisos medibles con dueño. | Lograr que el equipo sea autónomo en la facilitación — el SM no debería ser facilitador permanente. |
-| Product Backlog | Facilitar la relación PO-equipo; organizar las primeras sesiones de refinamiento; ayudar al PO a escribir User Stories con criterios claros. | Observar sesiones de refinamiento; identificar malentendidos; educar en escritura de historias y estimación relativa. | Apoyar al PO en conectar backlog con métricas de valor; explorar priorización avanzada (WSJF, Cost of Delay). |
-| Dev Team | Crear espacios seguros para que el equipo tome decisiones; empezar con autoselección de tareas en el Sprint Planning. | Mapear dependencias externas e impedimentos sistémicos; trabajar con la organización para eliminarlos. | Trabajar en métricas de equipo (velocity, predictibilidad) y evolucionar la DoD para incrementar calidad continuamente. |
-| Transparencia | Establecer Scrum Board visible; formar al equipo sobre su importancia para la inspección y adaptación. | Crear registro de impedimentos visible y dar seguimiento a su resolución — genera confianza en el proceso. | Crear dashboard de métricas de flujo para conversaciones basadas en datos con stakeholders y decisiones más informadas en la Retro. |
-| Exc. Técnica | Facilitar la conversación sobre la DoD incluyendo criterios de calidad técnica. Conectar con el equipo para entender impedimentos estructurales. | Hacer visible la deuda técnica en el backlog; facilitar la conversación con el PO para priorizarla. Un equipo con deuda descontrolada no puede ser predecible. | Trabajar en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para mejoras basadas en datos objetivos. |
-| Orient. Cliente | Facilitar sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final. Sin esta conexión, el equipo optimiza procesos en lugar de valor. | Trabajar con el PO para establecer métricas de outcome en el concepto del Sprint. Cuando el equipo ve el impacto, la motivación y calidad de decisiones mejoran. | Facilitar la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debe informar tanto el proceso como la estrategia del producto. |
+| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
+|-----------|-----------------|------------------------|-----------------|---------------------|
+| Ceremonias | Facilitar formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos. | Mejorar calidad de facilitación; que el Daily sea del equipo (no dirigido al SM); que la Retro genere compromisos medibles con dueño. | Lograr que el equipo sea autónomo en la facilitación — el SM no debería ser facilitador permanente. | Hacerse prescindible como facilitador. Dedicar energía a facilitar conversaciones sistémicas sobre cómo el sistema de trabajo del equipo puede evolucionar más allá de los eventos Scrum. |
+| Product Backlog | Facilitar la relación PO-equipo; organizar las primeras sesiones de refinamiento; ayudar al PO a escribir User Stories con criterios claros. | Observar sesiones de refinamiento; identificar malentendidos; educar en escritura de historias y estimación relativa. | Apoyar al PO en conectar backlog con métricas de valor; explorar priorización avanzada (WSJF, Cost of Delay). | Facilitar que el equipo conecte el trabajo con outcomes de negocio, apoyar al PO en discovery continuo. El backlog debería reflejar aprendizajes reales del mercado, no solo solicitudes de stakeholders. |
+| Dev Team | Crear espacios seguros para que el equipo tome decisiones; empezar con autoselección de tareas en el Sprint Planning. | Mapear dependencias externas e impedimentos sistémicos; trabajar con la organización para eliminarlos. | Trabajar en métricas de equipo (velocity, predictibilidad) y evolucionar la DoD para incrementar calidad continuamente. | El equipo tiene plena autonomía. El rol del SM evoluciona hacia el nivel organizacional: remover impedimentos sistémicos, facilitar interacciones con otros equipos y representar las necesidades del equipo en el diseño organizacional. |
+| Transparencia | Establecer Scrum Board visible; formar al equipo sobre su importancia para la inspección y adaptación. | Crear registro de impedimentos visible y dar seguimiento a su resolución — genera confianza en el proceso. | Crear dashboard de métricas de flujo para conversaciones basadas en datos con stakeholders y decisiones más informadas en la Retro. | La transparencia interna es excelente. El siguiente nivel: ayudar al equipo a comunicar su valor en outcomes medibles, facilitar conversaciones de OKRs entre el equipo y la dirección. |
+| Exc. Técnica | Facilitar la conversación sobre la DoD incluyendo criterios de calidad técnica. Conectar con el equipo para entender impedimentos estructurales. | Hacer visible la deuda técnica en el backlog; facilitar la conversación con el PO para priorizarla. Un equipo con deuda descontrolada no puede ser predecible. | Trabajar en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para mejoras basadas en datos objetivos. | La excelencia técnica del equipo es sólida. Tu palanca es sistémica: conectar DORA metrics con objetivos de negocio y facilitar conversaciones con la organización sobre cómo la capacidad técnica habilita mayor velocidad de aprendizaje de producto. |
+| Orient. Cliente | Facilitar sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final. | Trabajar con el PO para establecer métricas de outcome en el Sprint. Cuando el equipo ve el impacto, la motivación y calidad de decisiones mejoran. | Facilitar la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debe informar tanto el proceso como la estrategia del producto. | El equipo tiene contacto directo y continuo con los usuarios. Facilitar que ese aprendizaje se integre estructuralmente: Retros con insights de usuario, mapa de oportunidades compartido con el PO. El discovery continuo debería ser tan natural como el Daily. |
 
 ---
 
@@ -341,6 +368,7 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `activo` | boolean | Si el equipo está disponible en el formulario |
 | `ownerId` | string | UID del workspace admin que creó el equipo |
 | `notas` | object | Notas del coach por ciclo `{ [cicloKey]: string }` — solo visibles en el panel admin |
+| `category` | string | **V4** Categoría del equipo: `'Software'` / `'Conocimiento'` / `'Operaciones'` / `'Otro'` — usada para benchmark segmentado |
 
 #### `workspaces`
 | Campo | Tipo | Descripción |
@@ -353,6 +381,8 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 | `anonymityMode` | string | Modo de anonimato: `'full'` (solo rol) / `'semi'` (identificador) / `'nominal'` (nombre visible). Default: `'full'` |
 | `aiEnabled` | boolean | Si está activo, el formulario muestra aviso de uso de IA a los participantes. Default: `false` |
 | `assessmentCadenceWeeks` | number | Semanas de cadencia configurada (1–8). `0` = desactivado. Activa banner de recordatorio en el panel. Default: `0` |
+| `teamHealthEnabled` | boolean | **V4** Si está activo, muestra 3 preguntas opcionales de seguridad psicológica al final del formulario. Default: `false` |
+| `guidanceText` | string | **V4** Texto personalizado de guía de llenado individual en la pantalla de inicio. Vacío = texto por defecto. |
 
 Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
@@ -390,6 +420,9 @@ Acceso: lectura pública (formulario lo lee sin login), escritura solo por el pr
 | `customAnswers` | object | Respuestas a preguntas personalizadas del workspace (no afectan el scoring) |
 | `completionSeconds` | number | Segundos entre inicio de primera sección y envío (V3, opcional) |
 | `flaggedFast` | boolean | `true` si `completionSeconds < 180` — posible respuesta apresurada (V3, opcional) |
+| `teamType` | string | **V4** Tipo de equipo: `'software'` / `'knowledge'` (vacío = no especificado). Determina qué preguntas vio el participante en Excelencia Técnica. |
+| `teamHealthScore` | number | **V4** Score de seguridad psicológica (0–100%). Solo presente si el workspace tiene `teamHealthEnabled=true`. |
+| `healthAnswers` | object | **V4** Respuestas a las 3 preguntas de salud del equipo `{ health_0, health_1, health_2 }` → valores 0–3. |
 | `fecha` | timestamp | Timestamp del servidor al momento del envío |
 
 #### `planes`
@@ -531,21 +564,33 @@ Desde el panel admin se puede exportar:
 
 ---
 
-### Plan V4 — En progreso 🔄 (iniciado 2026-04-12)
+### Plan V4 — COMPLETO ✅ (2026-04-12)
 
-9 mejoras en 3 niveles de prioridad. Análisis completo en `PLAN_MEJORAS_V4.md`.
+9 mejoras en 3 niveles de prioridad. Detalle completo en `PLAN_MEJORAS_V4.md`.
 Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 | Prioridad | Mejoras | Estado |
 |-----------|---------|--------|
-| Alta | #A SM en RECS_ROLE, #B Nivel Avanzado (4ª rec), #C Pregunta impedimentos | ✅ Completada 2026-04-12 |
-| Media | #D No aplica técnico, #E Alerta score-comentario, #F Benchmark segmentado | ⏳ Pendiente |
-| Baja | #G Salud del equipo, #H Ponderación preguntas, #I Guía llenado individual | ⏳ Pendiente |
+| Alta | #A SM en RECS_ROLE, #B Nivel Avanzado (4ª rec), #C Pregunta impedimentos | ✅ Completada 2026-04-12 `4c2f8ad` |
+| Media | #D teamType no-software, #E Alerta score-comentario, #F Benchmark segmentado | ✅ Completada 2026-04-12 `6b34da4` |
+| Baja | #G Salud del equipo, #H Ponderación preguntas, #I Guía llenado individual | ✅ Completada 2026-04-12 `cb5dafc` |
 
-#### Prioridad Alta — implementada
+#### Prioridad Alta — implementada `4c2f8ad`
 
-- **#A/#B** Nivel Avanzado en recomendaciones — `getRec` actualizado con umbral `pct<=82` para idx 2 y `pct>82` para idx 3. 4ª entrada añadida a `RECS` (6 dims) y `RECS_ROLE` (PO + Dev Team + SM × 6 dims = 18 textos). Equipos Avanzado dejan de recibir recomendaciones de Maduro. Tests: 94 → 96. Commit: `4c2f8ad`
-- **#C** Pregunta de impedimentos en Transparencia — 4ª pregunta en sección Transparencia: *"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?"*. `DIMS.transparencia.max` 9 → 12. `calcResults()` ya era dinámico. ⚠ Nota: datos históricos de transparencia muestran máx. 75% (9/12) — iniciar nuevo ciclo para comparaciones válidas. Commit: `4c2f8ad`
+- **#A/#B** Nivel Avanzado en recomendaciones — `getRec` actualizado con umbral `pct<=82` para idx 2 y `pct>82` para idx 3. 4ª entrada añadida a `RECS` (6 dims) y `RECS_ROLE` (PO + Dev Team + SM × 6 dims = 18 textos). Equipos Avanzado dejan de recibir recomendaciones de Maduro. Tests: 94 → 96.
+- **#C** Pregunta de impedimentos en Transparencia — 4ª pregunta: *"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?"*. `DIMS.transparencia.max` 9 → 12. ⚠ Nota: datos históricos de transparencia muestran máx. 75% (9/12) — iniciar nuevo ciclo para comparaciones válidas.
+
+#### Prioridad Media — implementada `6b34da4`
+
+- **#D** teamType no-software — selector en pantalla de contexto del formulario. Si el equipo no es de software, la sección Excelencia Técnica muestra preguntas alternativas de calidad del trabajo de conocimiento (mismas keys `tecnico_0/1/2`). Campo `teamType` en `respuestas`. Badge "No-software" en el admin.
+- **#E** Detección de inconsistencia score-comentario — `detectCommentRisk()` keyword-based: score ≥67% + términos de riesgo en comentarios → badge ⚠ "Señal oculta" (ámbar) en histograma. Sin costo de API, sin IA.
+- **#F** Benchmark segmentado por categoría — campo `category` en `equipos`. Selector de categoría por equipo en pestaña Equipos. Benchmark org en radar usa subconjunto de misma categoría si hay ≥2; si no, fallback al benchmark org completo.
+
+#### Prioridad Baja — implementada `cb5dafc`
+
+- **#G** Salud del equipo — `HEALTH_QUESTIONS`: 3 preguntas de seguridad psicológica opcionales (activables con `teamHealthEnabled` en workspace). Score independiente `teamHealthScore` (0–100%). Badge Alta/Media/Baja en tarjeta del equipo en el admin.
+- **#H** Ponderación preguntas fundacionales — `weight: 1.5` en Sprint Goal, Product Goal, DoD y valores Scrum. Normalización a escala `DIMS.max`: `score = Math.round(wSum/wMax × dimMax)`. Sin breaking change en datos históricos ni en tests (96 tests pasan).
+- **#I** Guía de llenado individual — bloque de texto en pantalla de inicio del formulario, adaptado al `anonymityMode`. Campo `guidanceText` en workspace para personalización por coach.
 
 ---
 
@@ -626,6 +671,8 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 | `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
 | `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
 | `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
+| `cb5dafc` | Feat: salud del equipo, ponderación fundacionales 1.5x (normalizada), guía llenado individual (#G #H #I V4) |
+| `6b34da4` | Feat: teamType no-software, detectCommentRisk keywords, benchmark segmentado por categoría (#D #E #F V4) |
 | `4c2f8ad` | Feat: mejoras metodológicas — nivel Avanzado en RECS/RECS_ROLE, pregunta impedimentos en Transparencia, max 9→12 (#A #B #C V4) |
 | `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
 | `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
