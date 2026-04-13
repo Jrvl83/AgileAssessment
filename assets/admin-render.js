@@ -1,3 +1,6 @@
+// ── Escape HTML (global) ─────────────────────────────────────────
+const e = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
 // ── Toast ────────────────────────────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -2430,8 +2433,6 @@ function renderConfig() {
 
   const overrides = state.configOverrides || {};
   const custom    = state.configCustom    || {};
-
-  const e = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   const sectionCards = SECTIONS.map(sec => {
     const activeCount = sec.questions.filter((_, qi) => !((overrides[`${sec.id}_${qi}`] || {}).disabled)).length;
