@@ -365,8 +365,12 @@ function renderAIPanel(tid) {
     </div>` : '';
 
   return `
-    <div style="font-size:11px;color:var(--ink-faint);margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-      ${generadoLabel}${fromCacheBadge}${newRespsBadge}
+    <div style="font-size:11px;color:var(--ink-faint);margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
+      <span>${generadoLabel}</span>${fromCacheBadge}${newRespsBadge}
+      <button onclick="exportAnalisisPDF('${tid}')"
+        style="margin-left:auto;font-size:11px;padding:3px 10px;border-radius:6px;border:1.5px solid #dce6ff;background:white;color:#1a4fd6;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;">
+        ↓ Descargar informe
+      </button>
     </div>
     ${alertasHtml}
     ${narrativaHtml}

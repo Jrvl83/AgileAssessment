@@ -310,3 +310,170 @@ function exportPlanPDF() {
   win.focus();
   setTimeout(() => win.print(), 400);
 }
+
+// ── exportAnalisisPDF ─────────────────────────────────────────────
+// Genera un PDF limpio del informe de facilitación (análisis IA + scores).
+function exportAnalisisPDF(tid) {
+  const cf    = state.cycleFilter || 'Todos';
+  const key   = `${tid}__${cf}`;
+  const entry = state.aiAnalysis[key];
+  if (!entry || !entry.data) { toast('No hay análisis generado para exportar'); return; }
+
+  const d         = entry.data;
+  const teamName  = state.teamStats[tid]?.name || 'Equipo';
+  const ds        = getTeamFilteredStats(tid, 'Todos', cf, false);
+  const cycleLabel = cf === 'Todos' ? 'Todos los ciclos' : cf;
+  const dateStr   = new Date().toLocaleDateString('es', { day:'2-digit', month:'long', year:'numeric' });
+  const marca     = state.marca || 'Assessment de Madurez Agile';
+  const accent    = state.colorAcento || '#1a4fd6';
+
+  const DIM_LABELS = { eventos:'Ceremonias', backlog:'Product Backlog', devteam:'Dev Team',
+    transparencia:'Transparencia', tecnico:'Exc. Técnica', cliente:'Orient. Cliente' };
+  const DIM_COLORS = { eventos:'#1a4fd6', backlog:'#0d7a52', devteam:'#a05c0a',
+    transparencia:'#7c3aed', tecnico:'#0891b2', cliente:'#db2777' };
+
+  // ── Secciones ────────────────────────────────────────────────────
+  const scoreBlock = ds ? `
+    <div class="score-row">
+      <div class="score-hero">
+        <span class="score-num" style="color:${ds.level.color}">${ds.avgTotal}%</span>
+        <span class="level-badge" style="background:${ds.level.bg};color:${ds.level.color}">${ds.level.label}</span>
+      </div>
+      <div class="dim-grid">
+        ${DIMS.map(dim => {
+          const pct = ds.avgDims[dim.key]?.pct ?? 0;
+          const col = DIM_COLORS[dim.key] || accent;
+          return `<div class="dim-item">
+            <div class="dim-header">
+              <span class="dim-name">${dim.label}</span>
+              <span class="dim-pct" style="color:${col}">${pct}%</span>
+            </div>
+            <div class="dim-bar-wrap"><div class="dim-bar" style="width:${pct}%;background:${col}"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  const alertasBlock = Array.isArray(d.alertas) && d.alertas.length ? `
+    <div class="section">
+      <div class="section-label" style="color:#c0282a">⚠ Alertas</div>
+      <div class="alert-box">
+        ${d.alertas.map(a => `<div class="alert-item">⚠ ${esc(a)}</div>`).join('')}
+      </div>
+    </div>` : '';
+
+  const narrativaBlock = d.narrativa ? `
+    <div class="section">
+      <div class="section-label">Diagnóstico</div>
+      <div class="prose">${esc(d.narrativa).replace(/\n/g,'<br>')}</div>
+    </div>` : '';
+
+  const focoBlock = Array.isArray(d.focusSesion) && d.focusSesion.length ? `
+    <div class="section">
+      <div class="section-label">Dimensiones prioritarias</div>
+      ${d.focusSesion.slice(0,3).map((f, i) => {
+        const col = DIM_COLORS[f.dimension] || '#374151';
+        const lbl = DIM_LABELS[f.dimension]  || f.dimension;
+        return `<div class="foco-item">
+          <span class="foco-num" style="background:${col}">${i+1}</span>
+          <span><strong style="color:${col}">${lbl}</strong> — ${esc(f.razon || '')}</span>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const sintesisEntries = d.sintesisComentarios ? Object.entries(d.sintesisComentarios) : [];
+  const sintesisBlock = sintesisEntries.length ? `
+    <div class="section">
+      <div class="section-label">Síntesis de comentarios del equipo</div>
+      ${sintesisEntries.map(([secId, text]) => {
+        const col = DIM_COLORS[secId] || '#374151';
+        const lbl = DIM_LABELS[secId]  || secId;
+        return `<div class="sintesis-item">
+          <span class="sintesis-dim" style="color:${col}">${lbl}:</span> ${esc(text)}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const agendaBlock = d.agendaSesion ? `
+    <div class="section page-break-before">
+      <div class="section-label" style="color:${accent}">Agenda de debrief — borrador 90 min</div>
+      <div class="agenda-box">${esc(d.agendaSesion).replace(/\n/g,'<br>')}</div>
+    </div>` : '';
+
+  const resumenBlock = d.resumenEjecutivo ? `
+    <div class="section">
+      <div class="section-label" style="color:#0d7a52">Resumen ejecutivo</div>
+      <div class="resumen-box">${esc(d.resumenEjecutivo).replace(/\n/g,'<br>')}</div>
+    </div>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de Facilitación — ${teamName}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,Arial,sans-serif; color:#111827; padding:36px 44px; font-size:12px; line-height:1.6; }
+  .header { border-bottom:3px solid ${accent}; padding-bottom:14px; margin-bottom:22px; }
+  .header-eyebrow { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:${accent}; margin-bottom:6px; }
+  .header h1 { font-size:22px; font-weight:700; color:#111827; margin-bottom:3px; }
+  .header .meta { font-size:11px; color:#6b7280; }
+  .score-row { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:16px 18px; margin-bottom:18px; }
+  .score-hero { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+  .score-num { font-size:40px; font-weight:700; line-height:1; }
+  .level-badge { font-size:12px; font-weight:700; padding:4px 12px; border-radius:99px; }
+  .dim-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 24px; }
+  .dim-item { }
+  .dim-header { display:flex; justify-content:space-between; margin-bottom:3px; }
+  .dim-name { font-size:11px; color:#374151; }
+  .dim-pct { font-size:11px; font-weight:700; }
+  .dim-bar-wrap { height:6px; background:#e5e7eb; border-radius:99px; overflow:hidden; }
+  .dim-bar { height:100%; border-radius:99px; }
+  .section { margin-bottom:18px; }
+  .section-label { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#6b7280; margin-bottom:8px; }
+  .prose { font-size:12px; color:#374151; }
+  .alert-box { border-left:3px solid #c0282a; background:#fef2f2; border-radius:0 6px 6px 0; padding:10px 14px; }
+  .alert-item { font-size:12px; color:#7f1d1d; margin-bottom:4px; }
+  .alert-item:last-child { margin-bottom:0; }
+  .foco-item { display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; font-size:12px; color:#374151; }
+  .foco-num { flex-shrink:0; width:20px; height:20px; border-radius:50%; color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .sintesis-item { font-size:12px; color:#374151; margin-bottom:6px; }
+  .sintesis-dim { font-weight:700; }
+  .agenda-box { background:#f0f6ff; border:1px solid #c7d9f8; border-radius:8px; padding:14px 16px; font-size:12px; color:#1e3a5f; white-space:pre-wrap; }
+  .resumen-box { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:14px 16px; font-size:12px; color:#14532d; }
+  .footer { margin-top:24px; font-size:10px; color:#9ca3af; border-top:1px solid #e5e7eb; padding-top:10px; display:flex; justify-content:space-between; }
+  .page-break-before { page-break-before: avoid; }
+  @media print {
+    body { padding:18px 24px; }
+    .page-break-before { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-eyebrow">Informe de Facilitación · ${marca}</div>
+    <h1>${esc(teamName)}</h1>
+    <div class="meta">Ciclo: ${esc(cycleLabel)} · Generado el ${dateStr}</div>
+  </div>
+  ${scoreBlock}
+  ${resumenBlock}
+  ${alertasBlock}
+  ${focoBlock}
+  ${narrativaBlock}
+  ${sintesisBlock}
+  ${agendaBlock}
+  <div class="footer">
+    <span>${esc(marca)} · Informe de Facilitación</span>
+    <span>${esc(teamName)} · ${esc(cycleLabel)}</span>
+  </div>
+</body>
+</html>`;
+
+  function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
