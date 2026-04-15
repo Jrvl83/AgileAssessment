@@ -33,11 +33,11 @@ function getLevel(pct) {
 }
 
 // ── Guard: verifica que el llamador sea super_admin ───────────────
-async function assertSuperAdmin(request) {
-  if (!request.auth) {
+async function assertSuperAdmin(context) {
+  if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
   }
-  const doc = await db.collection('usuarios').doc(request.auth.uid).get();
+  const doc = await db.collection('usuarios').doc(context.auth.uid).get();
   if (!doc.exists || doc.data().role !== 'super_admin') {
     throw new functions.https.HttpsError('permission-denied', 'Solo el super admin puede realizar esta acción.');
   }
@@ -46,11 +46,11 @@ async function assertSuperAdmin(request) {
 // ── createWorkspaceAdmin ──────────────────────────────────────────
 // Crea la cuenta de Firebase Auth + documento en Firestore.
 // El correo de invitación lo envía el cliente con sendPasswordResetEmail.
-exports.createWorkspaceAdmin = functions.https.onCall(async (request) => {
-  await assertSuperAdmin(request);
+exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
+  await assertSuperAdmin(context);
 
-  const nombre = (request.data.nombre || '').trim();
-  const email  = (request.data.email  || '').trim();
+  const nombre = (data.nombre || '').trim();
+  const email  = (data.email  || '').trim();
 
   if (!nombre || !email) {
     throw new functions.https.HttpsError('invalid-argument', 'Nombre y email son requeridos.');
@@ -81,10 +81,10 @@ exports.createWorkspaceAdmin = functions.https.onCall(async (request) => {
 
 // ── deleteWorkspaceAdmin ──────────────────────────────────────────
 // Elimina la cuenta de Firebase Auth + el documento en Firestore.
-exports.deleteWorkspaceAdmin = functions.https.onCall(async (request) => {
-  await assertSuperAdmin(request);
+exports.deleteWorkspaceAdmin = functions.https.onCall(async (data, context) => {
+  await assertSuperAdmin(context);
 
-  const uid = (request.data.uid || '').trim();
+  const uid = (data.uid || '').trim();
   if (!uid) {
     throw new functions.https.HttpsError('invalid-argument', 'UID requerido.');
   }
@@ -107,20 +107,20 @@ exports.deleteWorkspaceAdmin = functions.https.onCall(async (request) => {
 
 // ── dispatchWebhook ───────────────────────────────────────────────
 // Lee webhookUrl del workspace del llamador y hace POST con el payload.
-exports.dispatchWebhook = functions.https.onCall(async (request) => {
-  if (!request.auth) {
+exports.dispatchWebhook = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
   }
-  const uid = request.auth.uid;
+  const uid = context.auth.uid;
   const wsDoc = await db.collection('workspaces').doc(uid).get();
   const webhookUrl = wsDoc.exists ? wsDoc.data().webhookUrl : null;
   if (!webhookUrl) return { skipped: true };
 
   const payload = {
-    event:       request.data.event,
+    event:       data.event,
     timestamp:   new Date().toISOString(),
     workspaceId: uid,
-    data:        request.data.payload || {}
+    data:        data.payload || {}
   };
 
   try {
@@ -332,17 +332,17 @@ Solo con el JSON. Sin explicaciones adicionales.`;
 // Output: { data, fromCache, newResponsesCount }
 exports.analyzeTeamWithClaude = functions
   .runWith({ secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 60 })
-  .https.onCall(async (request) => {
-    if (!request.auth) {
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
     }
 
-    const ownerId           = request.auth.uid;
-    const teamId            = (request.data.teamId            || '').trim();
-    const ciclo             = (request.data.ciclo             || '').trim() || null;
-    const contextoCoach     = (request.data.contextoCoach     || '').trim() || null;
-    const documentoContexto = (request.data.documentoContexto || '').trim() || null;
-    const images            = Array.isArray(request.data.images) ? request.data.images : null;
+    const ownerId           = context.auth.uid;
+    const teamId            = (data.teamId            || '').trim();
+    const ciclo             = (data.ciclo             || '').trim() || null;
+    const contextoCoach     = (data.contextoCoach     || '').trim() || null;
+    const documentoContexto = (data.documentoContexto || '').trim() || null;
+    const images            = Array.isArray(data.images) ? data.images : null;
 
     if (!teamId) {
       throw new functions.https.HttpsError('invalid-argument', 'teamId es requerido.');
