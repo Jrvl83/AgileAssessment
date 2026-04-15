@@ -331,8 +331,9 @@ Solo con el JSON. Sin explicaciones adicionales.`;
 // Input: { teamId, ciclo }   ciclo puede ser null/'Todos' o un nombre de ciclo.
 // Output: { data, fromCache, newResponsesCount }
 exports.analyzeTeamWithClaude = functions
-  .runWith({ secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 60 })
+  .runWith({ secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 300, memory: '512MB' })
   .https.onCall(async (data, context) => {
+    try {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
     }
@@ -443,4 +444,8 @@ exports.analyzeTeamWithClaude = functions
     await cacheRef.set(parsed);
 
     return { data: parsed, fromCache: false, newResponsesCount: 0 };
+    } catch (e) {
+      if (e instanceof functions.https.HttpsError) throw e;
+      throw new functions.https.HttpsError('internal', e.message || 'Error inesperado');
+    }
   });
