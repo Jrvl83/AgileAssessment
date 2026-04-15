@@ -34,8 +34,8 @@ AssessmentAgile/
 │   ├── admin.css           # Todos los estilos del panel admin
 │   ├── admin-state.js      # Firebase init + variables de estado globales
 │   ├── admin-api.js        # Funciones Firestore + helpers de cálculo, estadísticas y generateReport
-│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR, showReportLink
-│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF, exportPPT
+│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR, showReportLink, toggleTeamAI, callAnalyzeTeamWithClaude, renderAIPanel
+│   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF, exportPPT, exportAnalisisPDF
 │   └── admin-auth.js       # login, logout, onAuthStateChanged
 ├── firebase.json           # Configuración de hosting, firestore y functions
 ├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
@@ -52,8 +52,8 @@ AssessmentAgile/
 │   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (50 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
-│   ├── index.js            # Cloud Functions: createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam
-│   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22)
+│   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB
+│   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22), @anthropic-ai/sdk
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
@@ -125,7 +125,7 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 | Pestaña | Disponible para | Función |
 |---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark — org o por categoría si hay ≥2 equipos de la misma categoría), delta "+N% org/categoría" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables (4 niveles: Inicial/En desarrollo/Maduro/Avanzado), histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas) y badge ⚠ "Señal oculta" (inconsistencia score-comentario), badge "No-software" en Excelencia Técnica si el equipo usa preguntas alternativas, badge de salud del equipo (Alta/Media/Baja si `teamHealthEnabled`), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV |
+| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark — org o por categoría si hay ≥2 equipos de la misma categoría), delta "+N% org/categoría" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables (4 niveles: Inicial/En desarrollo/Maduro/Avanzado), histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas) y badge ⚠ "Señal oculta" (inconsistencia score-comentario), badge "No-software" en Excelencia Técnica si el equipo usa preguntas alternativas, badge de salud del equipo (Alta/Media/Baja si `teamHealthEnabled`), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV; sección colapsable "Análisis con IA" (misma lógica collapse-section que Recomendaciones y Detalle) con botón "↓ Descargar informe" que genera PDF "Informe de Facilitación" (`exportAnalisisPDF`) |
 | **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
 | **Equipos** | Todos | Alta, baja y activación de equipos; selector de categoría (Software/Conocimiento/Operaciones/Otro); botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
 | **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
@@ -487,6 +487,7 @@ Desde el panel admin se puede exportar:
 |---------|-----------|
 | **PDF análisis** | Reporte de análisis completo (impresión optimizada vía `window.print()`) |
 | **PDF plan de acción** | Acciones agrupadas por estado (En curso → Pendiente → Completado) en ventana nueva |
+| **PDF Informe de Facilitación** | Generado por `exportAnalisisPDF(tid)` en `admin-export.js`. Incluye: score + nivel + barras por dimensión, resumen ejecutivo, alertas, dimensiones prioritarias, narrativa, síntesis de comentarios y agenda de debrief. Botón "↓ Descargar informe" en el panel de Análisis con IA. |
 | **Reporte compartible** | Link `reporte.html?t=TOKEN` — snapshot público sin login, válido 30 días, con botón "↓ Descargar PDF" |
 | **CSV resumen** | Promedio por equipo y dimensión |
 | **CSV detalle** | Todas las respuestas individuales con metadatos |
@@ -634,6 +635,36 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 ---
 
+### Post-V4 — Correcciones y mejoras (2026-04-14)
+
+#### Correcciones de bugs
+
+| Bug | Causa raíz | Fix |
+|-----|-----------|-----|
+| `analyzeTeamWithClaude` devuelve 401 "No autenticado" | Todos los handlers de CF usaban la firma de v2 `(request)` con `request.auth` / `request.data`, pero el import era `firebase-functions/v1`. En v1, el primer parámetro es directamente el payload de datos — `request.auth` siempre era `undefined`. | Cambiados todos los handlers a la firma v1 `(data, context)` — `context.auth` para autenticación y `data.campo` para los parámetros. `assertSuperAdmin` recibe `context`. Afecta: `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `dispatchWebhook`, `analyzeTeamWithClaude`. |
+| "Unterminated string in JSON at position 3301" | `max_tokens: 1024` demasiado bajo para la respuesta JSON de 6 campos de Claude — la respuesta era truncada en mitad de un string. | `max_tokens: 4096`. |
+| Error de CORS policy en `analyzeTeamWithClaude` | Con 4096 tokens, la llamada a la API de Anthropic excedía el timeout de 60 s. Firebase mata el proceso sin enviar ninguna respuesta HTTP — el navegador interpreta la falta de cabeceras CORS como un error de política. | `timeoutSeconds: 300`, `memory: '512MB'` en el `runWith` de la función. Añadido try-catch global para que siempre se emita un `HttpsError` aunque el proceso tarde. |
+| Pills de rol muestran el total de todos los ciclos cuando hay filtro de ciclo activo | `roleCounts` se calculaba a partir de `teamResps` (sin filtrar por ciclo). `filteredByCycle` se declaraba después y no se usaba en los conteos. | Reordenadas las declaraciones en el render: `filteredByCycle` se calcula primero, y `roleCounts` / `filteredRoleCounts` se calculan a partir de `filteredByCycle`. |
+
+#### Nuevas funcionalidades
+
+**Sección "Análisis con IA" colapsable** — la sección se puede ocultar/mostrar igual que Recomendaciones y Detalle por pregunta. Usa el mismo patrón `collapse-section` / `collapse-toggle` / `collapse-body`. Estado por equipo en `state.teamAIExpanded[tid]` (objeto en `admin-state.js`). Función `toggleTeamAI(tid)` en `admin-render.js`. El header muestra badge de estado (✓/!/…) y chevron ▲/▼.
+
+**PDF "Informe de Facilitación"** — función `exportAnalisisPDF(tid)` en `admin-export.js`. Abre una ventana limpia y genera un documento HTML estructurado con: header de marca, score + nivel + barras de dimensiones, resumen ejecutivo, alertas, dimensiones prioritarias, narrativa completa, síntesis de comentarios y agenda de debrief de 90 min. Botón "↓ Descargar informe" en el panel de Análisis con IA (alineado a la derecha). Mismo patrón de `window.print()` que `exportPlanPDF`.
+
+**Seed V5 — 4 equipos con perfiles diferenciados** — reescritura completa de `seed-data.js`. Cada equipo tiene 1 SM (índice 0) + 1 PO (índice 1) + N devs:
+
+| Equipo | Devs | Tipo | Modalidad | Ciclos | Trayectoria |
+|--------|------|------|-----------|--------|-------------|
+| Fénix | 3 | Software | Remoto | Q1–Q3 | 44% → 60% → 71% (En desarrollo → Maduro) |
+| Orión | 5 | Software | Presencial | Q1–Q3 | 70% → 76% → 81% (Maduro estable) |
+| Titán | 8 | Software | Híbrido | Q1–Q3 | 32% → 40% → 52% (Inicial → En desarrollo) |
+| Nova | 7 | Conocimiento | Híbrido | Q2–Q3 | — → 55% → 73% (En desarrollo → Maduro) |
+
+12 planes de acción (3 por equipo). Titán tiene un plan con `updatedByTeam: true`. Fénix Q3 SM incluye comentario con "teatro" → activa badge ⚠ "Señal oculta". Los conteos correctos en vista "Todos" son: Orión SM=3/PO=3/Dev=15 (3 ciclos × 1/1/5).
+
+---
+
 ## Historial de versiones (commits clave)
 
 | Commit | Descripción |
@@ -671,6 +702,13 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 | `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
 | `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
 | `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
+| `9996d30` | Fix: role pill counts respetan filtro de ciclo — filteredByCycle calculado antes de roleCounts |
+| `7e7a8e4` | Feat: seed-data.js V5 — 4 equipos (Fénix/Orión/Titán/Nova), SM+PO+devs diferenciados, 3 ciclos, 12 planes |
+| `f383b75` | Feat: exportAnalisisPDF — PDF "Informe de Facilitación" con score, dimensiones, narrativa, alertas, agenda |
+| `fb3e5d7` | Feat: sección IA colapsable — teamAIExpanded en state, toggleTeamAI, collapse-section en renderAIPanel |
+| `d1627dc` | Fix: CF analyzeTeamWithClaude CORS — timeoutSeconds:300, memory:512MB, try-catch global |
+| `8dbd22b` | Fix: CF analyzeTeamWithClaude max_tokens 1024→4096 — evita truncamiento de JSON |
+| `805d850` | Fix: CF analyzeTeamWithClaude — firma v1 (data,context) en todos los handlers; context.auth para autenticación |
 | `cb5dafc` | Feat: salud del equipo, ponderación fundacionales 1.5x (normalizada), guía llenado individual (#G #H #I V4) |
 | `6b34da4` | Feat: teamType no-software, detectCommentRisk keywords, benchmark segmentado por categoría (#D #E #F V4) |
 | `4c2f8ad` | Feat: mejoras metodológicas — nivel Avanzado en RECS/RECS_ROLE, pregunta impedimentos en Transparencia, max 9→12 (#A #B #C V4) |
