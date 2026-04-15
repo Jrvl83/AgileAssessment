@@ -426,7 +426,7 @@ exports.analyzeTeamWithClaude = functions
       }
       const message = await anthropic.messages.create({
         model:      'claude-sonnet-4-6',
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages:   [{ role: 'user', content: msgContent }],
       });
       const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
