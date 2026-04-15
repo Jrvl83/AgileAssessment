@@ -35,6 +35,11 @@ function toggleTeamRecs(tid) {
   render();
 }
 
+function toggleTeamAI(tid) {
+  state.teamAIExpanded[tid] = !state.teamAIExpanded[tid];
+  render();
+}
+
 function toggleTeamDetail(tid) {
   state.teamDetailExpanded[tid] = !state.teamDetailExpanded[tid];
   render();
@@ -1213,6 +1218,7 @@ function renderAnalysis() {
         window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: radarBenchmark };
 
         const recsExpanded      = !!state.teamRecsExpanded[tid];
+        const aiExpanded        = !!state.teamAIExpanded[tid];
         const detailExpanded    = !!state.teamDetailExpanded[tid];
         const commentsExpanded  = !!state.teamCommentsExpanded[tid];
         const recCount = lowDims.length;
@@ -1381,10 +1387,23 @@ function renderAnalysis() {
               const ctxVal = (state.aiContext[aiKey] !== undefined
                 ? state.aiContext[aiKey]
                 : (aiEntry && aiEntry.data && aiEntry.data.contextoCoach) || '');
+              const aiBadge = isLoading
+                ? `<span class="collapse-count" style="background:#1a4fd6;color:#fff;">…</span>`
+                : hasData
+                  ? `<span class="collapse-count" style="background:#d4f0e5;color:#0d7a52;">✓</span>`
+                  : hasError
+                    ? `<span class="collapse-count" style="background:#fce8e8;color:#c0282a;">!</span>`
+                    : '';
               return `
-              <div class="no-print" style="border:1.5px solid #1a4fd6;border-radius:var(--radius-sm);margin-bottom:8px;overflow:hidden;">
+              <div class="collapse-section no-print">
+                <button class="collapse-toggle" onclick="toggleTeamAI('${tid}')" style="color:#1a4fd6;">
+                  <span class="collapse-toggle-label" style="color:#1a4fd6;">Análisis con IA ${aiBadge}</span>
+                  <span class="collapse-chevron">${aiExpanded ? '▲' : '▼'}</span>
+                </button>
+              ${aiExpanded ? `<div class="collapse-body">
+              <div style="border:1.5px solid #dce6ff;border-radius:var(--radius-sm);overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0f5ff;">
-                  <span style="font-size:12px;font-weight:700;color:#1a4fd6;">Análisis con IA</span>
+                  <span style="font-size:12px;font-weight:700;color:#1a4fd6;">Analizar con IA</span>
                   <button
                     onclick="${!btnDisabled ? `callAnalyzeTeamWithClaude('${tid}')` : ''}"
                     ${btnDisabled ? 'disabled' : ''}
@@ -1467,6 +1486,8 @@ function renderAnalysis() {
                 <div style="padding:12px 14px;border-top:1px solid #dce6ff;">
                   ${renderAIPanel(tid)}
                 </div>` : ''}
+              </div>
+              </div>` : ''}
               </div>`;
             })() : ''}
             <div class="collapse-section">

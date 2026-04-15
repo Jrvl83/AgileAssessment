@@ -52,6 +52,7 @@ const state = {
   teamDetailExpanded:  {},
   teamCommentsExpanded:{},
   teamGapsExpanded:    {},
+  teamAIExpanded:      {},
   newPlanDimension:   '',
   excludeOtro:        false,
   reports:            [],
