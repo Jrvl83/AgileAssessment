@@ -1123,17 +1123,18 @@ function renderAnalysis() {
         const selectedRole = state.teamRoleFilter[tid] || 'Todos';
         const teamResps = state.responses.filter(r => (r.fields.Equipo || []).includes(tid));
         const teamAvailRoles = [...new Set(teamResps.map(r => r.fields.Rol).filter(Boolean))].sort();
-        const roleCounts = {
-          'Todos': state.excludeOtro
-            ? teamResps.filter(r => r.fields.Rol !== 'Otro').length
-            : teamResps.length
-        };
-        teamAvailRoles.forEach(r => { roleCounts[r] = teamResps.filter(x => x.fields.Rol === r).length; });
         const filteredByCycle = teamResps.filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter);
         const filteredRoleCounts = {};
         filteredByCycle.forEach(r => {
           if (r.fields.Rol) filteredRoleCounts[r.fields.Rol] = (filteredRoleCounts[r.fields.Rol] || 0) + 1;
         });
+        // roleCounts usa el ciclo activo para que las pills muestren el conteo filtrado
+        const roleCounts = {
+          'Todos': state.excludeOtro
+            ? filteredByCycle.filter(r => r.fields.Rol !== 'Otro').length
+            : filteredByCycle.length
+        };
+        teamAvailRoles.forEach(r => { roleCounts[r] = filteredRoleCounts[r] || 0; });
         const anonWarning = selectedRole !== 'Todos' && (filteredRoleCounts[selectedRole] || 0) < MIN_ROLE_RESPONSES;
 
         const rolePills = ['Todos', ...teamAvailRoles].map(r => {
