@@ -102,7 +102,7 @@ async function handleDocxUpload(key, input) {
       if (statusEl) {
         statusEl.innerHTML = truncated
           ? `<span style="color:#a05c0a;">⚠ Se usarán los primeros ${DOC_CHAR_LIMIT.toLocaleString()} caracteres (documento excede el límite de ~5 páginas).</span>`
-          : `<span style="color:#0d7a52;">✓ ${file.name} · ${text.length.toLocaleString()} caracteres listos para el análisis.</span>`;
+          : `<span style="color:#0d7a52;">✓ ${e(file.name)} · ${text.length.toLocaleString()} caracteres listos para el análisis.</span>`;
       }
     } catch (err) {
       if (statusEl) statusEl.textContent = '✕ No se pudo leer el documento. Verifica que sea un archivo .docx válido.';
@@ -147,7 +147,7 @@ async function handleImageUpload(key, input) {
   for (const file of toProcess) {
     if (file.size > IMG_MAX_SIZE) {
       if (statusEl) statusEl.innerHTML =
-        `<span style="color:#c0282a;">✕ "${file.name}" supera el límite de 2 MB — omitida.</span>`;
+        `<span style="color:#c0282a;">✕ "${e(file.name)}" supera el límite de 2 MB — omitida.</span>`;
       continue;
     }
     const mediaType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
@@ -227,7 +227,7 @@ function showCloseCycleModal(cycleId, cycleName) {
 
   const noRespHtml = noResp.length
     ? `<div style="margin-top:12px;padding:10px 12px;background:#fdefd6;border-radius:6px;font-size:12px;color:#a05c0a;">
-        <strong>Sin respuestas este ciclo:</strong> ${noResp.map(t => t.name).join(', ')}
+        <strong>Sin respuestas este ciclo:</strong> ${noResp.map(t => e(t.name)).join(', ')}
        </div>` : '';
 
   const safeEscName = cycleName.replace(/"/g, '&quot;').replace(/'/g, "\\'");
@@ -236,7 +236,7 @@ function showCloseCycleModal(cycleId, cycleName) {
   modal.innerHTML = `
     <div style="background:white;border-radius:14px;padding:32px;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.22);">
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#c0282a;margin-bottom:8px;">Cierre de ciclo</div>
-      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);margin-bottom:4px;">${cycleName}</h3>
+      <h3 style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--ink);margin-bottom:4px;">${e(cycleName)}</h3>
       <p style="font-size:13px;color:var(--ink-muted);margin-bottom:18px;line-height:1.6;">
         El ciclo se marcará como <strong>cerrado</strong>. Los portales del equipo se sincronizarán con los datos finales y se registrará el evento en el webhook si está configurado.
       </p>
@@ -2222,7 +2222,7 @@ function showReportLink(url, teamName, ciclo) {
         <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
       <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
-        Link de <strong>solo lectura</strong> para <strong>${teamName}${cicloLabel}</strong>.
+        Link de <strong>solo lectura</strong> para <strong>${e(teamName)}${e(cicloLabel)}</strong>.
         Sin login ni controles de edición. Válido 30 días.
       </div>
       <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
@@ -2246,7 +2246,7 @@ function showPortalLink(url, teamName) {
         <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
       <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
-        Link permanente de <strong>solo lectura</strong> para <strong>${teamName}</strong>.<br>
+        Link permanente de <strong>solo lectura</strong> para <strong>${e(teamName)}</strong>.<br>
         El equipo puede ver sus resultados, evolución histórica y plan de acción.
       </div>
       <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
@@ -2282,7 +2282,7 @@ function showQR(teamId, teamName) {
         <div style="font-size:16px;font-weight:600;color:var(--ink);">Compartir assessment</div>
         <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
-      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:20px;">Comparte este QR con el equipo <strong>${teamName}</strong> para que accedan al assessment con el equipo pre-seleccionado.</div>
+      <div style="font-size:13px;color:var(--ink-muted);margin-bottom:20px;">Comparte este QR con el equipo <strong>${e(teamName)}</strong> para que accedan al assessment con el equipo pre-seleccionado.</div>
       <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:20px;"></div>
       <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;color:var(--ink-muted);word-break:break-all;margin-bottom:16px;">${url}</div>
       <div style="display:flex;gap:8px;">
