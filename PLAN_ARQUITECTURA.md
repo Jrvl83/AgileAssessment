@@ -1,5 +1,7 @@
 # Plan de Arquitectura — Bases Sólidas para Escalar
 
+> **Relación con `DEUDA_TECNICA.md`:** este documento organiza las mejoras estratégicas (9 ítems grandes). Los hallazgos tácticos y ongoing de auditorías viven en `DEUDA_TECNICA.md`. Cuando un ítem D# sea sub-tema de uno de estos 9, se referencia explícitamente.
+
 ## Contexto
 
 La herramienta funciona correctamente como MVP pero tiene deuda técnica que se convierte en riesgo real al escalar. Este plan organiza las mejoras por prioridad: primero lo que es un riesgo activo, luego lo que bloquea el crecimiento, finalmente lo que mejora la mantenibilidad a largo plazo.
@@ -330,7 +332,7 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 | 3 — Separar en archivos | ✅ Completado | `assets/` con admin.css, admin-state.js, admin-api.js, admin-render.js, admin-export.js, admin-auth.js |
 | 4 — Framework de componentes | Pendiente | |
 | 5 — Estado centralizado | ✅ Completado | `state` object + `setState(patch)` en admin-state.js; render() solo se llama desde setState |
-| 6 — Tests | ✅ Completado | Vitest; 59 tests en `tests/scoring.test.js`, `analysis.test.js`, `evolution.test.js`; CJS stubs en `assessment-config.js` y `admin-api.js` |
+| 6 — Tests | ✅ Completado (alcance parcial) | Vitest; **96 tests** en `tests/scoring.test.js` (27), `analysis.test.js` (52), `evolution.test.js` (17); CJS stubs en `assessment-config.js` y `admin-api.js`. Cobertura limitada a lógica pura — faltan tests de `render()`, auth y Cloud Functions (ver `DEUDA_TECNICA.md` ítem D6). |
 | 7 — CI/CD | ✅ Completado | `.github/workflows/deploy.yml`: job `test` (lint+vitest, push+PRs) → job `deploy` (solo push a main); requiere secret `FIREBASE_TOKEN` |
 | 8 — Paginación | Pendiente | |
 | 9 — Auditoría | Pendiente | |

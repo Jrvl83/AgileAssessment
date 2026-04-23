@@ -39,17 +39,19 @@ AssessmentAgile/
 │   └── admin-auth.js       # login, logout, onAuthStateChanged
 ├── firebase.json           # Configuración de hosting, firestore y functions
 ├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
-├── package.json            # devDependencies: vitest, eslint, firebase-tools
+├── package.json            # devDependencies: vitest, eslint, prettier, simple-git-hooks, lint-staged, firebase-tools
 ├── vitest.config.js        # Configuración de tests
-├── .eslintrc.json          # ESLint: eslint:recommended, browser env, sintaxis JS
+├── .eslintrc.json          # ESLint: eslint:recommended, browser env, no-var, prefer-const, eqeqeq smart
+├── .prettierrc.json        # Prettier: singleQuote, 2-space, printWidth 120, endOfLine auto
+├── .prettierignore         # Excluye node_modules, dist y package-lock
 ├── .gitignore              # Ignora node_modules/, .firebase/, *.docx
 ├── .github/
 │   └── workflows/
 │       └── deploy.yml      # CI/CD: lint+tests en PRs, deploy en main
 ├── tests/
 │   ├── setup.js            # Globals: DIMS, COACHING_QUESTIONS, MIN_ROLE_RESPONSES, getLevel, state, render stubs
-│   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (25 tests)
-│   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (50 tests)
+│   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (27 tests)
+│   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (52 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
 │   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB
@@ -59,6 +61,8 @@ PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
 PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — completado 2026-04-12
 PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento (completo)
+PLAN_ARQUITECTURA.md        # Plan estratégico de deuda técnica — 9 ítems (Vue 3, paginación, auditoría pendientes)
+DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos de auditorías
 ```
 
 ### Routing (firebase.json)
@@ -702,6 +706,8 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 | `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
 | `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
 | `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
+| `abfee42` | Fix: escapar HTML en 7 interpolaciones user-controlled de admin-render (auditoría XSS) |
+| `04caac9` | Chore: endurecer ESLint (no-var, prefer-const, eqeqeq) + Prettier 3.8.3 + pre-commit hook (simple-git-hooks + lint-staged) |
 | `9996d30` | Fix: role pill counts respetan filtro de ciclo — filteredByCycle calculado antes de roleCounts |
 | `7e7a8e4` | Feat: seed-data.js V5 — 4 equipos (Fénix/Orión/Titán/Nova), SM+PO+devs diferenciados, 3 ciclos, 12 planes |
 | `f383b75` | Feat: exportAnalisisPDF — PDF "Informe de Facilitación" con score, dimensiones, narrativa, alertas, agenda |
@@ -729,7 +735,7 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 | `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
 | (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
 | (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
-| (anterior) | Tests: suite Vitest — 92 tests en scoring (25), analysis (50) y evolution (17) |
+| (anterior) | Tests: suite Vitest — 96 tests en scoring (27), analysis (52) y evolution (17) |
 | (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)` |
 | (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
 | (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
