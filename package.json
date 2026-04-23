@@ -3,13 +3,28 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "lint": "eslint assets/ assessment-config.js",
+    "lint": "eslint assets/ assessment-config.js tests/",
+    "format": "prettier --write",
+    "format:check": "prettier --check",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx lint-staged"
+  },
+  "lint-staged": {
+    "assets/**/*.js": "eslint",
+    "tests/**/*.js": "eslint",
+    "assessment-config.js": "eslint",
+    "*.{json,yml,yaml}": "prettier --check"
   },
   "devDependencies": {
     "eslint": "^8.57.1",
     "firebase-tools": "^13.0.0",
+    "lint-staged": "16.4.0",
+    "prettier": "3.8.3",
+    "simple-git-hooks": "2.13.1",
     "vitest": "^2.0.0"
   }
 }

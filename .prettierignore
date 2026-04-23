@@ -1,0 +1,7 @@
+node_modules/
+functions/node_modules/
+functions/lib/
+.firebase/
+*.min.js
+package-lock.json
+functions/package-lock.json
