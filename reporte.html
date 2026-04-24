@@ -84,6 +84,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="assets/escape.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
@@ -132,10 +133,8 @@ function renderReport(r) {
   const eyebrow = document.querySelector('.header-eyebrow');
   if (eyebrow && branding.marca) eyebrow.textContent = branding.marca;
   if (branding.logoUrl) {
-    const safeUrl = branding.logoUrl.replace(/"/g, '%22');
-    const safeAlt = (branding.marca || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const titleEl = document.getElementById('report-title');
-    if (titleEl) titleEl.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span>${r.equipoNombre.replace(/</g,'&lt;')}</span>`;
+    if (titleEl) titleEl.innerHTML = `<img src="${e(branding.logoUrl)}" alt="${e(branding.marca || '')}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span>${e(r.equipoNombre)}</span>`;
   } else {
     document.getElementById('report-title').textContent = r.equipoNombre;
   }

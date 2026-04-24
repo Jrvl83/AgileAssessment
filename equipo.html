@@ -63,6 +63,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="assets/escape.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
@@ -85,9 +86,7 @@ let _radarChart = null;
 let _planStates = {}; // optimistic local overrides mientras Firestore procesa
 let _portalToken = null;
 
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+// e() → assets/escape.js
 
 function levelColor(pct) {
   return pct >= 83 ? '#0d7a52' : pct >= 66 ? '#1a4fd6' : pct >= 41 ? '#a05c0a' : '#c0282a';
@@ -104,11 +103,9 @@ function applyBranding(branding) {
   const eyebrow = document.getElementById('portal-eyebrow');
   if (branding.marca && eyebrow) eyebrow.textContent = branding.marca;
   if (branding.logoUrl) {
-    const safeUrl = branding.logoUrl.replace(/"/g, '%22');
-    const safeAlt = esc(branding.marca || '');
     const titleEl = document.getElementById('portal-title');
     if (titleEl) {
-      titleEl.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span id="portal-team-name"></span>`;
+      titleEl.innerHTML = `<img src="${e(branding.logoUrl)}" alt="${e(branding.marca || '')}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span id="portal-team-name"></span>`;
     }
   }
 }
@@ -130,7 +127,7 @@ function renderPortal(portal) {
             ${level ? `<span class="level-badge" style="background:${level.bg};color:${level.color}">${level.label}</span>` : ''}
           </div>
           <div style="margin-top:10px;font-size:12px;color:var(--ink-faint);">${d.count} respuesta${d.count !== 1 ? 's' : ''}</div>
-          ${d.activeCycle ? `<div style="margin-top:4px;font-size:12px;color:var(--ink-faint);">Ciclo activo: ${esc(d.activeCycle)}</div>` : ''}
+          ${d.activeCycle ? `<div style="margin-top:4px;font-size:12px;color:var(--ink-faint);">Ciclo activo: ${e(d.activeCycle)}</div>` : ''}
           ${level && level.desc ? `<div style="margin-top:12px;font-size:13px;color:var(--ink-muted);line-height:1.5;">${level.desc}</div>` : ''}
         </div>
         <div style="flex:0 0 auto;width:220px;">
@@ -142,7 +139,7 @@ function renderPortal(portal) {
       <div style="text-align:center;padding:24px 0;">
         <div style="font-size:32px;margin-bottom:12px;">📊</div>
         <div style="font-size:14px;color:var(--ink-muted);">No hay respuestas registradas todavía.<br>Completa el assessment para ver los resultados.</div>
-        ${d.activeCycle ? `<div style="margin-top:12px;font-size:13px;font-weight:500;color:var(--accent);">Ciclo activo: ${esc(d.activeCycle)}</div>` : ''}
+        ${d.activeCycle ? `<div style="margin-top:12px;font-size:13px;font-weight:500;color:var(--accent);">Ciclo activo: ${e(d.activeCycle)}</div>` : ''}
       </div>
     </div>`;
 
@@ -155,7 +152,7 @@ function renderPortal(portal) {
         return `
           <div class="dim-row">
             <div class="dim-row-header">
-              <span class="dim-label" style="color:${dim.color}">${esc(dim.label)}</span>
+              <span class="dim-label" style="color:${dim.color}">${e(dim.label)}</span>
               <span class="dim-pct" style="color:${dim.color}">${dp.pct}%</span>
             </div>
             <div class="dim-bar-wrap">
@@ -170,22 +167,22 @@ function renderPortal(portal) {
   const evolSection = evol.length >= 2 ? `
     <div class="section-card">
       <div class="section-title">Evolución histórica</div>
-      ${evol.map((e, i) => {
+      ${evol.map((ev, i) => {
         const prev = i > 0 ? evol[i-1].avgTotal : null;
-        const delta = prev !== null ? e.avgTotal - prev : null;
-        const col = levelColor(e.avgTotal);
+        const delta = prev !== null ? ev.avgTotal - prev : null;
+        const col = levelColor(ev.avgTotal);
         const deltaHtml = delta !== null
           ? `<span style="font-size:11px;font-weight:600;color:${delta >= 0 ? '#0d7a52' : '#c0282a'};">${delta >= 0 ? '▲ +' : '▼ '}${delta}%</span>`
           : '';
         return `
           <div class="evol-row">
-            <div style="width:110px;font-size:13px;font-weight:500;flex-shrink:0;">${esc(e.cycleName)}</div>
+            <div style="width:110px;font-size:13px;font-weight:500;flex-shrink:0;">${e(ev.cycleName)}</div>
             <div style="flex:1;min-width:80px;background:var(--surface-2);border-radius:99px;height:8px;overflow:hidden;">
-              <div style="width:${e.avgTotal}%;height:100%;background:${col};border-radius:99px;"></div>
+              <div style="width:${ev.avgTotal}%;height:100%;background:${col};border-radius:99px;"></div>
             </div>
-            <div style="font-size:13px;font-weight:600;width:44px;text-align:right;flex-shrink:0;color:${col};">${e.avgTotal}%</div>
+            <div style="font-size:13px;font-weight:600;width:44px;text-align:right;flex-shrink:0;color:${col};">${ev.avgTotal}%</div>
             <div style="width:64px;flex-shrink:0;text-align:right;">${deltaHtml}</div>
-            <div style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${e.count} resp.</div>
+            <div style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${ev.count} resp.</div>
           </div>`;
       }).join('')}
     </div>` : '';
@@ -201,16 +198,16 @@ function renderPortal(portal) {
         const st = PLAN_STATE[currentEstado] || PLAN_STATE['pendiente'];
         const otherStates = Object.entries(PLAN_STATE).filter(([k]) => k !== currentEstado);
         const fechaHtml = p.fechaObjetivo
-          ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${esc(p.fechaObjetivo)}</span>`
+          ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${e(p.fechaObjetivo)}</span>`
           : '';
         const respHtml = p.responsable
-          ? `<span style="font-size:11px;color:var(--ink-muted);">${esc(p.responsable)}</span>`
+          ? `<span style="font-size:11px;color:var(--ink-muted);">${e(p.responsable)}</span>`
           : '';
         const dimHtml = p.dimension
-          ? `<span style="font-size:10px;color:var(--ink-faint);margin-left:6px;">${esc(p.dimension)}</span>`
+          ? `<span style="font-size:10px;color:var(--ink-faint);margin-left:6px;">${e(p.dimension)}</span>`
           : '';
         const cicloHtml = p.ciclo
-          ? `<span style="font-size:10px;color:var(--ink-faint);">${esc(p.ciclo)}</span>`
+          ? `<span style="font-size:10px;color:var(--ink-faint);">${e(p.ciclo)}</span>`
           : '';
         const updatedBadge = (_planStates[p.id] || {}).saving
           ? `<span style="font-size:10px;color:var(--ink-faint);">Guardando…</span>`
@@ -224,7 +221,7 @@ function renderPortal(portal) {
               ${updatedBadge}
             </div>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:13px;font-weight:500;line-height:1.4;">${esc(p.iniciativa)}${dimHtml}</div>
+              <div style="font-size:13px;font-weight:500;line-height:1.4;">${e(p.iniciativa)}${dimHtml}</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center;">${respHtml}${fechaHtml}${cicloHtml}</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
                 ${otherStates.map(([k, v]) => `<button onclick="changePlanStatus('${p.id}','${k}')"

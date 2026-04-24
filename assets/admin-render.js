@@ -1,5 +1,4 @@
-// ── Escape HTML (global) ─────────────────────────────────────────
-const e = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// e() → assets/escape.js (cargado antes de este archivo en admin.html)
 
 // ── Toast ────────────────────────────────────────────────────────
 function toast(msg) {

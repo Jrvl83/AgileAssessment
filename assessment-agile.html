@@ -432,6 +432,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="assets/escape.js"></script>
 <script src="assessment-config.js"></script>
 <script>
 // ── Firebase config ──────────────────────────────────────────────
@@ -539,9 +540,7 @@ async function loadTeams() {
       if (eyebrow && wsData.marca) eyebrow.textContent = wsData.marca;
       if (h1) {
         if (wsData.logoUrl) {
-          const safeUrl = wsData.logoUrl.replace(/"/g, '%22');
-          const safeAlt = (wsData.marca || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          h1.innerHTML = `<img src="${safeUrl}" alt="${safeAlt}" style="max-height:48px;max-width:200px;object-fit:contain;display:block;">`;
+          h1.innerHTML = `<img src="${e(wsData.logoUrl)}" alt="${e(wsData.marca || '')}" style="max-height:48px;max-width:200px;object-fit:contain;display:block;">`;
         } else if (wsData.marca) {
           h1.textContent = wsData.marca;
         }
@@ -642,11 +641,10 @@ function calcResults() {
 }
 
 function renderBriefing() {
-  const escaped = briefingTexto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   return `
     <div style="padding:8px 0;">
       <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">Antes de comenzar</div>
-      <div style="font-size:16px;line-height:1.75;color:var(--ink-muted);white-space:pre-wrap;">${escaped}</div>
+      <div style="font-size:16px;line-height:1.75;color:var(--ink-muted);white-space:pre-wrap;">${e(briefingTexto)}</div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:32px;">
         <button class="btn primary" onclick="screen='intro';render()">Entendido, comenzar →</button>
       </div>
@@ -690,7 +688,7 @@ function renderIntro() {
     ? `<div class="teams-loading">Cargando equipos…</div>`
     : `<select class="field-input" onchange="setTeam(this.value, this.options[this.selectedIndex].text)">
         <option value="">— Selecciona tu equipo —</option>
-        ${teams.map(t=>`<option value="${t.id}" ${teamId===t.id?'selected':''}>${t.name}</option>`).join('')}
+        ${teams.map(t=>`<option value="${e(t.id)}" ${teamId===t.id?'selected':''}>${e(t.name)}</option>`).join('')}
        </select>`;
 
   return `
@@ -710,7 +708,7 @@ function renderIntro() {
         <label>${anonymityMode === 'nominal' ? 'Tu nombre' : 'Identificador de rol'} <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
         <input class="field-input" type="text"
           placeholder="${anonymityMode === 'nominal' ? 'Ej. María García' : 'Ej. Dev1, Dev2'}"
-          value="${participantName}" oninput="participantName=this.value" autocomplete="off"/>
+          value="${e(participantName)}" oninput="participantName=this.value" autocomplete="off"/>
       </div>`}
       <div class="role-select">
         <label>¿Cuál es tu rol en el equipo?</label>
@@ -718,10 +716,10 @@ function renderIntro() {
           ${["Product Owner","Dev Team","Scrum Master","Otro"].map(r=>`<button class="role-btn ${role===r?'selected':''}" onclick="setRole('${r}')">${r}</button>`).join('')}
         </div>
         ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
-        ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${cicloNombre}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(e){ return ''; } })()}
+        ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${e(cicloNombre)}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(err){ return ''; } })()}
       </div>
       <div style="background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-top:16px;font-size:13px;color:var(--ink-muted);line-height:1.6;">
-        ${guidanceText || `Este assessment está diseñado para completarse de forma <strong>individual</strong>, sin coordinarlo con tus compañeros. ${anonymityMode === 'full' ? 'Tus respuestas son completamente anónimas.' : anonymityMode === 'semi' ? 'Tus respuestas se guardan con un identificador de rol.' : 'Tus respuestas están vinculadas a tu nombre.'} No hay respuestas correctas o incorrectas.`}
+        ${guidanceText ? e(guidanceText) : `Este assessment está diseñado para completarse de forma <strong>individual</strong>, sin coordinarlo con tus compañeros. ${anonymityMode === 'full' ? 'Tus respuestas son completamente anónimas.' : anonymityMode === 'semi' ? 'Tus respuestas se guardan con un identificador de rol.' : 'Tus respuestas están vinculadas a tu nombre.'} No hay respuestas correctas o incorrectas.`}
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
         <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
@@ -783,12 +781,12 @@ function renderSection() {
     const sel = answers[key];
     const displayText = (ov[key] && ov[key].texto) ? ov[key].texto : q.text;
     return `<div class="question">
-      <div class="question-text"><span class="question-num">P${qNum}</span>${displayText}</div>
-      <div class="options" role="radiogroup" aria-label="${displayText}">
+      <div class="question-text"><span class="question-num">P${qNum}</span>${e(displayText)}</div>
+      <div class="options" role="radiogroup" aria-label="${e(displayText)}">
         ${q.opts.map((opt, oi) => `
           <button class="option ${sel===oi?'selected':''}" onclick="pick('${key}',${oi})" role="radio" aria-checked="${sel===oi}">
             <span class="option-score">${oi+1}</span>
-            <span class="option-label">${opt}</span>
+            <span class="option-label">${e(opt)}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -800,12 +798,12 @@ function renderSection() {
     qNum++;
     return `<div class="question" style="border-top:2px dashed var(--border);padding-top:20px;margin-top:4px;">
       <div style="font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Pregunta adicional</div>
-      <div class="question-text"><span class="question-num">P${qNum}</span>${cq.texto.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="question-text"><span class="question-num">P${qNum}</span>${e(cq.texto)}</div>
       <div class="options" role="radiogroup">
         ${cq.opts.filter(Boolean).map((opt, oi) => `
-          <button class="option ${sel===oi?'selected':''}" onclick="pickCustom('${cq.id}',${oi})" role="radio" aria-checked="${sel===oi}">
+          <button class="option ${sel===oi?'selected':''}" onclick="pickCustom('${e(cq.id)}',${oi})" role="radio" aria-checked="${sel===oi}">
             <span class="option-score">${oi+1}</span>
-            <span class="option-label">${opt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+            <span class="option-label">${e(opt)}</span>
           </button>`).join('')}
       </div>
     </div>`;
@@ -830,7 +828,7 @@ function renderSection() {
         <strong style="font-weight:500;color:var(--ink);">Comentario abierto</strong>
         <span style="color:var(--ink-faint);font-weight:400;"> — ¿Qué está bloqueando más a tu equipo en esta área? (opcional)</span>
       </label>
-      <textarea class="field-input" id="open-${sec.id}" placeholder="Escribe tu observación aquí…" oninput="openTexts['${sec.id}']=this.value">${(openTexts[sec.id]||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <textarea class="field-input" id="open-${sec.id}" placeholder="Escribe tu observación aquí…" oninput="openTexts['${sec.id}']=this.value">${e(openTexts[sec.id]||'')}</textarea>
     </div>
     <div class="nav">
       ${currentSection>0?`<button class="btn" onclick="prev()">← Anterior</button>`:''}
