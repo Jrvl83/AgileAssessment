@@ -8,24 +8,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ## Prioridad Alta
 
-### D1 — Helper `e()` de escape HTML inconsistente en páginas públicas
-
-**Contexto:** `assets/admin-render.js` ya usa la función `e()` de forma consistente para escapar variables user-controlled. Las páginas públicas replican el escape inline (parcial) o no lo tienen:
-
-- `reporte.html:138` — usa `.replace(/</g,'&lt;')` — solo `<`, no cubre `"`, `'`, `&`.
-- `assessment-agile.html:544, 645, 803, 808` — escape inline triplicado (`&`, `<`, `>`), sin `"`/`'`.
-- `assessment-agile.html:542-543` — `safeUrl` solo escapa `"` → `%22`; `safeAlt` solo `<`/`>`. Se usan en atributos `src=""` y `alt=""` con comillas dobles, por lo que queda cubierto el corte del atributo, pero no injection de otros atributos.
-- `equipo.html:89` — tiene helper, pero escapa solo `&`, `<`, `>` (no atributos).
-- `facilitar.html:593` — tiene `e()`, mismo alcance limitado.
-
-**Propuesta:** helper compartido (o copiado idéntico en cada página) que escape `& < > " '`. Reemplazar todos los escape-inline por llamadas a `e()`. Considerar mover `e()` a un archivo `assets/escape.js` cargado por todas las páginas.
-
-**Blast radius:** un workspace admin malicioso puede hacer XSS a sus propios stakeholders a través de `marca`, `logoUrl`, `teamName` o `equipoNombre`. No hay escalada entre workspaces (las reglas de Firestore aíslan), pero es defensa en profundidad.
-
-**Esfuerzo:** S (2–3 horas, 4 archivos).
-
----
-
 ### D2 — Logging estructurado + audit log
 
 **Contexto:** `functions/index.js` tiene `console.error` sueltos sin contexto estructurado (timestamp, severity, request id). Admin frontend tiene varios `catch { /* silent */ }` que ocultan fallos al usuario. No hay trazabilidad de acciones admin (crear/borrar equipo, exportar, suspender usuario).
@@ -153,6 +135,7 @@ Testear en staging antes de producción — CSP estricta puede romper inline sty
 | 2026-04-23 | Agregar Prettier + scripts `format`/`format:check` | `04caac9` |
 | 2026-04-23 | Pre-commit hook (`simple-git-hooks` + `lint-staged`) con lint + prettier-check | `04caac9` |
 | 2026-04-23 | Escape HTML en 7 interpolaciones user-controlled de `admin-render.js` | `abfee42` |
+| 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos | `b2e770f` |
 
 ---
 
