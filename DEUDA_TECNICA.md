@@ -6,21 +6,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ---
 
-## Prioridad Alta
-
-### D2 — Logging estructurado + audit log
-
-**Contexto:** `functions/index.js` tiene `console.error` sueltos sin contexto estructurado (timestamp, severity, request id). Admin frontend tiene varios `catch { /* silent */ }` que ocultan fallos al usuario. No hay trazabilidad de acciones admin (crear/borrar equipo, exportar, suspender usuario).
-
-**Propuesta:**
-1. Introducir logger mínimo en CFs (`functions/logger.js`) con niveles `info/warn/error` y contexto JSON. Reemplazar `console.error` manuales.
-2. Colección `auditLog` en Firestore escrita solo desde CFs. Log de acciones admin con `{ accion, realizadoPor, detalles, timestamp }`.
-3. En admin frontend, reemplazar `catch { /* silent */ }` por `catch (err) { console.warn(err); toast(...); }`.
-
-**Esfuerzo:** M (1–2 días). Superpone con `PLAN_ARQUITECTURA.md` ítem 9.
-
----
-
 ## Prioridad Media
 
 ### D3 — Monitoring en producción (Sentry / Crashlytics)
@@ -136,6 +121,7 @@ Testear en staging antes de producción — CSP estricta puede romper inline sty
 | 2026-04-23 | Pre-commit hook (`simple-git-hooks` + `lint-staged`) con lint + prettier-check | `04caac9` |
 | 2026-04-23 | Escape HTML en 7 interpolaciones user-controlled de `admin-render.js` | `abfee42` |
 | 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos | `b2e770f` |
+| 2026-04-24 | **D2** — `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; integrado en `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `analyzeTeamWithClaude`; eliminados los 2 `catch { /* silent */ }` y 3 `.catch(() => {})` del frontend | `fa01fae` |
 
 ---
 
