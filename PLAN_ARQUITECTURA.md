@@ -105,6 +105,7 @@ La Cloud Function:
 ```
 
 **También habilita:**
+
 - `deleteUser`: eliminar cuenta real de Firebase Auth, no solo el documento Firestore
 - Auditoría: log de quién creó/eliminó qué cuenta y cuándo
 - Rate limiting: evitar abuso de creación masiva de cuentas
@@ -143,9 +144,11 @@ Separar en archivos con responsabilidades claras, manteniendo vanilla JS (sin fr
 
 **Problema:**
 El HTML se genera concatenando template strings:
+
 ```js
 return `<div class="team-row">${t.name}<button onclick="deleteTeam('${t.id}')">✕</button></div>`;
 ```
+
 Esto es frágil ante caracteres especiales, mezcla lógica con presentación y hace imposible el testing de componentes individuales.
 
 **Solución recomendada: Vue 3 (sin build step, via CDN)**
@@ -156,6 +159,7 @@ Vue 3 permite usarlo directamente desde CDN sin Webpack ni Vite, lo que mantiene
 ```
 
 Beneficios concretos sobre el approach actual:
+
 - Componentes reactivos — no hay que llamar `render()` manualmente
 - Templates HTML reales — sin riesgo de injection por caracteres especiales
 - `v-if`, `v-for` en lugar de ternarios en strings
@@ -199,18 +203,19 @@ No hay ningún test automatizado. Cambios en la lógica de scoring, recomendacio
 
 **Qué testear primero (mayor ROI):**
 
-| Función | Por qué es crítica |
-|---------|-------------------|
-| `getLevel(pct)` | Determina el nivel de madurez mostrado |
-| `getTeamFilteredStats()` | Base de todo el análisis |
-| `getMajorityRole()` | Afecta todas las recomendaciones en vista "Todos" |
-| `detectPatterns()` | Lógica de patrones cruzados |
-| `getContextNote()` | Notas contextuales por perfil de equipo |
-| Scoring por dimensión | Cálculo central del assessment |
+| Función                  | Por qué es crítica                                |
+| ------------------------ | ------------------------------------------------- |
+| `getLevel(pct)`          | Determina el nivel de madurez mostrado            |
+| `getTeamFilteredStats()` | Base de todo el análisis                          |
+| `getMajorityRole()`      | Afecta todas las recomendaciones en vista "Todos" |
+| `detectPatterns()`       | Lógica de patrones cruzados                       |
+| `getContextNote()`       | Notas contextuales por perfil de equipo           |
+| Scoring por dimensión    | Cálculo central del assessment                    |
 
 **Stack sugerido:** Vitest (compatible con ES modules, cero configuración) o Jest.
 
 **Estructura:**
+
 ```
 /tests
   ├── scoring.test.js
@@ -228,6 +233,7 @@ El deploy es manual (`firebase deploy`), sin validación previa. Un archivo con 
 
 **Solución:**
 GitHub Actions workflow que en cada push a `main`:
+
 1. Valida sintaxis JS (`eslint`)
 2. Corre los tests (`vitest run`)
 3. Solo si pasan → `firebase deploy`
@@ -255,6 +261,7 @@ jobs:
 `fetchAllData()` carga **todas** las respuestas de Firestore en cada actualización (`db.collection('respuestas').get()`). Con 10 equipos y 5 ciclos, esto puede ser miles de documentos. Firestore cobra por lectura por documento.
 
 **Solución:**
+
 - Paginación en la lista de respuestas (Firestore `limit()` + `startAfter()`)
 - Query por ciclo activo por defecto en lugar de cargar todo
 - `onSnapshot()` para actualizaciones en tiempo real solo cuando el admin está activo en la pestaña
@@ -268,6 +275,7 @@ No hay registro de acciones críticas: quién creó un equipo, quién exportó d
 
 **Solución:**
 Colección `auditLog` en Firestore:
+
 ```js
 {
   accion: 'crear_equipo' | 'suspender_usuario' | 'exportar_csv' | ...,
@@ -283,17 +291,17 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 
 ## Resumen por fase
 
-| Fase | Ítem | Prioridad | Esfuerzo estimado |
-|------|------|-----------|-------------------|
-| 1 — Seguridad | Firestore rules con validación real | 🔴 Alta | Horas |
-| 1 — Seguridad | Cloud Function para gestión de usuarios | 🔴 Alta | 1–2 días |
-| 2 — Arquitectura | Separar código en archivos | 🟡 Media | 1 día |
-| 2 — Arquitectura | Migrar a Vue 3 o mejorar vanilla JS | 🟡 Media | 3–5 días |
-| 2 — Arquitectura | Estado centralizado | 🟡 Media | 1 día |
-| 3 — Confiabilidad | Tests de lógica crítica | 🟡 Media | 2–3 días |
-| 3 — Confiabilidad | CI/CD básico con GitHub Actions | 🟢 Baja | Horas |
-| 4 — Escala | Paginación y queries eficientes | 🟢 Baja | 1–2 días |
-| 4 — Escala | Auditoría y observabilidad | 🟢 Baja | 1 día |
+| Fase              | Ítem                                    | Prioridad | Esfuerzo estimado |
+| ----------------- | --------------------------------------- | --------- | ----------------- |
+| 1 — Seguridad     | Firestore rules con validación real     | 🔴 Alta   | Horas             |
+| 1 — Seguridad     | Cloud Function para gestión de usuarios | 🔴 Alta   | 1–2 días          |
+| 2 — Arquitectura  | Separar código en archivos              | 🟡 Media  | 1 día             |
+| 2 — Arquitectura  | Migrar a Vue 3 o mejorar vanilla JS     | 🟡 Media  | 3–5 días          |
+| 2 — Arquitectura  | Estado centralizado                     | 🟡 Media  | 1 día             |
+| 3 — Confiabilidad | Tests de lógica crítica                 | 🟡 Media  | 2–3 días          |
+| 3 — Confiabilidad | CI/CD básico con GitHub Actions         | 🟢 Baja   | Horas             |
+| 4 — Escala        | Paginación y queries eficientes         | 🟢 Baja   | 1–2 días          |
+| 4 — Escala        | Auditoría y observabilidad              | 🟢 Baja   | 1 día             |
 
 ---
 
@@ -313,6 +321,7 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 **Problema:** Los correos de invitación (password reset) llegan a la bandeja de spam porque se envían desde `noreply@agile-assessment-5a117.firebaseapp.com`, dominio compartido de Firebase sin SPF/DKIM propios.
 
 **Solución recomendada: SMTP personalizado con SendGrid**
+
 1. Crear cuenta en SendGrid (free tier: 100 correos/día)
 2. Verificar dominio propio y configurar SPF + DKIM
 3. Firebase Console → Authentication → Templates → Configure action email → SMTP settings → pegar credenciales de SendGrid
@@ -325,14 +334,14 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 
 ## Estado
 
-| Ítem | Estado | Notas |
-|------|--------|-------|
-| 1 — Firestore rules server-side | ✅ Completado | `firestore.rules` versionado en el repo, validación de `ownerId` y `isSuperAdmin()` server-side |
-| 2 — Cloud Function usuarios | ✅ Completado | `createWorkspaceAdmin` + `deleteWorkspaceAdmin` en `functions/index.js`, plan Blaze activado |
-| 3 — Separar en archivos | ✅ Completado | `assets/` con admin.css, admin-state.js, admin-api.js, admin-render.js, admin-export.js, admin-auth.js |
-| 4 — Framework de componentes | Pendiente | |
-| 5 — Estado centralizado | ✅ Completado | `state` object + `setState(patch)` en admin-state.js; render() solo se llama desde setState |
-| 6 — Tests | ✅ Completado (alcance parcial) | Vitest; **96 tests** en `tests/scoring.test.js` (27), `analysis.test.js` (52), `evolution.test.js` (17); CJS stubs en `assessment-config.js` y `admin-api.js`. Cobertura limitada a lógica pura — faltan tests de `render()`, auth y Cloud Functions (ver `DEUDA_TECNICA.md` ítem D6). |
-| 7 — CI/CD | ✅ Completado | `.github/workflows/deploy.yml`: job `test` (lint+vitest, push+PRs) → job `deploy` (solo push a main); requiere secret `FIREBASE_TOKEN` |
-| 8 — Paginación | Pendiente | |
-| 9 — Auditoría | ✅ Completado (alcance parcial) | `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; eventos registrados: `workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`. Observabilidad (Sentry/Crashlytics) y audit de acciones admin frontend pendientes en `DEUDA_TECNICA.md` (D3 y posible D2-bis). |
+| Ítem                            | Estado                          | Notas                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Firestore rules server-side | ✅ Completado                   | `firestore.rules` versionado en el repo, validación de `ownerId` y `isSuperAdmin()` server-side                                                                                                                                                                                                                                                            |
+| 2 — Cloud Function usuarios     | ✅ Completado                   | `createWorkspaceAdmin` + `deleteWorkspaceAdmin` en `functions/index.js`, plan Blaze activado                                                                                                                                                                                                                                                               |
+| 3 — Separar en archivos         | ✅ Completado                   | `assets/` con admin.css, admin-state.js, admin-api.js, admin-render.js, admin-export.js, admin-auth.js                                                                                                                                                                                                                                                     |
+| 4 — Framework de componentes    | Pendiente                       |                                                                                                                                                                                                                                                                                                                                                            |
+| 5 — Estado centralizado         | ✅ Completado                   | `state` object + `setState(patch)` en admin-state.js; render() solo se llama desde setState                                                                                                                                                                                                                                                                |
+| 6 — Tests                       | ✅ Completado (alcance parcial) | Vitest; **96 tests** en `tests/scoring.test.js` (27), `analysis.test.js` (52), `evolution.test.js` (17); CJS stubs en `assessment-config.js` y `admin-api.js`. Cobertura limitada a lógica pura — faltan tests de `render()`, auth y Cloud Functions (ver `DEUDA_TECNICA.md` ítem D6).                                                                     |
+| 7 — CI/CD                       | ✅ Completado                   | `.github/workflows/deploy.yml`: job `test` (lint+vitest, push+PRs) → job `deploy` (solo push a main); requiere secret `FIREBASE_TOKEN`                                                                                                                                                                                                                     |
+| 8 — Paginación                  | Pendiente                       |                                                                                                                                                                                                                                                                                                                                                            |
+| 9 — Auditoría                   | ✅ Completado (alcance parcial) | `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; eventos registrados: `workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`. Observabilidad (Sentry/Crashlytics) y audit de acciones admin frontend pendientes en `DEUDA_TECNICA.md` (D3 y posible D2-bis). |

@@ -1,124 +1,259 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portal del Equipo</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #0f1117; --ink-muted: #5a5f72; --ink-faint: #9198aa;
-    --surface: #fafaf8; --surface-2: #f2f1ed;
-    --accent: #1a4fd6; --accent-light: #dce6ff;
-    --border: #dddbd4; --radius: 12px; --radius-sm: 8px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--surface); color: var(--ink); min-height: 100vh; font-size: 16px; line-height: 1.6; }
-  .shell { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Portal del Equipo</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0f1117;
+        --ink-muted: #5a5f72;
+        --ink-faint: #9198aa;
+        --surface: #fafaf8;
+        --surface-2: #f2f1ed;
+        --accent: #1a4fd6;
+        --accent-light: #dce6ff;
+        --border: #dddbd4;
+        --radius: 12px;
+        --radius-sm: 8px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--surface);
+        color: var(--ink);
+        min-height: 100vh;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      .shell {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 20px 80px;
+      }
 
-  .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
-  .header-eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
-  .header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(22px, 4vw, 32px); line-height: 1.1; margin-bottom: 6px; }
-  .header p { font-size: 14px; color: var(--ink-muted); }
+      .header {
+        padding: 48px 0 32px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 32px;
+      }
+      .header-eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
+      .header h1 {
+        font-family: 'DM Serif Display', serif;
+        font-size: clamp(22px, 4vw, 32px);
+        line-height: 1.1;
+        margin-bottom: 6px;
+      }
+      .header p {
+        font-size: 14px;
+        color: var(--ink-muted);
+      }
 
-  .section-card { background: white; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
-  .section-title { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 16px; }
+      .section-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .section-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 16px;
+      }
 
-  .score-hero { display: flex; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
-  .score-big { font-size: 52px; font-weight: 600; line-height: 1; }
-  .level-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 99px; display: inline-block; }
+      .score-hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .score-big {
+        font-size: 52px;
+        font-weight: 600;
+        line-height: 1;
+      }
+      .level-badge {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 99px;
+        display: inline-block;
+      }
 
-  .dim-row { margin-bottom: 12px; }
-  .dim-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-  .dim-label { font-size: 13px; font-weight: 500; }
-  .dim-pct { font-size: 13px; font-weight: 600; }
-  .dim-bar-wrap { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
-  .dim-bar { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+      .dim-row {
+        margin-bottom: 12px;
+      }
+      .dim-row-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .dim-label {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .dim-pct {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .dim-bar-wrap {
+        height: 8px;
+        background: var(--surface-2);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .dim-bar {
+        height: 100%;
+        border-radius: 99px;
+        transition: width 0.4s ease;
+      }
 
-  .evol-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f3f4f6; flex-wrap: wrap; }
-  .evol-row:last-child { border-bottom: none; }
+      .evol-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #f3f4f6;
+        flex-wrap: wrap;
+      }
+      .evol-row:last-child {
+        border-bottom: none;
+      }
 
-  .plan-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-  .plan-item:last-child { border-bottom: none; }
-  .plan-status { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+      .plan-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .plan-item:last-child {
+        border-bottom: none;
+      }
+      .plan-status {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 10px;
+        border-radius: 99px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
 
-  .footer { text-align: center; font-size: 12px; color: var(--ink-faint); padding: 24px 0; border-top: 1px solid var(--border); margin-top: 20px; line-height: 1.8; }
-  .error-state { text-align: center; padding: 80px 20px; font-size: 15px; color: var(--ink-muted); }
-  .loading-state { text-align: center; padding: 60px 20px; color: var(--ink-faint); font-size: 14px; }
-</style>
-</head>
-<body>
-<div class="shell">
-  <div class="header">
-    <div class="header-eyebrow" id="portal-eyebrow">Portal del Equipo</div>
-    <h1 id="portal-title">Cargando…</h1>
-    <p id="portal-subtitle"></p>
-  </div>
-  <div id="app">
-    <div class="loading-state">Cargando datos del equipo…</div>
-  </div>
-  <div class="footer" id="portal-footer"></div>
-</div>
+      .footer {
+        text-align: center;
+        font-size: 12px;
+        color: var(--ink-faint);
+        padding: 24px 0;
+        border-top: 1px solid var(--border);
+        margin-top: 20px;
+        line-height: 1.8;
+      }
+      .error-state {
+        text-align: center;
+        padding: 80px 20px;
+        font-size: 15px;
+        color: var(--ink-muted);
+      }
+      .loading-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--ink-faint);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="header">
+        <div class="header-eyebrow" id="portal-eyebrow">Portal del Equipo</div>
+        <h1 id="portal-title">Cargando…</h1>
+        <p id="portal-subtitle"></p>
+      </div>
+      <div id="app">
+        <div class="loading-state">Cargando datos del equipo…</div>
+      </div>
+      <div class="footer" id="portal-footer"></div>
+    </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="assets/escape.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
-  authDomain: "agile-assessment-5a117.firebaseapp.com",
-  projectId: "agile-assessment-5a117",
-  storageBucket: "agile-assessment-5a117.firebasestorage.app",
-  messagingSenderId: "41571782884",
-  appId: "1:41571782884:web:e8b96178aeffc4649edcf1"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="assets/escape.js"></script>
+    <script>
+      const firebaseConfig = {
+        apiKey: 'AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM',
+        authDomain: 'agile-assessment-5a117.firebaseapp.com',
+        projectId: 'agile-assessment-5a117',
+        storageBucket: 'agile-assessment-5a117.firebasestorage.app',
+        messagingSenderId: '41571782884',
+        appId: '1:41571782884:web:e8b96178aeffc4649edcf1',
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
 
-const PLAN_STATE = {
-  'pendiente':  { label: 'Pendiente',  color: '#a05c0a', bg: '#fdefd6' },
-  'en-curso':   { label: 'En curso',   color: '#1a4fd6', bg: '#dce6ff' },
-  'completado': { label: 'Completado', color: '#0d7a52', bg: '#d4f0e5' }
-};
+      const PLAN_STATE = {
+        pendiente: { label: 'Pendiente', color: '#a05c0a', bg: '#fdefd6' },
+        'en-curso': { label: 'En curso', color: '#1a4fd6', bg: '#dce6ff' },
+        completado: { label: 'Completado', color: '#0d7a52', bg: '#d4f0e5' },
+      };
 
-let _radarChart = null;
-let _planStates = {}; // optimistic local overrides mientras Firestore procesa
-let _portalToken = null;
+      let _radarChart = null;
+      let _planStates = {}; // optimistic local overrides mientras Firestore procesa
+      let _portalToken = null;
 
-// e() → assets/escape.js
+      // e() → assets/escape.js
 
-function levelColor(pct) {
-  return pct >= 83 ? '#0d7a52' : pct >= 66 ? '#1a4fd6' : pct >= 41 ? '#a05c0a' : '#c0282a';
-}
+      function levelColor(pct) {
+        return pct >= 83 ? '#0d7a52' : pct >= 66 ? '#1a4fd6' : pct >= 41 ? '#a05c0a' : '#c0282a';
+      }
 
-function showError(msg) {
-  document.getElementById('portal-title').textContent = 'Portal no disponible';
-  document.getElementById('app').innerHTML = `<div class="error-state">${msg}</div>`;
-}
+      function showError(msg) {
+        document.getElementById('portal-title').textContent = 'Portal no disponible';
+        document.getElementById('app').innerHTML = `<div class="error-state">${msg}</div>`;
+      }
 
-function applyBranding(branding) {
-  if (!branding) return;
-  if (branding.colorAcento) document.documentElement.style.setProperty('--accent', branding.colorAcento);
-  const eyebrow = document.getElementById('portal-eyebrow');
-  if (branding.marca && eyebrow) eyebrow.textContent = branding.marca;
-  if (branding.logoUrl) {
-    const titleEl = document.getElementById('portal-title');
-    if (titleEl) {
-      titleEl.innerHTML = `<img src="${e(branding.logoUrl)}" alt="${e(branding.marca || '')}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span id="portal-team-name"></span>`;
-    }
-  }
-}
+      function applyBranding(branding) {
+        if (!branding) return;
+        if (branding.colorAcento) document.documentElement.style.setProperty('--accent', branding.colorAcento);
+        const eyebrow = document.getElementById('portal-eyebrow');
+        if (branding.marca && eyebrow) eyebrow.textContent = branding.marca;
+        if (branding.logoUrl) {
+          const titleEl = document.getElementById('portal-title');
+          if (titleEl) {
+            titleEl.innerHTML = `<img src="${e(branding.logoUrl)}" alt="${e(branding.marca || '')}" style="max-height:40px;max-width:180px;object-fit:contain;display:block;margin-bottom:4px;"><span id="portal-team-name"></span>`;
+          }
+        }
+      }
 
-function renderPortal(portal) {
-  const d = portal.data || {};
-  const dims = d.dims || [];
-  const avgDims = d.avgDims || {};
-  const level = d.level || null;
-  const hasData = typeof d.avgTotal === 'number';
+      function renderPortal(portal) {
+        const d = portal.data || {};
+        const dims = d.dims || [];
+        const avgDims = d.avgDims || {};
+        const level = d.level || null;
+        const hasData = typeof d.avgTotal === 'number';
 
-  // ── Score + Radar ──────────────────────────────────────────────
-  const scoreSection = hasData ? `
+        // ── Score + Radar ──────────────────────────────────────────────
+        const scoreSection = hasData
+          ? `
     <div class="section-card">
       <div class="score-hero">
         <div style="flex:1;min-width:160px;">
@@ -134,7 +269,8 @@ function renderPortal(portal) {
           <canvas id="radar-portal" style="display:block;width:100%;max-height:220px;"></canvas>
         </div>
       </div>
-    </div>` : `
+    </div>`
+          : `
     <div class="section-card">
       <div style="text-align:center;padding:24px 0;">
         <div style="font-size:32px;margin-bottom:12px;">📊</div>
@@ -143,13 +279,16 @@ function renderPortal(portal) {
       </div>
     </div>`;
 
-  // ── Dimensiones ────────────────────────────────────────────────
-  const dimsSection = hasData && dims.length ? `
+        // ── Dimensiones ────────────────────────────────────────────────
+        const dimsSection =
+          hasData && dims.length
+            ? `
     <div class="section-card">
       <div class="section-title">Resultados por dimensión</div>
-      ${dims.map(dim => {
-        const dp = avgDims[dim.key] || { pct: 0 };
-        return `
+      ${dims
+        .map((dim) => {
+          const dp = avgDims[dim.key] || { pct: 0 };
+          return `
           <div class="dim-row">
             <div class="dim-row-header">
               <span class="dim-label" style="color:${dim.color}">${e(dim.label)}</span>
@@ -159,22 +298,28 @@ function renderPortal(portal) {
               <div class="dim-bar" style="width:${dp.pct}%;background:${dim.color}"></div>
             </div>
           </div>`;
-      }).join('')}
-    </div>` : '';
+        })
+        .join('')}
+    </div>`
+            : '';
 
-  // ── Evolución histórica ────────────────────────────────────────
-  const evol = d.evolutionData || [];
-  const evolSection = evol.length >= 2 ? `
+        // ── Evolución histórica ────────────────────────────────────────
+        const evol = d.evolutionData || [];
+        const evolSection =
+          evol.length >= 2
+            ? `
     <div class="section-card">
       <div class="section-title">Evolución histórica</div>
-      ${evol.map((ev, i) => {
-        const prev = i > 0 ? evol[i-1].avgTotal : null;
-        const delta = prev !== null ? ev.avgTotal - prev : null;
-        const col = levelColor(ev.avgTotal);
-        const deltaHtml = delta !== null
-          ? `<span style="font-size:11px;font-weight:600;color:${delta >= 0 ? '#0d7a52' : '#c0282a'};">${delta >= 0 ? '▲ +' : '▼ '}${delta}%</span>`
-          : '';
-        return `
+      ${evol
+        .map((ev, i) => {
+          const prev = i > 0 ? evol[i - 1].avgTotal : null;
+          const delta = prev !== null ? ev.avgTotal - prev : null;
+          const col = levelColor(ev.avgTotal);
+          const deltaHtml =
+            delta !== null
+              ? `<span style="font-size:11px;font-weight:600;color:${delta >= 0 ? '#0d7a52' : '#c0282a'};">${delta >= 0 ? '▲ +' : '▼ '}${delta}%</span>`
+              : '';
+          return `
           <div class="evol-row">
             <div style="width:110px;font-size:13px;font-weight:500;flex-shrink:0;">${e(ev.cycleName)}</div>
             <div style="flex:1;min-width:80px;background:var(--surface-2);border-radius:99px;height:8px;overflow:hidden;">
@@ -184,37 +329,39 @@ function renderPortal(portal) {
             <div style="width:64px;flex-shrink:0;text-align:right;">${deltaHtml}</div>
             <div style="font-size:11px;color:var(--ink-faint);flex-shrink:0;">${ev.count} resp.</div>
           </div>`;
-      }).join('')}
-    </div>` : '';
+        })
+        .join('')}
+    </div>`
+            : '';
 
-  // ── Plan de acción ─────────────────────────────────────────────
-  const plans = (d.plans || []).filter(p => p.iniciativa);
-  const plansSection = plans.length ? `
+        // ── Plan de acción ─────────────────────────────────────────────
+        const plans = (d.plans || []).filter((p) => p.iniciativa);
+        const plansSection = plans.length
+          ? `
     <div class="section-card">
       <div class="section-title">Plan de acción</div>
       <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;">Puedes actualizar el estado de las acciones que te corresponden.</p>
-      ${plans.map(p => {
-        const currentEstado = (_planStates[p.id] || {}).estado || p.estado || 'pendiente';
-        const st = PLAN_STATE[currentEstado] || PLAN_STATE['pendiente'];
-        const otherStates = Object.entries(PLAN_STATE).filter(([k]) => k !== currentEstado);
-        const fechaHtml = p.fechaObjetivo
-          ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${e(p.fechaObjetivo)}</span>`
-          : '';
-        const respHtml = p.responsable
-          ? `<span style="font-size:11px;color:var(--ink-muted);">${e(p.responsable)}</span>`
-          : '';
-        const dimHtml = p.dimension
-          ? `<span style="font-size:10px;color:var(--ink-faint);margin-left:6px;">${e(p.dimension)}</span>`
-          : '';
-        const cicloHtml = p.ciclo
-          ? `<span style="font-size:10px;color:var(--ink-faint);">${e(p.ciclo)}</span>`
-          : '';
-        const updatedBadge = (_planStates[p.id] || {}).saving
-          ? `<span style="font-size:10px;color:var(--ink-faint);">Guardando…</span>`
-          : (_planStates[p.id] || {}).saved
-            ? `<span style="font-size:10px;color:#0d7a52;">Guardado</span>`
+      ${plans
+        .map((p) => {
+          const currentEstado = (_planStates[p.id] || {}).estado || p.estado || 'pendiente';
+          const st = PLAN_STATE[currentEstado] || PLAN_STATE['pendiente'];
+          const otherStates = Object.entries(PLAN_STATE).filter(([k]) => k !== currentEstado);
+          const fechaHtml = p.fechaObjetivo
+            ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${e(p.fechaObjetivo)}</span>`
             : '';
-        return `
+          const respHtml = p.responsable
+            ? `<span style="font-size:11px;color:var(--ink-muted);">${e(p.responsable)}</span>`
+            : '';
+          const dimHtml = p.dimension
+            ? `<span style="font-size:10px;color:var(--ink-faint);margin-left:6px;">${e(p.dimension)}</span>`
+            : '';
+          const cicloHtml = p.ciclo ? `<span style="font-size:10px;color:var(--ink-faint);">${e(p.ciclo)}</span>` : '';
+          const updatedBadge = (_planStates[p.id] || {}).saving
+            ? `<span style="font-size:10px;color:var(--ink-faint);">Guardando…</span>`
+            : (_planStates[p.id] || {}).saved
+              ? `<span style="font-size:10px;color:#0d7a52;">Guardado</span>`
+              : '';
+          return `
           <div class="plan-item" id="plan-${p.id}">
             <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px;flex-shrink:0;">
               <span class="plan-status" style="background:${st.bg};color:${st.color};">${st.label}</span>
@@ -224,146 +371,164 @@ function renderPortal(portal) {
               <div style="font-size:13px;font-weight:500;line-height:1.4;">${e(p.iniciativa)}${dimHtml}</div>
               <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;align-items:center;">${respHtml}${fechaHtml}${cicloHtml}</div>
               <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-                ${otherStates.map(([k, v]) => `<button onclick="changePlanStatus('${p.id}','${k}')"
+                ${otherStates
+                  .map(
+                    ([k, v]) => `<button onclick="changePlanStatus('${p.id}','${k}')"
                   style="font-size:11px;padding:3px 10px;border-radius:99px;border:1.5px solid ${v.color};background:${v.bg};color:${v.color};cursor:pointer;font-family:inherit;font-weight:600;">
                   ${v.label}
-                </button>`).join('')}
+                </button>`
+                  )
+                  .join('')}
               </div>
             </div>
           </div>`;
-      }).join('')}
-    </div>` : '';
+        })
+        .join('')}
+    </div>`
+          : '';
 
-  document.getElementById('app').innerHTML = scoreSection + dimsSection + evolSection + plansSection;
+        document.getElementById('app').innerHTML = scoreSection + dimsSection + evolSection + plansSection;
 
-  // Radar
-  if (hasData && d.radarValues && d.radarValues.length) {
-    requestAnimationFrame(() => {
-      const canvas = document.getElementById('radar-portal');
-      if (!canvas || typeof Chart === 'undefined') return;
-      if (_radarChart) { _radarChart.destroy(); _radarChart = null; }
-      _radarChart = new Chart(canvas, {
-        type: 'radar',
-        data: {
-          labels: d.radarLabels,
-          datasets: [{
-            data: d.radarValues,
-            backgroundColor: 'rgba(26, 86, 219, 0.10)',
-            borderColor: 'rgba(26, 86, 219, 0.75)',
-            borderWidth: 2,
-            pointBackgroundColor: d.radarColors,
-            pointBorderColor: '#fff',
-            pointBorderWidth: 1.5,
-            pointRadius: 4,
-            pointHoverRadius: 5,
-          }]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: true,
-          scales: {
-            r: {
-              min: 0, max: 100,
-              ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
-              grid: { color: 'rgba(0,0,0,0.07)' },
-              angleLines: { color: 'rgba(0,0,0,0.07)' },
-              pointLabels: { font: { size: 10, family: "'DM Sans', sans-serif" }, color: '#374151' }
+        // Radar
+        if (hasData && d.radarValues && d.radarValues.length) {
+          requestAnimationFrame(() => {
+            const canvas = document.getElementById('radar-portal');
+            if (!canvas || typeof Chart === 'undefined') return;
+            if (_radarChart) {
+              _radarChart.destroy();
+              _radarChart = null;
             }
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + '%' } }
-          },
-          animation: { duration: 350 }
+            _radarChart = new Chart(canvas, {
+              type: 'radar',
+              data: {
+                labels: d.radarLabels,
+                datasets: [
+                  {
+                    data: d.radarValues,
+                    backgroundColor: 'rgba(26, 86, 219, 0.10)',
+                    borderColor: 'rgba(26, 86, 219, 0.75)',
+                    borderWidth: 2,
+                    pointBackgroundColor: d.radarColors,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 5,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                  r: {
+                    min: 0,
+                    max: 100,
+                    ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
+                    grid: { color: 'rgba(0,0,0,0.07)' },
+                    angleLines: { color: 'rgba(0,0,0,0.07)' },
+                    pointLabels: { font: { size: 10, family: "'DM Sans', sans-serif" }, color: '#374151' },
+                  },
+                },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: (ctx) => ' ' + ctx.raw + '%' } },
+                },
+                animation: { duration: 350 },
+              },
+            });
+          });
         }
-      });
-    });
-  }
-}
-
-async function changePlanStatus(planId, newEstado) {
-  // Optimistic update
-  _planStates[planId] = { estado: newEstado, saving: true, saved: false };
-  renderCurrentPortal();
-
-  try {
-    await db.collection('planes').doc(planId).update({
-      estado: newEstado,
-      updatedByTeam: true,
-      updatedByTeamAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    _planStates[planId] = { estado: newEstado, saving: false, saved: true };
-    // Limpiar indicador "Guardado" después de 2 s
-    setTimeout(() => {
-      if (_planStates[planId] && _planStates[planId].estado === newEstado) {
-        _planStates[planId].saved = false;
       }
-      renderCurrentPortal();
-    }, 2000);
-  } catch(e) {
-    // Revertir en caso de error
-    delete _planStates[planId];
-    alert('No se pudo guardar el cambio. Verifica tu conexión e inténtalo de nuevo.');
-  }
-  renderCurrentPortal();
-}
 
-let _currentPortalData = null;
-function renderCurrentPortal() {
-  if (_currentPortalData) renderPortal(_currentPortalData);
-}
+      async function changePlanStatus(planId, newEstado) {
+        // Optimistic update
+        _planStates[planId] = { estado: newEstado, saving: true, saved: false };
+        renderCurrentPortal();
 
-function loadPortal() {
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get('t');
-  _portalToken = token;
-  if (!token) { showError('Link inválido. Solicita el link al coach.'); return; }
+        try {
+          await db.collection('planes').doc(planId).update({
+            estado: newEstado,
+            updatedByTeam: true,
+            updatedByTeamAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+          _planStates[planId] = { estado: newEstado, saving: false, saved: true };
+          // Limpiar indicador "Guardado" después de 2 s
+          setTimeout(() => {
+            if (_planStates[planId] && _planStates[planId].estado === newEstado) {
+              _planStates[planId].saved = false;
+            }
+            renderCurrentPortal();
+          }, 2000);
+        } catch (e) {
+          // Revertir en caso de error
+          delete _planStates[planId];
+          alert('No se pudo guardar el cambio. Verifica tu conexión e inténtalo de nuevo.');
+        }
+        renderCurrentPortal();
+      }
 
-  db.collection('portales').doc(token).onSnapshot(doc => {
-    if (!doc.exists) {
-      showError('Este portal no existe o ha sido revocado.');
-      return;
-    }
-    const portal = doc.data();
+      let _currentPortalData = null;
+      function renderCurrentPortal() {
+        if (_currentPortalData) renderPortal(_currentPortalData);
+      }
 
-    // Título
-    const titleEl = document.getElementById('portal-title');
-    const teamNameSpan = document.getElementById('portal-team-name');
-    if (teamNameSpan) {
-      teamNameSpan.textContent = portal.teamName || 'Equipo';
-    } else if (titleEl) {
-      titleEl.textContent = portal.teamName || 'Equipo';
-    }
-    document.title = (portal.teamName || 'Equipo') + ' — Portal del Equipo';
-    document.getElementById('portal-subtitle').textContent = 'Resultados y plan de acción del equipo';
+      function loadPortal() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('t');
+        _portalToken = token;
+        if (!token) {
+          showError('Link inválido. Solicita el link al coach.');
+          return;
+        }
 
-    // Branding
-    applyBranding(portal.branding);
-    // Si hay logo, actualizar el span con el nombre
-    const spanAfterLogo = document.getElementById('portal-team-name');
-    if (spanAfterLogo) spanAfterLogo.textContent = portal.teamName || 'Equipo';
-    // Si no hay logo, el h1 ya tiene el texto
-    if (!(portal.branding && portal.branding.logoUrl)) {
-      const h1 = document.getElementById('portal-title');
-      if (h1 && !h1.querySelector('img')) h1.textContent = portal.teamName || 'Equipo';
-    }
+        db.collection('portales')
+          .doc(token)
+          .onSnapshot(
+            (doc) => {
+              if (!doc.exists) {
+                showError('Este portal no existe o ha sido revocado.');
+                return;
+              }
+              const portal = doc.data();
 
-    // Footer
-    const updAt = portal.updatedAt ? portal.updatedAt.toDate() : null;
-    const updStr = updAt
-      ? updAt.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' })
-      : null;
-    document.getElementById('portal-footer').innerHTML =
-      (updStr ? `Datos actualizados el ${updStr}<br>` : '') +
-      'Vista de solo lectura · Assessment Agile';
+              // Título
+              const titleEl = document.getElementById('portal-title');
+              const teamNameSpan = document.getElementById('portal-team-name');
+              if (teamNameSpan) {
+                teamNameSpan.textContent = portal.teamName || 'Equipo';
+              } else if (titleEl) {
+                titleEl.textContent = portal.teamName || 'Equipo';
+              }
+              document.title = (portal.teamName || 'Equipo') + ' — Portal del Equipo';
+              document.getElementById('portal-subtitle').textContent = 'Resultados y plan de acción del equipo';
 
-    _currentPortalData = portal;
-    renderPortal(portal);
-  }, () => {
-    showError('Error al cargar el portal. Intenta nuevamente más tarde.');
-  });
-}
+              // Branding
+              applyBranding(portal.branding);
+              // Si hay logo, actualizar el span con el nombre
+              const spanAfterLogo = document.getElementById('portal-team-name');
+              if (spanAfterLogo) spanAfterLogo.textContent = portal.teamName || 'Equipo';
+              // Si no hay logo, el h1 ya tiene el texto
+              if (!(portal.branding && portal.branding.logoUrl)) {
+                const h1 = document.getElementById('portal-title');
+                if (h1 && !h1.querySelector('img')) h1.textContent = portal.teamName || 'Equipo';
+              }
 
-loadPortal();
-</script>
-</body>
+              // Footer
+              const updAt = portal.updatedAt ? portal.updatedAt.toDate() : null;
+              const updStr = updAt ? updAt.toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : null;
+              document.getElementById('portal-footer').innerHTML =
+                (updStr ? `Datos actualizados el ${updStr}<br>` : '') + 'Vista de solo lectura · Assessment Agile';
+
+              _currentPortalData = portal;
+              renderPortal(portal);
+            },
+            () => {
+              showError('Error al cargar el portal. Intenta nuevamente más tarde.');
+            }
+          );
+      }
+
+      loadPortal();
+    </script>
+  </body>
 </html>

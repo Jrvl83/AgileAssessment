@@ -6,14 +6,14 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 
 ## Stack tecnológico
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | HTML / CSS / JavaScript (Vanilla SPA) |
-| Base de datos | Firebase Firestore |
-| Auth | Firebase Authentication (email + contraseña) |
-| Backend | Firebase Cloud Functions (Node.js 22) |
-| Hosting | Firebase Hosting |
-| Idioma | Español |
+| Capa          | Tecnología                                   |
+| ------------- | -------------------------------------------- |
+| Frontend      | HTML / CSS / JavaScript (Vanilla SPA)        |
+| Base de datos | Firebase Firestore                           |
+| Auth          | Firebase Authentication (email + contraseña) |
+| Backend       | Firebase Cloud Functions (Node.js 22)        |
+| Hosting       | Firebase Hosting                             |
+| Idioma        | Español                                      |
 
 **Proyecto Firebase:** `agile-assessment-5a117` — Plan **Blaze**
 
@@ -67,13 +67,13 @@ DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos de auditorías
 
 ### Routing (firebase.json)
 
-| Ruta | Archivo | Acceso |
-|------|---------|--------|
-| `/` y cualquier ruta | `assessment-agile.html` | Requiere `?workspaceId=X` — sin él muestra error |
-| `/admin` | `admin.html` | Requiere login (Firebase Auth) |
-| `/facilitar` | `facilitar.html` | Requiere login — URL canónica: `?workspaceId=X&equipoId=Y[&ciclo=Z]` |
-| `/reporte.html?t=TOKEN` | `reporte.html` | Público, sin login — token con expiración de 30 días |
-| `/equipo.html?t=TOKEN` | `equipo.html` | Público, sin login — token permanente (regenerable desde admin) |
+| Ruta                    | Archivo                 | Acceso                                                               |
+| ----------------------- | ----------------------- | -------------------------------------------------------------------- |
+| `/` y cualquier ruta    | `assessment-agile.html` | Requiere `?workspaceId=X` — sin él muestra error                     |
+| `/admin`                | `admin.html`            | Requiere login (Firebase Auth)                                       |
+| `/facilitar`            | `facilitar.html`        | Requiere login — URL canónica: `?workspaceId=X&equipoId=Y[&ciclo=Z]` |
+| `/reporte.html?t=TOKEN` | `reporte.html`          | Público, sin login — token con expiración de 30 días                 |
+| `/equipo.html?t=TOKEN`  | `equipo.html`           | Público, sin login — token permanente (regenerable desde admin)      |
 
 ---
 
@@ -120,21 +120,21 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 #### Roles
 
-| Rol | Acceso |
-|-----|--------|
-| **super_admin** | Ve todos los workspaces, gestiona usuarios (crear / suspender / reactivar / eliminar) |
-| **admin** (workspace admin) | Ve solo sus propios equipos, respuestas, ciclos y planes |
+| Rol                         | Acceso                                                                                |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| **super_admin**             | Ve todos los workspaces, gestiona usuarios (crear / suspender / reactivar / eliminar) |
+| **admin** (workspace admin) | Ve solo sus propios equipos, respuestas, ciclos y planes                              |
 
 #### Pestañas del panel
 
-| Pestaña | Disponible para | Función |
-|---------|----------------|---------|
-| **Análisis** | Todos | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark — org o por categoría si hay ≥2 equipos de la misma categoría), delta "+N% org/categoría" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables (4 niveles: Inicial/En desarrollo/Maduro/Avanzado), histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas) y badge ⚠ "Señal oculta" (inconsistencia score-comentario), badge "No-software" en Excelencia Técnica si el equipo usa preguntas alternativas, badge de salud del equipo (Alta/Media/Baja si `teamHealthEnabled`), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV; sección colapsable "Análisis con IA" (misma lógica collapse-section que Recomendaciones y Detalle) con botón "↓ Descargar informe" que genera PDF "Informe de Facilitación" (`exportAnalisisPDF`) |
-| **Evolución** | Todos | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión |
-| **Equipos** | Todos | Alta, baja y activación de equipos; selector de categoría (Software/Conocimiento/Operaciones/Otro); botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo |
-| **Plan de Acción** | Todos | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado |
-| **Configuración** | Todos | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA, guardado en `workspaces/{uid}`. **Salud del equipo:** toggle para activar las 3 preguntas opcionales de seguridad psicológica al final del formulario. **Guía de llenado:** textarea para personalizar el mensaje de independencia de respuestas en el formulario. **Cadencia de ciclos:** select 1–8 semanas — activa banner de recordatorio cuando pasa ese tiempo sin respuestas. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}` |
-| **Usuarios** | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación |
+| Pestaña            | Disponible para  | Función                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Análisis**       | Todos            | Estadísticas agregadas, madurez por equipo y rol (con umbral de anonimato MIN=3 resp. por rol), toggle "Excluir Otro", badge de alineación, radar por equipo (con línea punteada de benchmark — org o por categoría si hay ≥2 equipos de la misma categoría), delta "+N% org/categoría" en header de cada equipo, comparativa multi-equipo, recomendaciones colapsables (4 niveles: Inicial/En desarrollo/Maduro/Avanzado), histogramas por pregunta con badge "Opiniones divididas" (preguntas polarizadas) y badge ⚠ "Señal oculta" (inconsistencia score-comentario), badge "No-software" en Excelencia Técnica si el equipo usa preguntas alternativas, badge de salud del equipo (Alta/Media/Baja si `teamHealthEnabled`), notas del coach por ciclo (guardado automático), contador de respuestas en tiempo real con comparación vs. ciclo anterior, indicador de momentum ↗/→/↘ por equipo, sección colapsable "⚡ Brechas de percepción detectadas" por dimensión, botón "Guía de facilitación" (ventana imprimible con top 3 oportunidades + preguntas de coaching + celebraciones), botón "↗ Compartir reporte", botón "↓ PPT" (genera .pptx con 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción), exportación PDF/CSV; sección colapsable "Análisis con IA" (misma lógica collapse-section que Recomendaciones y Detalle) con botón "↓ Descargar informe" que genera PDF "Informe de Facilitación" (`exportAnalisisPDF`) |
+| **Evolución**      | Todos            | Progreso de equipos a lo largo de ciclos, tabla de dimensiones por ciclo, gráfico de líneas de tendencia histórica por dimensión (Chart.js, visible con ≥3 ciclos), detalle por pregunta con delta vs. ciclo anterior, sección "Planes vinculados" por dimensión                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **Equipos**        | Todos            | Alta, baja y activación de equipos; selector de categoría (Software/Conocimiento/Operaciones/Otro); botón QR (URL persistente `?workspaceId=X&equipoId=Y`); botón **Facilitar →** (abre `facilitar.html` en nueva pestaña con el ciclo activo); editor de marca del workspace (nombre, logo, color de acento — guardado en `workspaces/{uid}`); briefing pre-assessment editable; historial de reportes compartidos con fecha de expiración y botón Revocar; botón `+ Portal` / `Portal ↗` por equipo para crear/sincronizar el portal del equipo                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Plan de Acción** | Todos            | Acciones de mejora: iniciativa, responsable, fecha, estado, ciclo y dimensión objetivo. Badge de dimensión. Badge "Actualizado por equipo" cuando el equipo cambió el estado desde el portal. Exportación a PDF agrupado por estado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| **Configuración**  | Todos            | **Anonimato y privacidad:** selector de modo anónimo total / semi-anónimo / nominal + toggle de IA, guardado en `workspaces/{uid}`. **Salud del equipo:** toggle para activar las 3 preguntas opcionales de seguridad psicológica al final del formulario. **Guía de llenado:** textarea para personalizar el mensaje de independencia de respuestas en el formulario. **Cadencia de ciclos:** select 1–8 semanas — activa banner de recordatorio cuando pasa ese tiempo sin respuestas. **Webhook:** URL configurable + botón "Probar"; eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. **Editor de preguntas** por sección: desactivar, editar texto, agregar personalizadas (hasta 3/sección, no afectan scoring). Guardado automático en `configuraciones/{ownerId}` y `workspaces/{ownerId}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Usuarios**       | Solo super_admin | Crear workspace admins, suspender / reactivar / eliminar cuentas, reenviar invitación                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 #### Flujo para dar acceso a un cliente
 
@@ -155,14 +155,14 @@ Acceso en `/admin`. Sistema multi-tenant con dos roles:
 
 El assessment mide madurez en 6 dimensiones:
 
-| # | Dimensión | Enfoque | Perspectiva principal | Preguntas | Puntaje Máx. |
-|---|-----------|---------|----------------------|-----------|--------------|
-| 1 | **Ceremonias** | Calidad y valor de los eventos Scrum | PO + Dev Team | 4 | 12 pts |
-| 2 | **Product Backlog** | Gestión del Product Backlog por el PO | Product Owner | 3 | 9 pts |
-| 3 | **Dev Team** | Autoorganización y entrega técnica | Dev Team | 4 | 12 pts |
-| 4 | **Transparencia** | Inspección, adaptación, impedimentos y pilares empíricos | PO + Dev Team | 4 | 12 pts |
-| 5 | **Excelencia Técnica** | CI/CD, pruebas automatizadas, deuda técnica (o equivalentes de conocimiento) | Dev Team | 3 | 9 pts |
-| 6 | **Orientación al Cliente** | Contacto con usuarios, métricas de valor | PO + Dev Team | 3 | 9 pts |
+| #   | Dimensión                  | Enfoque                                                                      | Perspectiva principal | Preguntas | Puntaje Máx. |
+| --- | -------------------------- | ---------------------------------------------------------------------------- | --------------------- | --------- | ------------ |
+| 1   | **Ceremonias**             | Calidad y valor de los eventos Scrum                                         | PO + Dev Team         | 4         | 12 pts       |
+| 2   | **Product Backlog**        | Gestión del Product Backlog por el PO                                        | Product Owner         | 3         | 9 pts        |
+| 3   | **Dev Team**               | Autoorganización y entrega técnica                                           | Dev Team              | 4         | 12 pts       |
+| 4   | **Transparencia**          | Inspección, adaptación, impedimentos y pilares empíricos                     | PO + Dev Team         | 4         | 12 pts       |
+| 5   | **Excelencia Técnica**     | CI/CD, pruebas automatizadas, deuda técnica (o equivalentes de conocimiento) | Dev Team              | 3         | 9 pts        |
+| 6   | **Orientación al Cliente** | Contacto con usuarios, métricas de valor                                     | PO + Dev Team         | 3         | 9 pts        |
 
 **Total:** 21 preguntas — puntaje máximo: **63 puntos**
 
@@ -176,16 +176,17 @@ El assessment mide madurez en 6 dimensiones:
 
 Cada pregunta tiene 4 opciones ordenadas de menor a mayor madurez:
 
-| Opción | Puntos | Descripción |
-|--------|--------|-------------|
-| 1 | 0 | Práctica ausente o inconsistente |
-| 2 | 1 | Práctica inicial con brechas importantes |
-| 3 | 2 | Práctica parcialmente establecida |
-| 4 | 3 | Práctica consolidada y generando valor |
+| Opción | Puntos | Descripción                              |
+| ------ | ------ | ---------------------------------------- |
+| 1      | 0      | Práctica ausente o inconsistente         |
+| 2      | 1      | Práctica inicial con brechas importantes |
+| 3      | 2      | Práctica parcialmente establecida        |
+| 4      | 3      | Práctica consolidada y generando valor   |
 
 **Ponderación de preguntas fundacionales (V4):**
 
 Cuatro preguntas tienen `weight: 1.5` (fundamentos de Scrum):
+
 - Sprint Goal (Ceremonias P1)
 - Product Goal (Product Backlog P3)
 - Definition of Done (Dev Team P2)
@@ -204,12 +205,12 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 
 ### Niveles de madurez
 
-| Nivel | Rango | Etiqueta | Descripción |
-|-------|-------|----------|-------------|
-| 1 | 0 – 40% | **Inicial** | El equipo conoce la teoría Scrum pero la práctica es inconsistente. Alta dependencia externa. |
-| 2 | 41 – 65% | **En desarrollo** | Adopción parcial de Scrum. Los eventos ocurren pero la generación de valor no está optimizada. |
-| 3 | 66 – 82% | **Maduro** | Scrum bien integrado. El equipo entrega valor consistentemente con mejora continua. |
-| 4 | 83 – 100% | **Avanzado** | Equipo ágil de alto rendimiento. El empirismo guía las decisiones; la mejora es parte del ADN. |
+| Nivel | Rango     | Etiqueta          | Descripción                                                                                    |
+| ----- | --------- | ----------------- | ---------------------------------------------------------------------------------------------- |
+| 1     | 0 – 40%   | **Inicial**       | El equipo conoce la teoría Scrum pero la práctica es inconsistente. Alta dependencia externa.  |
+| 2     | 41 – 65%  | **En desarrollo** | Adopción parcial de Scrum. Los eventos ocurren pero la generación de valor no está optimizada. |
+| 3     | 66 – 82%  | **Maduro**        | Scrum bien integrado. El equipo entrega valor consistentemente con mejora continua.            |
+| 4     | 83 – 100% | **Avanzado**      | Equipo ágil de alto rendimiento. El empirismo guía las decisiones; la mejora es parte del ADN. |
 
 ---
 
@@ -218,15 +219,19 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 #### Sección 1 de 6 — Ceremonias y ritmo del equipo
 
 **P1. ¿Con qué frecuencia se realiza la Sprint Planning y genera un Sprint Goal claro?**
+
 - Nunca o rara vez → A veces, pero el Goal es vago → Casi siempre con Goal definido → Siempre; el Goal guía cada decisión del Sprint
 
 **P2. ¿El Daily Scrum se usa para inspeccionar el progreso hacia el Sprint Goal y adaptar el plan?**
+
 - No hacemos Daily o es un reporte de estado → Hacemos Daily pero sin foco en el Goal → Mayormente nos enfocamos en el Goal → El Daily es una herramienta real de adaptación diaria
 
 **P3. ¿La Sprint Review involucra a stakeholders reales y genera feedback accionable?**
+
 - No hacemos Review o es solo interna → Hay stakeholders pero el feedback no se incorpora → A veces logramos feedback útil → Siempre; los stakeholders influyen el Product Backlog
 
 **P4. ¿La Retrospectiva produce mejoras concretas que se implementan en el siguiente Sprint?**
+
 - No hacemos Retro → Hacemos Retro pero sin compromisos concretos → Definimos mejoras pero pocas se implementan → Las mejoras se rastrean y se implementan sistemáticamente
 
 ---
@@ -234,12 +239,15 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 #### Sección 2 de 6 — Gestión del Product Backlog
 
 **P5. ¿El Product Backlog está ordenado por valor y refleja las necesidades reales de los usuarios?**
+
 - No está ordenado o no existe claro → Está ordenado por esfuerzo o cronología → Ordenado parcialmente por valor → Ordenado por valor, revisado continuamente con stakeholders
 
 **P6. ¿Los ítems del backlog tienen criterios de aceptación claros antes de entrar al Sprint?**
+
 - Rara vez tienen criterios → Algunos tienen criterios básicos → La mayoría tiene criterios antes del Sprint → Todos tienen criterios claros y el equipo los revisó
 
 **P7. ¿El Product Goal está definido y el equipo lo conoce?**
+
 - No existe Product Goal formal → Existe pero pocos en el equipo lo conocen → El equipo lo conoce pero no lo usa para tomar decisiones → El Product Goal guía el refinamiento y priorización
 
 ---
@@ -247,15 +255,19 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 #### Sección 3 de 6 — Autoorganización y entrega
 
 **P8. ¿El equipo se autoorganiza para lograr el Sprint Goal sin necesitar asignación externa de tareas?**
+
 - El líder o PM asigna todas las tareas → Hay algo de autoorganización pero con dependencia externa → El equipo mayormente se organiza solo → Plena autoorganización; el equipo decide cómo lograr el Goal
 
 **P9. ¿El Increment al final de cada Sprint cumple la Definition of Done y está potencialmente entregable?**
+
 - No tenemos Definition of Done → Tenemos DoD pero rara vez se cumple → Se cumple en la mayoría de Sprints → Siempre; cada Sprint produce un Increment usable
 
 **P10. ¿El equipo tiene las habilidades necesarias para entregar valor completo (cross-functional)?**
+
 - Hay muchas dependencias externas para completar ítems → Dependencias frecuentes en algunas áreas → Mayormente autónomo, pocas dependencias → Totalmente cross-functional; entrega completa sin externos
 
 **P11. ¿Qué tan bien maneja el equipo el WIP (work in progress) para evitar cuellos de botella?**
+
 - Sin límite de WIP; varios ítems empezados y sin terminar → El WIP crece sin control en cada Sprint → Hay cierta conciencia pero sin límites formales → Limitamos WIP activamente para maximizar el flujo
 
 ---
@@ -263,15 +275,19 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 #### Sección 4 de 6 — Transparencia, inspección y adaptación
 
 **P12. ¿El equipo y stakeholders tienen visibilidad real del progreso y los impedimentos?**
+
 - La información está fragmentada o desactualizada → Hay visibilidad parcial en algunas áreas → Buena visibilidad, con algunas brechas → Transparencia total; el Scrum Board refleja la realidad
 
 **P13. ¿El equipo adapta su plan basándose en lo aprendido durante el Sprint?**
+
 - El plan no cambia una vez iniciado el Sprint → Adaptaciones mínimas, generalmente al final → Adaptaciones frecuentes con base en la evidencia → Inspección y adaptación continua; el plan es una guía viva
 
 **P14. ¿Los valores de Scrum (compromiso, coraje, foco, apertura, respeto) son visibles en el día a día?**
+
 - Rara vez se manifiestan en las interacciones → Algunos valores están presentes de forma inconsistente → La mayoría de valores se practican habitualmente → Los valores son parte de la cultura del equipo
 
-**P15. ¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?** *(V4 — nueva)*
+**P15. ¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?** _(V4 — nueva)_
+
 - Los impedimentos no se identifican o permanecen bloqueados varias semanas sin dueño → Se mencionan en el Daily pero nadie los escala; el equipo los asume como parte del trabajo → La mayoría se escalan y se resuelven, aunque algunos quedan sin seguimiento → Los impedimentos se identifican, escalan y resuelven sistemáticamente antes de que bloqueen el Sprint Goal
 
 ---
@@ -280,26 +296,32 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 
 > Para equipos que no trabajan en desarrollo de software (teamType = No-software), esta sección muestra preguntas alternativas sobre gestión de calidad del trabajo de conocimiento. Los resultados se almacenan con las mismas keys (`tecnico_0/1/2`).
 
-**P16. ¿El equipo tiene integración continua (CI) que detecta errores automáticamente?** *(P15 en versiones anteriores a V4)*
+**P16. ¿El equipo tiene integración continua (CI) que detecta errores automáticamente?** _(P15 en versiones anteriores a V4)_
+
 - No hay CI; el build es manual o esporádico → CI configurado pero con fallos frecuentes no resueltos → CI estable; los fallos se resuelven antes de continuar → CI + CD; despliegues automatizados frecuentes y fiables
 
-**P17. ¿El equipo tiene pruebas automatizadas que generan confianza para hacer cambios?** *(P16 en versiones anteriores a V4)*
+**P17. ¿El equipo tiene pruebas automatizadas que generan confianza para hacer cambios?** _(P16 en versiones anteriores a V4)_
+
 - Sin pruebas automatizadas → Algunas pruebas pero con cobertura muy baja → Buena cobertura en áreas críticas del sistema → Suite sólida de pruebas; se refactoriza y despliega con confianza
 
-**P18. ¿El equipo gestiona activamente la deuda técnica?** *(P17 en versiones anteriores a V4)*
+**P18. ¿El equipo gestiona activamente la deuda técnica?** _(P17 en versiones anteriores a V4)_
+
 - No se reconoce ni se habla de deuda técnica → Se reconoce pero nunca se prioriza → Se incluye en el backlog y se prioriza con criterio → Se gestiona como parte del refinamiento y de la Definition of Done
 
 ---
 
 #### Sección 6 de 6 — Orientación al cliente
 
-**P19. ¿El equipo tiene contacto directo con usuarios o clientes reales?** *(P18 en versiones anteriores a V4)*
+**P19. ¿El equipo tiene contacto directo con usuarios o clientes reales?** _(P18 en versiones anteriores a V4)_
+
 - Nunca; todo pasa a través del PO o Management → Raramente, solo en demos formales → Ocasionalmente en Sprint Reviews o entrevistas puntuales → Regularmente; el equipo valida hipótesis directamente con usuarios
 
-**P20. ¿El equipo mide si lo que entrega genera valor real para el negocio o el usuario?** *(P19 en versiones anteriores a V4)*
+**P20. ¿El equipo mide si lo que entrega genera valor real para el negocio o el usuario?** _(P19 en versiones anteriores a V4)_
+
 - No se mide impacto; solo se cuentan features entregadas → Hay algunas métricas de negocio pero no se revisan con regularidad → Seguimiento de métricas clave por producto en cada Sprint Review → Cultura de experimentación: hipótesis → medición → aprendizaje
 
-**P21. ¿El equipo entiende el 'por qué' de negocio detrás de cada ítem del backlog?** *(P20 en versiones anteriores a V4)*
+**P21. ¿El equipo entiende el 'por qué' de negocio detrás de cada ítem del backlog?** _(P20 en versiones anteriores a V4)_
+
 - Rara vez se explica el propósito de negocio de los ítems → A veces, cuando se pregunta explícitamente → El PO explica el valor esperado en el refinamiento → El equipo cuestiona y co-diseña la solución basado en el problema real
 
 ---
@@ -308,47 +330,47 @@ El peso se aplica al calcular el score: `wSum += respuesta × weight`. El result
 
 Las recomendaciones se generan automáticamente según el **puntaje de cada dimensión** y el **rol del participante**. Hay 4 rangos de recomendación por dimensión (desde V4):
 
-| Rango | Nivel | idx |
-|-------|-------|-----|
-| 0 – 33% | Inicial | 0 |
-| 34 – 66% | En desarrollo | 1 |
-| 67 – 82% | Maduro | 2 |
-| 83 – 100% | Avanzado | 3 |
+| Rango     | Nivel         | idx |
+| --------- | ------------- | --- |
+| 0 – 33%   | Inicial       | 0   |
+| 34 – 66%  | En desarrollo | 1   |
+| 67 – 82%  | Maduro        | 2   |
+| 83 – 100% | Avanzado      | 3   |
 
 `getRec(dim, pct, role)` → `idx = pct<=33 ? 0 : pct<=66 ? 1 : pct<=82 ? 2 : 3`
 
 #### Product Owner
 
-| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
-|-----------|-----------------|------------------------|-----------------|---------------------|
-| Ceremonias | El Sprint Goal no existe o no guía las decisiones. Definir un objetivo de negocio claro y medible para cada Sprint. | El Sprint Goal existe pero no conecta con el Product Goal. Trabajar en que cada Sprint Goal sea un paso concreto hacia el Product Goal. | Profundizar en que cada Sprint Review sea una sesión de inspección/adaptación del Product Backlog basada en feedback real y métricas. | Eleva la calidad del Sprint Goal: que sea una hipótesis de negocio con métricas de validación claras que el equipo pueda inspeccionar durante el Sprint. |
-| Product Backlog | Definir Product Goal inspirador; escribir User Stories con criterios de aceptación claros. | Implementar refinamiento regular; evaluar WSJF o Kano para priorización por valor. | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs para entrega estratégica. | Conectar cada Sprint con outcomes medibles. Explorar hypothesis-driven development: el backlog como mapa de aprendizajes, no inventario de funcionalidades. |
-| Dev Team | Estar disponible durante el Sprint para clarificaciones rápidas — la accesibilidad del PO es crítica. | Asegurar que las User Stories lleguen al Sprint Planning con suficiente detalle. Trabajar con el SM para eliminar dependencias externas. | Involucrarse en la DoD para que refleje los criterios de calidad que el negocio realmente necesita. | El equipo es completamente autónomo. Tu palanca es el contexto estratégico: compartir métricas de uso y roadmap de aprendizajes para que el equipo tome decisiones técnicas alineadas con el valor real. |
-| Transparencia | Hacer el Product Backlog visible a todos. Definir métricas simples de progreso hacia el Product Goal. | Compartir activamente el Product Goal en cada Sprint Review; conectar Sprint Backlog con objetivos de negocio. | Rastrear métricas de outcome (impacto en negocio), no solo output (features entregadas). | Evoluciona los artefactos Scrum hacia herramientas de comunicación estratégica. El Product Goal como hipótesis medible; métricas de outcome visibles para toda la organización. |
-| Exc. Técnica | Exigir que la DoD incluya pruebas automatizadas básicas — sin esto cada Increment acumula riesgo oculto. | Asegurar que la deuda técnica tenga visibilidad en el backlog y se priorice regularmente, no solo en crisis. | Conectar métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal. | Conecta las DORA metrics con tu roadmap: un equipo que despliega múltiples veces al día puede experimentar y aprender a una velocidad que ningún documento de especificación puede capturar. |
-| Orient. Cliente | Facilitar acceso a usuarios reales: organizar entrevistas, invitar clientes a Sprint Reviews. Sin feedback real, el backlog es especulación. | Definir métricas de outcome claras (retención, adopción, NPS) y revisarlas en cada Sprint Review. | Evolucionar hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos, ajuste del Product Goal con datos reales. | Institucionaliza el descubrimiento continuo: Opportunity Solution Trees, Product Goal como hipótesis de negocio. El backlog debería ser la historia de los aprendizajes del equipo sobre el problema del cliente. |
+| Dimensión       | 0–33% (Inicial)                                                                                                                              | 34–66% (En desarrollo)                                                                                                                   | 67–82% (Maduro)                                                                                                                                | 83–100% (Avanzado)                                                                                                                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ceremonias      | El Sprint Goal no existe o no guía las decisiones. Definir un objetivo de negocio claro y medible para cada Sprint.                          | El Sprint Goal existe pero no conecta con el Product Goal. Trabajar en que cada Sprint Goal sea un paso concreto hacia el Product Goal.  | Profundizar en que cada Sprint Review sea una sesión de inspección/adaptación del Product Backlog basada en feedback real y métricas.          | Eleva la calidad del Sprint Goal: que sea una hipótesis de negocio con métricas de validación claras que el equipo pueda inspeccionar durante el Sprint.                                                          |
+| Product Backlog | Definir Product Goal inspirador; escribir User Stories con criterios de aceptación claros.                                                   | Implementar refinamiento regular; evaluar WSJF o Kano para priorización por valor.                                                       | Conectar ítems con Product Goal; explorar Impact Mapping u OKRs para entrega estratégica.                                                      | Conectar cada Sprint con outcomes medibles. Explorar hypothesis-driven development: el backlog como mapa de aprendizajes, no inventario de funcionalidades.                                                       |
+| Dev Team        | Estar disponible durante el Sprint para clarificaciones rápidas — la accesibilidad del PO es crítica.                                        | Asegurar que las User Stories lleguen al Sprint Planning con suficiente detalle. Trabajar con el SM para eliminar dependencias externas. | Involucrarse en la DoD para que refleje los criterios de calidad que el negocio realmente necesita.                                            | El equipo es completamente autónomo. Tu palanca es el contexto estratégico: compartir métricas de uso y roadmap de aprendizajes para que el equipo tome decisiones técnicas alineadas con el valor real.          |
+| Transparencia   | Hacer el Product Backlog visible a todos. Definir métricas simples de progreso hacia el Product Goal.                                        | Compartir activamente el Product Goal en cada Sprint Review; conectar Sprint Backlog con objetivos de negocio.                           | Rastrear métricas de outcome (impacto en negocio), no solo output (features entregadas).                                                       | Evoluciona los artefactos Scrum hacia herramientas de comunicación estratégica. El Product Goal como hipótesis medible; métricas de outcome visibles para toda la organización.                                   |
+| Exc. Técnica    | Exigir que la DoD incluya pruebas automatizadas básicas — sin esto cada Increment acumula riesgo oculto.                                     | Asegurar que la deuda técnica tenga visibilidad en el backlog y se priorice regularmente, no solo en crisis.                             | Conectar métricas técnicas (frecuencia de despliegue, tasa de fallos) con los objetivos de negocio del Product Goal.                           | Conecta las DORA metrics con tu roadmap: un equipo que despliega múltiples veces al día puede experimentar y aprender a una velocidad que ningún documento de especificación puede capturar.                      |
+| Orient. Cliente | Facilitar acceso a usuarios reales: organizar entrevistas, invitar clientes a Sprint Reviews. Sin feedback real, el backlog es especulación. | Definir métricas de outcome claras (retención, adopción, NPS) y revisarlas en cada Sprint Review.                                        | Evolucionar hacia un modelo de descubrimiento continuo: entrevistas semanales, experimentos rápidos, ajuste del Product Goal con datos reales. | Institucionaliza el descubrimiento continuo: Opportunity Solution Trees, Product Goal como hipótesis de negocio. El backlog debería ser la historia de los aprendizajes del equipo sobre el problema del cliente. |
 
 #### Dev Team
 
-| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
-|-----------|-----------------|------------------------|-----------------|---------------------|
-| Ceremonias | Apropiarse del Daily (15 min orientados al Sprint Goal); co-crear el Sprint Plan. | En el Daily, preguntar si se está en camino al Sprint Goal. En la Retro, generar 1–2 compromisos concretos con dueño. | Profundizar en que la Retro genere mejoras sistémicas; que el Sprint Review sea una conversación real sobre el valor entregado. | Facilitación distribuida: que el equipo conduzca sus propios eventos sin necesitar al SM. La Retro debe evolucionar hacia experimentos sistémicos con hipótesis medibles y revisión de resultados. |
-| Product Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos antes de comprometerse. | Involucrarse activamente: rechazar Stories sin criterios de aceptación claros en el Sprint Planning. | Conectar Stories con el "por qué" de negocio para tomar mejores decisiones técnicas durante el Sprint. | Co-diseñar el espacio del problema con el PO: entender las hipótesis de negocio y proponer alternativas técnicas que validen las mismas hipótesis con menor esfuerzo o mayor aprendizaje. |
-| Dev Team | Definir DoD que todos validen; distribuir el conocimiento. Cada miembro debe poder trabajar en cualquier tarea. | Rotar tareas, implementar pair programming, mapear y eliminar dependencias externas frecuentes. | Implementar límites de WIP; medir cycle time; mejorar el flujo para mayor predictibilidad. | Mejora continua basada en datos: lead time, cycle time y deployment frequency. Explorar Team Topologies para optimizar interacciones y reducir carga cognitiva del sistema. |
-| Transparencia | Mantener el Scrum Board actualizado en tiempo real. Sin visibilidad compartida no hay inspección posible. | Escalar impedimentos en el Daily antes de que bloqueen el Sprint Goal. | Incorporar métricas de flujo (burndown, velocity, cycle time) para retrospectivas basadas en datos. | Usar los datos para influir en la organización: compartir métricas de flujo en lenguaje de negocio y co-crear con el PO dashboards de outcome que demuestren valor generado, no solo trabajo realizado. |
-| Exc. Técnica | Definir DoD con pruebas automatizadas y configurar CI mínimo. Sin esto, entregar con frecuencia es arriesgado. | Aumentar cobertura de tests en áreas críticas; estabilizar CI; incluir deuda técnica en el backlog como ítem de valor. | Evolucionar hacia CD y gestión proactiva de deuda técnica. Medir DORA metrics para seguir mejorando. | La excelencia técnica es vuestra fortaleza. Hacerla visible hacia la organización: conectar deployment frequency con capacidad de experimentar. Un equipo que despliega múltiples veces al día puede invalidar una hipótesis antes de que se convierta en deuda de producto. |
-| Orient. Cliente | Pedir al PO que comparta métricas de uso y organice sesiones de observación de usuarios. | Involucrarse en entrevistas de usuario y Sprint Reviews con stakeholders reales. | Conectar métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario. | Incorporar métricas de experiencia de usuario en decisiones técnicas (performance, fiabilidad, accesibilidad como parte de la DoD) y participar activamente en el descubrimiento continuo. |
+| Dimensión       | 0–33% (Inicial)                                                                                                  | 34–66% (En desarrollo)                                                                                                 | 67–82% (Maduro)                                                                                                                 | 83–100% (Avanzado)                                                                                                                                                                                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ceremonias      | Apropiarse del Daily (15 min orientados al Sprint Goal); co-crear el Sprint Plan.                                | En el Daily, preguntar si se está en camino al Sprint Goal. En la Retro, generar 1–2 compromisos concretos con dueño.  | Profundizar en que la Retro genere mejoras sistémicas; que el Sprint Review sea una conversación real sobre el valor entregado. | Facilitación distribuida: que el equipo conduzca sus propios eventos sin necesitar al SM. La Retro debe evolucionar hacia experimentos sistémicos con hipótesis medibles y revisión de resultados.                                                                           |
+| Product Backlog | Exigir sesiones de refinamiento regulares; hacer preguntas técnicas; identificar riesgos antes de comprometerse. | Involucrarse activamente: rechazar Stories sin criterios de aceptación claros en el Sprint Planning.                   | Conectar Stories con el "por qué" de negocio para tomar mejores decisiones técnicas durante el Sprint.                          | Co-diseñar el espacio del problema con el PO: entender las hipótesis de negocio y proponer alternativas técnicas que validen las mismas hipótesis con menor esfuerzo o mayor aprendizaje.                                                                                    |
+| Dev Team        | Definir DoD que todos validen; distribuir el conocimiento. Cada miembro debe poder trabajar en cualquier tarea.  | Rotar tareas, implementar pair programming, mapear y eliminar dependencias externas frecuentes.                        | Implementar límites de WIP; medir cycle time; mejorar el flujo para mayor predictibilidad.                                      | Mejora continua basada en datos: lead time, cycle time y deployment frequency. Explorar Team Topologies para optimizar interacciones y reducir carga cognitiva del sistema.                                                                                                  |
+| Transparencia   | Mantener el Scrum Board actualizado en tiempo real. Sin visibilidad compartida no hay inspección posible.        | Escalar impedimentos en el Daily antes de que bloqueen el Sprint Goal.                                                 | Incorporar métricas de flujo (burndown, velocity, cycle time) para retrospectivas basadas en datos.                             | Usar los datos para influir en la organización: compartir métricas de flujo en lenguaje de negocio y co-crear con el PO dashboards de outcome que demuestren valor generado, no solo trabajo realizado.                                                                      |
+| Exc. Técnica    | Definir DoD con pruebas automatizadas y configurar CI mínimo. Sin esto, entregar con frecuencia es arriesgado.   | Aumentar cobertura de tests en áreas críticas; estabilizar CI; incluir deuda técnica en el backlog como ítem de valor. | Evolucionar hacia CD y gestión proactiva de deuda técnica. Medir DORA metrics para seguir mejorando.                            | La excelencia técnica es vuestra fortaleza. Hacerla visible hacia la organización: conectar deployment frequency con capacidad de experimentar. Un equipo que despliega múltiples veces al día puede invalidar una hipótesis antes de que se convierta en deuda de producto. |
+| Orient. Cliente | Pedir al PO que comparta métricas de uso y organice sesiones de observación de usuarios.                         | Involucrarse en entrevistas de usuario y Sprint Reviews con stakeholders reales.                                       | Conectar métricas técnicas (performance, fiabilidad) con métricas de experiencia de usuario.                                    | Incorporar métricas de experiencia de usuario en decisiones técnicas (performance, fiabilidad, accesibilidad como parte de la DoD) y participar activamente en el descubrimiento continuo.                                                                                   |
 
 #### Scrum Master
 
-| Dimensión | 0–33% (Inicial) | 34–66% (En desarrollo) | 67–82% (Maduro) | 83–100% (Avanzado) |
-|-----------|-----------------|------------------------|-----------------|---------------------|
-| Ceremonias | Facilitar formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos. | Mejorar calidad de facilitación; que el Daily sea del equipo (no dirigido al SM); que la Retro genere compromisos medibles con dueño. | Lograr que el equipo sea autónomo en la facilitación — el SM no debería ser facilitador permanente. | Hacerse prescindible como facilitador. Dedicar energía a facilitar conversaciones sistémicas sobre cómo el sistema de trabajo del equipo puede evolucionar más allá de los eventos Scrum. |
-| Product Backlog | Facilitar la relación PO-equipo; organizar las primeras sesiones de refinamiento; ayudar al PO a escribir User Stories con criterios claros. | Observar sesiones de refinamiento; identificar malentendidos; educar en escritura de historias y estimación relativa. | Apoyar al PO en conectar backlog con métricas de valor; explorar priorización avanzada (WSJF, Cost of Delay). | Facilitar que el equipo conecte el trabajo con outcomes de negocio, apoyar al PO en discovery continuo. El backlog debería reflejar aprendizajes reales del mercado, no solo solicitudes de stakeholders. |
-| Dev Team | Crear espacios seguros para que el equipo tome decisiones; empezar con autoselección de tareas en el Sprint Planning. | Mapear dependencias externas e impedimentos sistémicos; trabajar con la organización para eliminarlos. | Trabajar en métricas de equipo (velocity, predictibilidad) y evolucionar la DoD para incrementar calidad continuamente. | El equipo tiene plena autonomía. El rol del SM evoluciona hacia el nivel organizacional: remover impedimentos sistémicos, facilitar interacciones con otros equipos y representar las necesidades del equipo en el diseño organizacional. |
-| Transparencia | Establecer Scrum Board visible; formar al equipo sobre su importancia para la inspección y adaptación. | Crear registro de impedimentos visible y dar seguimiento a su resolución — genera confianza en el proceso. | Crear dashboard de métricas de flujo para conversaciones basadas en datos con stakeholders y decisiones más informadas en la Retro. | La transparencia interna es excelente. El siguiente nivel: ayudar al equipo a comunicar su valor en outcomes medibles, facilitar conversaciones de OKRs entre el equipo y la dirección. |
-| Exc. Técnica | Facilitar la conversación sobre la DoD incluyendo criterios de calidad técnica. Conectar con el equipo para entender impedimentos estructurales. | Hacer visible la deuda técnica en el backlog; facilitar la conversación con el PO para priorizarla. Un equipo con deuda descontrolada no puede ser predecible. | Trabajar en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para mejoras basadas en datos objetivos. | La excelencia técnica del equipo es sólida. Tu palanca es sistémica: conectar DORA metrics con objetivos de negocio y facilitar conversaciones con la organización sobre cómo la capacidad técnica habilita mayor velocidad de aprendizaje de producto. |
-| Orient. Cliente | Facilitar sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final. | Trabajar con el PO para establecer métricas de outcome en el Sprint. Cuando el equipo ve el impacto, la motivación y calidad de decisiones mejoran. | Facilitar la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debe informar tanto el proceso como la estrategia del producto. | El equipo tiene contacto directo y continuo con los usuarios. Facilitar que ese aprendizaje se integre estructuralmente: Retros con insights de usuario, mapa de oportunidades compartido con el PO. El discovery continuo debería ser tan natural como el Daily. |
+| Dimensión       | 0–33% (Inicial)                                                                                                                                  | 34–66% (En desarrollo)                                                                                                                                         | 67–82% (Maduro)                                                                                                                                                          | 83–100% (Avanzado)                                                                                                                                                                                                                                                |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ceremonias      | Facilitar formación sobre el propósito de cada evento Scrum. El Sprint Planning debe terminar con un Sprint Goal comprometido por todos.         | Mejorar calidad de facilitación; que el Daily sea del equipo (no dirigido al SM); que la Retro genere compromisos medibles con dueño.                          | Lograr que el equipo sea autónomo en la facilitación — el SM no debería ser facilitador permanente.                                                                      | Hacerse prescindible como facilitador. Dedicar energía a facilitar conversaciones sistémicas sobre cómo el sistema de trabajo del equipo puede evolucionar más allá de los eventos Scrum.                                                                         |
+| Product Backlog | Facilitar la relación PO-equipo; organizar las primeras sesiones de refinamiento; ayudar al PO a escribir User Stories con criterios claros.     | Observar sesiones de refinamiento; identificar malentendidos; educar en escritura de historias y estimación relativa.                                          | Apoyar al PO en conectar backlog con métricas de valor; explorar priorización avanzada (WSJF, Cost of Delay).                                                            | Facilitar que el equipo conecte el trabajo con outcomes de negocio, apoyar al PO en discovery continuo. El backlog debería reflejar aprendizajes reales del mercado, no solo solicitudes de stakeholders.                                                         |
+| Dev Team        | Crear espacios seguros para que el equipo tome decisiones; empezar con autoselección de tareas en el Sprint Planning.                            | Mapear dependencias externas e impedimentos sistémicos; trabajar con la organización para eliminarlos.                                                         | Trabajar en métricas de equipo (velocity, predictibilidad) y evolucionar la DoD para incrementar calidad continuamente.                                                  | El equipo tiene plena autonomía. El rol del SM evoluciona hacia el nivel organizacional: remover impedimentos sistémicos, facilitar interacciones con otros equipos y representar las necesidades del equipo en el diseño organizacional.                         |
+| Transparencia   | Establecer Scrum Board visible; formar al equipo sobre su importancia para la inspección y adaptación.                                           | Crear registro de impedimentos visible y dar seguimiento a su resolución — genera confianza en el proceso.                                                     | Crear dashboard de métricas de flujo para conversaciones basadas en datos con stakeholders y decisiones más informadas en la Retro.                                      | La transparencia interna es excelente. El siguiente nivel: ayudar al equipo a comunicar su valor en outcomes medibles, facilitar conversaciones de OKRs entre el equipo y la dirección.                                                                           |
+| Exc. Técnica    | Facilitar la conversación sobre la DoD incluyendo criterios de calidad técnica. Conectar con el equipo para entender impedimentos estructurales. | Hacer visible la deuda técnica en el backlog; facilitar la conversación con el PO para priorizarla. Un equipo con deuda descontrolada no puede ser predecible. | Trabajar en adoptar métricas de ingeniería (deployment frequency, lead time for changes) para mejoras basadas en datos objetivos.                                        | La excelencia técnica del equipo es sólida. Tu palanca es sistémica: conectar DORA metrics con objetivos de negocio y facilitar conversaciones con la organización sobre cómo la capacidad técnica habilita mayor velocidad de aprendizaje de producto.           |
+| Orient. Cliente | Facilitar sesiones de mapeo de valor donde el equipo visualice cómo su trabajo llega al usuario final.                                           | Trabajar con el PO para establecer métricas de outcome en el Sprint. Cuando el equipo ve el impacto, la motivación y calidad de decisiones mejoran.            | Facilitar la incorporación de feedback de usuario en las Retrospectivas. El aprendizaje sobre el cliente debe informar tanto el proceso como la estrategia del producto. | El equipo tiene contacto directo y continuo con los usuarios. Facilitar que ese aprendizaje se integre estructuralmente: Retros con insights de usuario, mapa de oportunidades compartido con el PO. El discovery continuo debería ser tan natural como el Daily. |
 
 ---
 
@@ -357,138 +379,148 @@ Las recomendaciones se generan automáticamente según el **puntaje de cada dime
 ### Colecciones
 
 #### `usuarios`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `nombre` | string | Nombre del workspace admin |
-| `email` | string | Email de acceso |
-| `role` | string | `'super_admin'` o `'admin'` |
-| `activo` | boolean | `true` = acceso permitido, `false` = suspendido |
-| `creadoEn` | timestamp | Fecha de creación de la cuenta |
+
+| Campo      | Tipo      | Descripción                                     |
+| ---------- | --------- | ----------------------------------------------- |
+| `nombre`   | string    | Nombre del workspace admin                      |
+| `email`    | string    | Email de acceso                                 |
+| `role`     | string    | `'super_admin'` o `'admin'`                     |
+| `activo`   | boolean   | `true` = acceso permitido, `false` = suspendido |
+| `creadoEn` | timestamp | Fecha de creación de la cuenta                  |
 
 #### `equipos`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `nombre` | string | Nombre del equipo |
-| `activo` | boolean | Si el equipo está disponible en el formulario |
-| `ownerId` | string | UID del workspace admin que creó el equipo |
-| `notas` | object | Notas del coach por ciclo `{ [cicloKey]: string }` — solo visibles en el panel admin |
-| `category` | string | **V4** Categoría del equipo: `'Software'` / `'Conocimiento'` / `'Operaciones'` / `'Otro'` — usada para benchmark segmentado |
+
+| Campo      | Tipo    | Descripción                                                                                                                 |
+| ---------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `nombre`   | string  | Nombre del equipo                                                                                                           |
+| `activo`   | boolean | Si el equipo está disponible en el formulario                                                                               |
+| `ownerId`  | string  | UID del workspace admin que creó el equipo                                                                                  |
+| `notas`    | object  | Notas del coach por ciclo `{ [cicloKey]: string }` — solo visibles en el panel admin                                        |
+| `category` | string  | **V4** Categoría del equipo: `'Software'` / `'Conocimiento'` / `'Operaciones'` / `'Otro'` — usada para benchmark segmentado |
 
 #### `workspaces`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `briefingTexto` | string | Texto de encuadre que el participante ve antes del formulario (vacío = sin pantalla de briefing) |
-| `marca` | string | Nombre de marca del workspace (reemplaza "Assessment de Madurez Agile" en el formulario y reportes) |
-| `logoUrl` | string | URL del logo — reemplaza el título de texto por una imagen |
-| `colorAcento` | string | Color HEX que sustituye al azul (#1a4fd6) por defecto en formulario y reportes |
-| `webhookUrl` | string | URL del endpoint para recibir eventos vía HTTP POST |
-| `anonymityMode` | string | Modo de anonimato: `'full'` (solo rol) / `'semi'` (identificador) / `'nominal'` (nombre visible). Default: `'full'` |
-| `aiEnabled` | boolean | Si está activo, el formulario muestra aviso de uso de IA a los participantes. Default: `false` |
-| `assessmentCadenceWeeks` | number | Semanas de cadencia configurada (1–8). `0` = desactivado. Activa banner de recordatorio en el panel. Default: `0` |
-| `teamHealthEnabled` | boolean | **V4** Si está activo, muestra 3 preguntas opcionales de seguridad psicológica al final del formulario. Default: `false` |
-| `guidanceText` | string | **V4** Texto personalizado de guía de llenado individual en la pantalla de inicio. Vacío = texto por defecto. |
+
+| Campo                    | Tipo    | Descripción                                                                                                              |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `briefingTexto`          | string  | Texto de encuadre que el participante ve antes del formulario (vacío = sin pantalla de briefing)                         |
+| `marca`                  | string  | Nombre de marca del workspace (reemplaza "Assessment de Madurez Agile" en el formulario y reportes)                      |
+| `logoUrl`                | string  | URL del logo — reemplaza el título de texto por una imagen                                                               |
+| `colorAcento`            | string  | Color HEX que sustituye al azul (#1a4fd6) por defecto en formulario y reportes                                           |
+| `webhookUrl`             | string  | URL del endpoint para recibir eventos vía HTTP POST                                                                      |
+| `anonymityMode`          | string  | Modo de anonimato: `'full'` (solo rol) / `'semi'` (identificador) / `'nominal'` (nombre visible). Default: `'full'`      |
+| `aiEnabled`              | boolean | Si está activo, el formulario muestra aviso de uso de IA a los participantes. Default: `false`                           |
+| `assessmentCadenceWeeks` | number  | Semanas de cadencia configurada (1–8). `0` = desactivado. Activa banner de recordatorio en el panel. Default: `0`        |
+| `teamHealthEnabled`      | boolean | **V4** Si está activo, muestra 3 preguntas opcionales de seguridad psicológica al final del formulario. Default: `false` |
+| `guidanceText`           | string  | **V4** Texto personalizado de guía de llenado individual en la pantalla de inicio. Vacío = texto por defecto.            |
 
 Acceso: lectura pública (formulario lo lee sin login), escritura solo por el propio workspace admin.
 
 #### `ciclos`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `nombre` | string | Nombre del ciclo (ej: "Q1 2025") |
-| `activo` | boolean | Ciclo actualmente activo |
-| `ownerId` | string | UID del workspace admin que creó el ciclo |
+
+| Campo     | Tipo    | Descripción                               |
+| --------- | ------- | ----------------------------------------- |
+| `nombre`  | string  | Nombre del ciclo (ej: "Q1 2025")          |
+| `activo`  | boolean | Ciclo actualmente activo                  |
+| `ownerId` | string  | UID del workspace admin que creó el ciclo |
 
 #### `respuestas`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `equipoId` | string | ID del documento del equipo |
-| `equipoNombre` | string | Nombre del equipo (desnormalizado) |
-| `participante` | string | Nombre del participante ("Anónimo" si no completó) |
-| `rol` | string | Rol: Product Owner / Dev Team / Scrum Master / Otro |
-| `ciclo` | string | Nombre del ciclo activo al momento del envío |
-| `tamanoEquipo` | string | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3. |
-| `tiempoScrum` | string | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3. |
-| `teamAge` | string | Antigüedad Scrum: "< 3 meses" / "3–12 meses" / "1–2 años" / "> 2 años" (opcional, V3) |
-| `teamSize` | string | Tamaño del equipo: "3–5" / "6–8" / "9+" (opcional, V3) |
-| `dedicatedPO` | string | PO dedicado: "Sí" / "No" / "Compartido" (opcional, V3) |
-| `workMode` | string | Modalidad: "Presencial" / "Híbrido" / "Totalmente remoto" (opcional, V3) |
-| `scoreEventos` | number | Puntaje bruto de la dimensión Ceremonias |
-| `scoreBacklog` | number | Puntaje bruto de la dimensión Product Backlog |
-| `scoreDevTeam` | number | Puntaje bruto de la dimensión Dev Team |
-| `scoreTransparencia` | number | Puntaje bruto de la dimensión Transparencia |
-| `scoreTecnico` | number | Puntaje bruto de la dimensión Excelencia Técnica |
-| `scoreCliente` | number | Puntaje bruto de la dimensión Orientación al Cliente |
-| `scoreTotalPct` | number | Porcentaje total (0–100) |
-| `nivel` | string | Etiqueta del nivel de madurez |
-| `answers` | object | Respuestas individuales por pregunta (`{secId}_{qi}` → valor 0–3) |
-| `comments` | object | Comentarios abiertos por sección (sectionId → string, opcional) |
-| `customAnswers` | object | Respuestas a preguntas personalizadas del workspace (no afectan el scoring) |
-| `completionSeconds` | number | Segundos entre inicio de primera sección y envío (V3, opcional) |
-| `flaggedFast` | boolean | `true` si `completionSeconds < 180` — posible respuesta apresurada (V3, opcional) |
-| `teamType` | string | **V4** Tipo de equipo: `'software'` / `'knowledge'` (vacío = no especificado). Determina qué preguntas vio el participante en Excelencia Técnica. |
-| `teamHealthScore` | number | **V4** Score de seguridad psicológica (0–100%). Solo presente si el workspace tiene `teamHealthEnabled=true`. |
-| `healthAnswers` | object | **V4** Respuestas a las 3 preguntas de salud del equipo `{ health_0, health_1, health_2 }` → valores 0–3. |
-| `fecha` | timestamp | Timestamp del servidor al momento del envío |
+
+| Campo                | Tipo      | Descripción                                                                                                                                       |
+| -------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `equipoId`           | string    | ID del documento del equipo                                                                                                                       |
+| `equipoNombre`       | string    | Nombre del equipo (desnormalizado)                                                                                                                |
+| `participante`       | string    | Nombre del participante ("Anónimo" si no completó)                                                                                                |
+| `rol`                | string    | Rol: Product Owner / Dev Team / Scrum Master / Otro                                                                                               |
+| `ciclo`              | string    | Nombre del ciclo activo al momento del envío                                                                                                      |
+| `tamanoEquipo`       | string    | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3.                                                                           |
+| `tiempoScrum`        | string    | **Legacy** — ya no se recolecta. Presente en registros anteriores a V3.                                                                           |
+| `teamAge`            | string    | Antigüedad Scrum: "< 3 meses" / "3–12 meses" / "1–2 años" / "> 2 años" (opcional, V3)                                                             |
+| `teamSize`           | string    | Tamaño del equipo: "3–5" / "6–8" / "9+" (opcional, V3)                                                                                            |
+| `dedicatedPO`        | string    | PO dedicado: "Sí" / "No" / "Compartido" (opcional, V3)                                                                                            |
+| `workMode`           | string    | Modalidad: "Presencial" / "Híbrido" / "Totalmente remoto" (opcional, V3)                                                                          |
+| `scoreEventos`       | number    | Puntaje bruto de la dimensión Ceremonias                                                                                                          |
+| `scoreBacklog`       | number    | Puntaje bruto de la dimensión Product Backlog                                                                                                     |
+| `scoreDevTeam`       | number    | Puntaje bruto de la dimensión Dev Team                                                                                                            |
+| `scoreTransparencia` | number    | Puntaje bruto de la dimensión Transparencia                                                                                                       |
+| `scoreTecnico`       | number    | Puntaje bruto de la dimensión Excelencia Técnica                                                                                                  |
+| `scoreCliente`       | number    | Puntaje bruto de la dimensión Orientación al Cliente                                                                                              |
+| `scoreTotalPct`      | number    | Porcentaje total (0–100)                                                                                                                          |
+| `nivel`              | string    | Etiqueta del nivel de madurez                                                                                                                     |
+| `answers`            | object    | Respuestas individuales por pregunta (`{secId}_{qi}` → valor 0–3)                                                                                 |
+| `comments`           | object    | Comentarios abiertos por sección (sectionId → string, opcional)                                                                                   |
+| `customAnswers`      | object    | Respuestas a preguntas personalizadas del workspace (no afectan el scoring)                                                                       |
+| `completionSeconds`  | number    | Segundos entre inicio de primera sección y envío (V3, opcional)                                                                                   |
+| `flaggedFast`        | boolean   | `true` si `completionSeconds < 180` — posible respuesta apresurada (V3, opcional)                                                                 |
+| `teamType`           | string    | **V4** Tipo de equipo: `'software'` / `'knowledge'` (vacío = no especificado). Determina qué preguntas vio el participante en Excelencia Técnica. |
+| `teamHealthScore`    | number    | **V4** Score de seguridad psicológica (0–100%). Solo presente si el workspace tiene `teamHealthEnabled=true`.                                     |
+| `healthAnswers`      | object    | **V4** Respuestas a las 3 preguntas de salud del equipo `{ health_0, health_1, health_2 }` → valores 0–3.                                         |
+| `fecha`              | timestamp | Timestamp del servidor al momento del envío                                                                                                       |
 
 #### `planes`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `equipoId` | string | ID del equipo al que aplica el plan |
-| `iniciativa` | string | Descripción de la acción de mejora |
-| `responsable` | string | Persona responsable de la acción |
-| `fechaObjetivo` | string | Fecha objetivo (formato YYYY-MM-DD) |
-| `estado` | string | Estado: `pendiente` / `en-curso` / `completado` |
-| `ciclo` | string | Ciclo en que se creó la acción |
-| `dimension` | string | Dimensión objetivo (key de DIMS, opcional) |
-| `ownerId` | string | UID del workspace admin |
-| `portalToken` | string | Token del portal del equipo — permite al equipo actualizar el estado sin login |
-| `updatedByTeam` | boolean | `true` si el último cambio de estado lo hizo el equipo desde el portal |
-| `updatedByTeamAt` | timestamp | Timestamp del cambio de estado hecho por el equipo |
+
+| Campo             | Tipo      | Descripción                                                                    |
+| ----------------- | --------- | ------------------------------------------------------------------------------ |
+| `equipoId`        | string    | ID del equipo al que aplica el plan                                            |
+| `iniciativa`      | string    | Descripción de la acción de mejora                                             |
+| `responsable`     | string    | Persona responsable de la acción                                               |
+| `fechaObjetivo`   | string    | Fecha objetivo (formato YYYY-MM-DD)                                            |
+| `estado`          | string    | Estado: `pendiente` / `en-curso` / `completado`                                |
+| `ciclo`           | string    | Ciclo en que se creó la acción                                                 |
+| `dimension`       | string    | Dimensión objetivo (key de DIMS, opcional)                                     |
+| `ownerId`         | string    | UID del workspace admin                                                        |
+| `portalToken`     | string    | Token del portal del equipo — permite al equipo actualizar el estado sin login |
+| `updatedByTeam`   | boolean   | `true` si el último cambio de estado lo hizo el equipo desde el portal         |
+| `updatedByTeamAt` | timestamp | Timestamp del cambio de estado hecho por el equipo                             |
 
 #### `portales`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `teamId` | string | ID del equipo al que pertenece el portal |
-| `teamName` | string | Nombre del equipo (desnormalizado) |
-| `ownerId` | string | UID del workspace admin que creó el portal |
-| `token` | string | Token único de acceso (igual al ID del documento) |
-| `createdAt` | timestamp | Fecha de creación del portal |
-| `lastSynced` | timestamp | Fecha del último sync de datos desde el admin |
-| `scores` | object | Snapshot de scores por dimensión del último ciclo |
-| `evolution` | array | Evolución histórica por ciclo para el gráfico |
-| `plans` | array | Lista de planes del equipo con estado actual |
+
+| Campo        | Tipo      | Descripción                                       |
+| ------------ | --------- | ------------------------------------------------- |
+| `teamId`     | string    | ID del equipo al que pertenece el portal          |
+| `teamName`   | string    | Nombre del equipo (desnormalizado)                |
+| `ownerId`    | string    | UID del workspace admin que creó el portal        |
+| `token`      | string    | Token único de acceso (igual al ID del documento) |
+| `createdAt`  | timestamp | Fecha de creación del portal                      |
+| `lastSynced` | timestamp | Fecha del último sync de datos desde el admin     |
+| `scores`     | object    | Snapshot de scores por dimensión del último ciclo |
+| `evolution`  | array     | Evolución histórica por ciclo para el gráfico     |
+| `plans`      | array     | Lista de planes del equipo con estado actual      |
 
 Acceso: lectura pública, creación/actualización/eliminación solo por el owner.
 
 #### `configuraciones`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `questionOverrides` | object | Por sección+pregunta: `{ [secId_qi]: { disabled: bool, texto: string } }` |
-| `customQuestions` | object | Por sección: `{ [secId]: [{ id, texto, opts: string[] }] }` — hasta 3 por sección |
+
+| Campo               | Tipo   | Descripción                                                                       |
+| ------------------- | ------ | --------------------------------------------------------------------------------- |
+| `questionOverrides` | object | Por sección+pregunta: `{ [secId_qi]: { disabled: bool, texto: string } }`         |
+| `customQuestions`   | object | Por sección: `{ [secId]: [{ id, texto, opts: string[] }] }` — hasta 3 por sección |
 
 ID del documento = UID del workspace admin. Acceso: lectura pública, escritura solo por el propio admin.
 
 #### `reportes`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `equipoId` | string | ID del equipo del snapshot |
-| `equipoNombre` | string | Nombre del equipo (desnormalizado) |
-| `ciclo` | string | Ciclo filtrado al generar el reporte ("Todos" si sin filtro) |
-| `ownerId` | string | UID del admin que generó el reporte |
-| `generatedAt` | timestamp | Fecha de generación |
-| `expiresAt` | timestamp | Fecha de expiración (30 días desde generación) |
-| `branding` | object | Branding del workspace al momento de generación: `{ marca, logoUrl, colorAcento }` |
-| `data` | object | Snapshot con avgTotal, level, avgDims, dims, radarValues, roleStats, dispersion, recommendations |
+
+| Campo          | Tipo      | Descripción                                                                                      |
+| -------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `equipoId`     | string    | ID del equipo del snapshot                                                                       |
+| `equipoNombre` | string    | Nombre del equipo (desnormalizado)                                                               |
+| `ciclo`        | string    | Ciclo filtrado al generar el reporte ("Todos" si sin filtro)                                     |
+| `ownerId`      | string    | UID del admin que generó el reporte                                                              |
+| `generatedAt`  | timestamp | Fecha de generación                                                                              |
+| `expiresAt`    | timestamp | Fecha de expiración (30 días desde generación)                                                   |
+| `branding`     | object    | Branding del workspace al momento de generación: `{ marca, logoUrl, colorAcento }`               |
+| `data`         | object    | Snapshot con avgTotal, level, avgDims, dims, radarValues, roleStats, dispersion, recommendations |
 
 Acceso: lectura pública (cualquiera con el token), creación autenticada, eliminación solo por owner o super_admin.
 
 #### `auditLog`
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `accion` | string | Evento (`workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`, …) |
-| `realizadoPor` | string | UID del llamador de la CF |
-| `detalles` | object | Payload relevante del evento (uid target, teamId, ciclo, fromCache, etc.) |
-| `severity` | string | `info` \| `warn` \| `error` |
-| `timestamp` | timestamp | `serverTimestamp()` al momento de la escritura |
+
+| Campo          | Tipo      | Descripción                                                                     |
+| -------------- | --------- | ------------------------------------------------------------------------------- |
+| `accion`       | string    | Evento (`workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`, …) |
+| `realizadoPor` | string    | UID del llamador de la CF                                                       |
+| `detalles`     | object    | Payload relevante del evento (uid target, teamId, ciclo, fromCache, etc.)       |
+| `severity`     | string    | `info` \| `warn` \| `error`                                                     |
+| `timestamp`    | timestamp | `serverTimestamp()` al momento de la escritura                                  |
 
 Escritura exclusivamente vía Cloud Function (helper `writeAudit` usa admin SDK). Lectura: solo super_admin.
 
@@ -498,14 +530,14 @@ Escritura exclusivamente vía Cloud Function (helper `writeAudit` usa admin SDK)
 
 Desde el panel admin se puede exportar:
 
-| Formato | Contenido |
-|---------|-----------|
-| **PDF análisis** | Reporte de análisis completo (impresión optimizada vía `window.print()`) |
-| **PDF plan de acción** | Acciones agrupadas por estado (En curso → Pendiente → Completado) en ventana nueva |
+| Formato                         | Contenido                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **PDF análisis**                | Reporte de análisis completo (impresión optimizada vía `window.print()`)                                                                                                                                                                                                             |
+| **PDF plan de acción**          | Acciones agrupadas por estado (En curso → Pendiente → Completado) en ventana nueva                                                                                                                                                                                                   |
 | **PDF Informe de Facilitación** | Generado por `exportAnalisisPDF(tid)` en `admin-export.js`. Incluye: score + nivel + barras por dimensión, resumen ejecutivo, alertas, dimensiones prioritarias, narrativa, síntesis de comentarios y agenda de debrief. Botón "↓ Descargar informe" en el panel de Análisis con IA. |
-| **Reporte compartible** | Link `reporte.html?t=TOKEN` — snapshot público sin login, válido 30 días, con botón "↓ Descargar PDF" |
-| **CSV resumen** | Promedio por equipo y dimensión |
-| **CSV detalle** | Todas las respuestas individuales con metadatos |
+| **Reporte compartible**         | Link `reporte.html?t=TOKEN` — snapshot público sin login, válido 30 días, con botón "↓ Descargar PDF"                                                                                                                                                                                |
+| **CSV resumen**                 | Promedio por equipo y dimensión                                                                                                                                                                                                                                                      |
+| **CSV detalle**                 | Todas las respuestas individuales con metadatos                                                                                                                                                                                                                                      |
 
 ---
 
@@ -513,70 +545,70 @@ Desde el panel admin se puede exportar:
 
 ### Plan coaching V1 (completado)
 
-| Prioridad | Mejora | Descripción |
-|-----------|--------|-------------|
-| Alta | `assessment-config.js` | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan como script externo. |
-| Alta | Dispersión / alineación del equipo | Cada tarjeta de equipo muestra badge "Alineación Alta/Media/Baja" (basado en desviación estándar) y rango min–max por dimensión cuando hay 2+ respuestas. |
-| Alta | Plan de Acción | Nueva pestaña en admin con acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Persiste en colección Firestore `planes`. |
-| Alta | Gráfico de radar por equipo | Cada tarjeta de equipo en la pestaña Análisis muestra un spider chart con las 6 dimensiones. Usa Chart.js 4.4.3. Los puntos tienen el color de cada dimensión. |
-| Media | Nuevas dimensiones | 2 dimensiones nuevas: **Excelencia Técnica** (CI/CD, tests, deuda técnica) y **Orientación al Cliente** (contacto con usuarios, métricas de valor). 14 → **20 preguntas**, 4 → **6 dimensiones**, 42 → **60 pts máx**. |
-| Media | Contexto del equipo | Campos opcionales en el intro: tamaño del equipo (1–5 / 6–9 / 10+) y tiempo usando Scrum (<6 / 6–18 / >18 meses). Se guardan en Firestore y se incluyen en exportación CSV. |
-| Media | QR code por equipo | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?workspaceId=` para pre-seleccionar el workspace en el formulario público. |
-| Media | Exportación Plan de Acción PDF | Botón en la pestaña Plan de Acción que genera un PDF con acciones agrupadas por estado (En curso → Pendiente → Completado), resumen de conteos y filtros de equipo/ciclo aplicados. |
-| Media | Nota contextual por rol en el formulario | Cuando un participante entra a una sección cuya perspectiva principal no es su rol, el formulario muestra una instrucción contextual (ej: PO en sección Dev Team). Preserva el dato cruzado entre roles. |
-| Media | Secciones colapsables + histogramas por pregunta | Las recomendaciones y el detalle por pregunta son colapsables por equipo. El detalle muestra mini histogramas de 4 barras (distribución de respuestas 0–3) por pregunta, agrupados por dimensión. |
-| Media | Preguntas abiertas por sección | Textarea opcional al final de cada sección del formulario: "¿Qué está bloqueando más a tu equipo en esta área?". Se guarda en Firestore y se muestra en el panel como citas anónimas agrupadas por dimensión. |
-| Media | Vinculación Plan ↔ Evolución | Campo Dimensión en planes. En la pestaña Evolución se muestran los planes vinculados a la dimensión seleccionada con delta y badge de estado. |
-| Media | Comparativa multi-equipo | Card "Comparativa por dimensión" en Análisis con radar superpuesto (N equipos, colores distintos) y tabla heatmap por equipo × dimensión (semáforo verde/ámbar/rojo). Visible con ≥2 equipos con datos. |
-| Media | Reporte compartible para stakeholders | Botón "↗ Compartir reporte" en cada tarjeta de equipo. Genera snapshot en `reportes/{token}` (válido 30 días) y muestra el link. `reporte.html` sirve la vista pública: radar, barras, roles, recomendaciones y botón PDF. |
-| Media | Manejo diferenciado del rol "Otro" | Toggle "Excluir Otro" en la pestaña Análisis (visible solo si hay respuestas con ese rol). Excluye esas respuestas de los promedios globales y de tarjetas de equipo al ver "Todos". N de respuestas visible en cada pill de rol. |
-| Baja | Prevención de duplicados | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario). |
-| Baja | Evolución por pregunta | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior. |
-| Fix | Acceso sin workspaceId bloqueado | El formulario público sin `?workspaceId=X` en la URL muestra un mensaje de error en lugar de listar equipos de todos los workspaces. Previene leak de privacidad entre workspaces. |
+| Prioridad | Mejora                                           | Descripción                                                                                                                                                                                                                       |
+| --------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Alta      | `assessment-config.js`                           | Fuente única de verdad para preguntas, niveles, dimensiones y recomendaciones. Ambos HTML lo cargan como script externo.                                                                                                          |
+| Alta      | Dispersión / alineación del equipo               | Cada tarjeta de equipo muestra badge "Alineación Alta/Media/Baja" (basado en desviación estándar) y rango min–max por dimensión cuando hay 2+ respuestas.                                                                         |
+| Alta      | Plan de Acción                                   | Nueva pestaña en admin con acciones de mejora por equipo: iniciativa, responsable, fecha, estado y ciclo. Persiste en colección Firestore `planes`.                                                                               |
+| Alta      | Gráfico de radar por equipo                      | Cada tarjeta de equipo en la pestaña Análisis muestra un spider chart con las 6 dimensiones. Usa Chart.js 4.4.3. Los puntos tienen el color de cada dimensión.                                                                    |
+| Media     | Nuevas dimensiones                               | 2 dimensiones nuevas: **Excelencia Técnica** (CI/CD, tests, deuda técnica) y **Orientación al Cliente** (contacto con usuarios, métricas de valor). 14 → **20 preguntas**, 4 → **6 dimensiones**, 42 → **60 pts máx**.            |
+| Media     | Contexto del equipo                              | Campos opcionales en el intro: tamaño del equipo (1–5 / 6–9 / 10+) y tiempo usando Scrum (<6 / 6–18 / >18 meses). Se guardan en Firestore y se incluyen en exportación CSV.                                                       |
+| Media     | QR code por equipo                               | Botón QR en cada equipo del admin genera un modal con QR + URL copiable. La URL incluye `?workspaceId=` para pre-seleccionar el workspace en el formulario público.                                                               |
+| Media     | Exportación Plan de Acción PDF                   | Botón en la pestaña Plan de Acción que genera un PDF con acciones agrupadas por estado (En curso → Pendiente → Completado), resumen de conteos y filtros de equipo/ciclo aplicados.                                               |
+| Media     | Nota contextual por rol en el formulario         | Cuando un participante entra a una sección cuya perspectiva principal no es su rol, el formulario muestra una instrucción contextual (ej: PO en sección Dev Team). Preserva el dato cruzado entre roles.                          |
+| Media     | Secciones colapsables + histogramas por pregunta | Las recomendaciones y el detalle por pregunta son colapsables por equipo. El detalle muestra mini histogramas de 4 barras (distribución de respuestas 0–3) por pregunta, agrupados por dimensión.                                 |
+| Media     | Preguntas abiertas por sección                   | Textarea opcional al final de cada sección del formulario: "¿Qué está bloqueando más a tu equipo en esta área?". Se guarda en Firestore y se muestra en el panel como citas anónimas agrupadas por dimensión.                     |
+| Media     | Vinculación Plan ↔ Evolución                     | Campo Dimensión en planes. En la pestaña Evolución se muestran los planes vinculados a la dimensión seleccionada con delta y badge de estado.                                                                                     |
+| Media     | Comparativa multi-equipo                         | Card "Comparativa por dimensión" en Análisis con radar superpuesto (N equipos, colores distintos) y tabla heatmap por equipo × dimensión (semáforo verde/ámbar/rojo). Visible con ≥2 equipos con datos.                           |
+| Media     | Reporte compartible para stakeholders            | Botón "↗ Compartir reporte" en cada tarjeta de equipo. Genera snapshot en `reportes/{token}` (válido 30 días) y muestra el link. `reporte.html` sirve la vista pública: radar, barras, roles, recomendaciones y botón PDF.        |
+| Media     | Manejo diferenciado del rol "Otro"               | Toggle "Excluir Otro" en la pestaña Análisis (visible solo si hay respuestas con ese rol). Excluye esas respuestas de los promedios globales y de tarjetas de equipo al ver "Todos". N de respuestas visible en cada pill de rol. |
+| Baja      | Prevención de duplicados                         | Aviso informativo si el participante ya respondió en el ciclo activo (detección vía localStorage, sin bloquear el formulario).                                                                                                    |
+| Baja      | Evolución por pregunta                           | Las respuestas individuales se guardan como objeto `answers` en Firestore. En la pestaña Evolución aparece un detalle por pregunta con % del último ciclo y delta (▲/▼) respecto al anterior.                                     |
+| Fix       | Acceso sin workspaceId bloqueado                 | El formulario público sin `?workspaceId=X` en la URL muestra un mensaje de error en lugar de listar equipos de todos los workspaces. Previene leak de privacidad entre workspaces.                                                |
 
 ### Plan V2 — Fase 1 (completada 2026-04-10)
 
-| # | Mejora | Descripción |
-|---|--------|-------------|
-| #4 | Notas del coach por equipo y ciclo | Textarea al pie de cada tarjeta de equipo en Análisis. Guardado automático con debounce en `equipos/{id}.notas.{ciclo}`. Draft en memoria preserva el texto durante re-renders. |
-| #6 | Umbral de anonimato | Constante `MIN_ROLE_RESPONSES=3`. Pills con ⚠ si un rol tiene menos respuestas en el ciclo activo. Banner de advertencia al filtrar ese rol. En el card org, roles bajo umbral se excluyen con nota explicativa. |
-| #19 | Historial de reportes compartidos | Sección en pestaña Equipos: lista todos los reportes activos con equipo, ciclo, fechas de generación/expiración y botón Revocar. Cargado en `fetchAllData()` con query por `ownerId`. |
-| #20 | Contador de respuestas en tiempo real | `onSnapshot` sobre `respuestas` — detecta nuevas respuestas sin refrescar y actualiza automáticamente. Badge en el header de cada tarjeta: azul con conteo del ciclo activo, rojo con ↓ si está por debajo del ciclo anterior. |
-| #5 | Briefing pre-assessment personalizable | El coach edita el texto en pestaña Equipos (guardado en `workspaces/{uid}` vía debounce). Si está configurado, el participante ve una pantalla de briefing antes del formulario. Sin texto, el flujo es idéntico al anterior. |
+| #   | Mejora                                 | Descripción                                                                                                                                                                                                                    |
+| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| #4  | Notas del coach por equipo y ciclo     | Textarea al pie de cada tarjeta de equipo en Análisis. Guardado automático con debounce en `equipos/{id}.notas.{ciclo}`. Draft en memoria preserva el texto durante re-renders.                                                |
+| #6  | Umbral de anonimato                    | Constante `MIN_ROLE_RESPONSES=3`. Pills con ⚠ si un rol tiene menos respuestas en el ciclo activo. Banner de advertencia al filtrar ese rol. En el card org, roles bajo umbral se excluyen con nota explicativa.               |
+| #19 | Historial de reportes compartidos      | Sección en pestaña Equipos: lista todos los reportes activos con equipo, ciclo, fechas de generación/expiración y botón Revocar. Cargado en `fetchAllData()` con query por `ownerId`.                                          |
+| #20 | Contador de respuestas en tiempo real  | `onSnapshot` sobre `respuestas` — detecta nuevas respuestas sin refrescar y actualiza automáticamente. Badge en el header de cada tarjeta: azul con conteo del ciclo activo, rojo con ↓ si está por debajo del ciclo anterior. |
+| #5  | Briefing pre-assessment personalizable | El coach edita el texto en pestaña Equipos (guardado en `workspaces/{uid}` vía debounce). Si está configurado, el participante ve una pantalla de briefing antes del formulario. Sin texto, el flujo es idéntico al anterior.  |
 
 ---
 
 ### Plan V2 — Fase 2 (completada 2026-04-11)
 
-| # | Mejora | Commit | Descripción |
-|---|--------|--------|-------------|
-| #10 | Análisis de consistencia por pregunta | `0f7c479` | `isPolarized(counts)`: cada extremo debe representar ≥20% del total Y su suma ≥50%, con ≥3 respuestas. Evita falsos positivos con outliers. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta. |
-| #9 | Índice de momentum de mejora | `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos. |
-| #1 | Detección de divergencia entre roles | `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts). |
-| #7 | Tendencia histórica por dimensión | `d507341` | `initEvolutionTrendChart()` + card con `<canvas>` en pestaña Evolución. Gráfico de líneas Chart.js (una línea por dimensión, mismos colores). Solo visible con ≥3 ciclos. Usa patrón `window._evolTrendData`. |
-| #3 | Guía de debriefing auto-generada | `aeeb628` | `COACHING_QUESTIONS` en `assessment-config.js` (3 preguntas × 3 niveles × 6 dims). `generateDebriefGuide(tid, cf)` retorna top 3 oportunidades + preguntas, celebraciones, gaps. Botón "Guía de facilitación" abre ventana imprimible. 12 tests nuevos (suite total: 92). |
+| #   | Mejora                                | Commit    | Descripción                                                                                                                                                                                                                                                               |
+| --- | ------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #10 | Análisis de consistencia por pregunta | `0f7c479` | `isPolarized(counts)`: cada extremo debe representar ≥20% del total Y su suma ≥50%, con ≥3 respuestas. Evita falsos positivos con outliers. Badge "Opiniones divididas" (ámbar) inline en el histograma de la pregunta.                                                   |
+| #9  | Índice de momentum de mejora          | `0311cff` | `calcMomentum(tid, role, n=3)`: delta promedio por ciclo en los últimos n ciclos. Indicador ↗/→/↘ + pts/ciclo debajo del badge de nivel en la tarjeta. Solo visible con ≥2 ciclos.                                                                                        |
+| #1  | Detección de divergencia entre roles  | `5631870` | `detectRoleGaps(tid, cycleFilter, threshold=25)`: compara roles con ≥MIN respuestas. Sección colapsable "⚡ Brechas de percepción" en la tarjeta (fondo ámbar). Badge ⚡ Xpts en cada barra de dimensión (naranja ≥25pts, rojo ≥40pts).                                   |
+| #7  | Tendencia histórica por dimensión     | `d507341` | `initEvolutionTrendChart()` + card con `<canvas>` en pestaña Evolución. Gráfico de líneas Chart.js (una línea por dimensión, mismos colores). Solo visible con ≥3 ciclos. Usa patrón `window._evolTrendData`.                                                             |
+| #3  | Guía de debriefing auto-generada      | `aeeb628` | `COACHING_QUESTIONS` en `assessment-config.js` (3 preguntas × 3 niveles × 6 dims). `generateDebriefGuide(tid, cf)` retorna top 3 oportunidades + preguntas, celebraciones, gaps. Botón "Guía de facilitación" abre ventana imprimible. 12 tests nuevos (suite total: 92). |
 
 ---
 
 ### Plan V2 — Fase 3 (completada 2026-04-11)
 
-| # | Mejora | Commit | Descripción |
-|---|--------|--------|-------------|
-| #16 | White-label básico | `352b690` | Campos `marca`, `logoUrl`, `colorAcento` en `workspaces/{uid}`. Editor de marca en pestaña Equipos (guardado automático). `assessment-agile.html` aplica nombre, logo y color al cargar. `reporte.html` aplica el branding almacenado en el snapshot del reporte. |
-| #11 | Portal de equipo | `c517c11` | Nueva página `equipo.html?t=TOKEN`. Vista pública dinámica (onSnapshot) con radar, barras por dimensión, evolución histórica y plan de acción. Colección `portales/{token}` con snapshot sincronizado en background. Botón `+ Portal` / `Portal ↗` por equipo en pestaña Equipos. Reglas Firestore: lectura pública, escritura solo al owner. |
-| #12 | Estados por equipo | `3d0906b` | El equipo puede cambiar estado de planes (pendiente → en-curso → completado) desde el portal, sin login. Actualización optimista en UI. Regla Firestore con cross-validation: valida que `portalToken` del plan exista en `portales` y que `teamId` coincida. Badge "Actualizado por equipo" en el plan admin. |
-| #14 | Preguntas personalizables | `82dc6fc` | Colección `configuraciones/{ownerId}`. Nueva pestaña "Configuración" en admin con editor por sección: desactivar preguntas, editar texto, agregar preguntas personalizadas (hasta 3/sección). `assessment-agile.html` lee config y filtra/aplica overrides sin afectar scoring. Respuestas custom guardadas en `customAnswers` separado. |
-| #13 | Recordatorios de ciclo | — | Diferida — requiere SendGrid con dominio verificado |
+| #   | Mejora                    | Commit    | Descripción                                                                                                                                                                                                                                                                                                                                   |
+| --- | ------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #16 | White-label básico        | `352b690` | Campos `marca`, `logoUrl`, `colorAcento` en `workspaces/{uid}`. Editor de marca en pestaña Equipos (guardado automático). `assessment-agile.html` aplica nombre, logo y color al cargar. `reporte.html` aplica el branding almacenado en el snapshot del reporte.                                                                             |
+| #11 | Portal de equipo          | `c517c11` | Nueva página `equipo.html?t=TOKEN`. Vista pública dinámica (onSnapshot) con radar, barras por dimensión, evolución histórica y plan de acción. Colección `portales/{token}` con snapshot sincronizado en background. Botón `+ Portal` / `Portal ↗` por equipo en pestaña Equipos. Reglas Firestore: lectura pública, escritura solo al owner. |
+| #12 | Estados por equipo        | `3d0906b` | El equipo puede cambiar estado de planes (pendiente → en-curso → completado) desde el portal, sin login. Actualización optimista en UI. Regla Firestore con cross-validation: valida que `portalToken` del plan exista en `portales` y que `teamId` coincida. Badge "Actualizado por equipo" en el plan admin.                                |
+| #14 | Preguntas personalizables | `82dc6fc` | Colección `configuraciones/{ownerId}`. Nueva pestaña "Configuración" en admin con editor por sección: desactivar preguntas, editar texto, agregar preguntas personalizadas (hasta 3/sección). `assessment-agile.html` lee config y filtra/aplica overrides sin afectar scoring. Respuestas custom guardadas en `customAnswers` separado.      |
+| #13 | Recordatorios de ciclo    | —         | Diferida — requiere SendGrid con dominio verificado                                                                                                                                                                                                                                                                                           |
 
 ### Plan V2 — Fase 4 (completada 2026-04-12)
 
-| # | Mejora | Commit | Descripción |
-|---|--------|--------|-------------|
-| #8 | Benchmark org en radar | `e4915bc` | Línea punteada gris en radar de cada equipo con el promedio de la organización. Delta "+N% org" en el header de la tarjeta de equipo. |
+| #   | Mejora                 | Commit    | Descripción                                                                                                                                                                                                                                                                |
+| --- | ---------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #8  | Benchmark org en radar | `e4915bc` | Línea punteada gris en radar de cada equipo con el promedio de la organización. Delta "+N% org" en el header de la tarjeta de equipo.                                                                                                                                      |
 | #18 | Webhooks configurables | `76ac19a` | CF callable `dispatchWebhook` + Firestore trigger `onPlanUpdatedByTeam`. Eventos: `ciclo.abierto`, `ciclo.cerrado`, `reporte.generado`, `plan.actualizado`. URL configurable en pestaña Configuración del admin. Runtime actualizado a Node.js 22 y firebase-functions v7. |
-| #17 | Exportación PPT | `12e4f4d` | `exportPPT(teamId)` en `admin-export.js` con PptxGenJS. 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción. Captura del canvas Chart.js con `toDataURL`. Botón "↓ PPT" en cada tarjeta de equipo. |
-| #2 | Debriefing en sala | — | Diferida — el reporte compartible cubre el caso de uso principal |
-| #15 | Kanban | — | Diferida — requiere definición de dimensiones Kanban (incluida en V3 como #9) |
+| #17 | Exportación PPT        | `12e4f4d` | `exportPPT(teamId)` en `admin-export.js` con PptxGenJS. 4 slides: cover, radar+dimensiones, recomendaciones, plan de acción. Captura del canvas Chart.js con `toDataURL`. Botón "↓ PPT" en cada tarjeta de equipo.                                                         |
+| #2  | Debriefing en sala     | —         | Diferida — el reporte compartible cubre el caso de uso principal                                                                                                                                                                                                           |
+| #15 | Kanban                 | —         | Diferida — requiere definición de dimensiones Kanban (incluida en V3 como #9)                                                                                                                                                                                              |
 
 ---
 
@@ -585,16 +617,16 @@ Desde el panel admin se puede exportar:
 9 mejoras en 3 niveles de prioridad. Detalle completo en `PLAN_MEJORAS_V4.md`.
 Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
-| Prioridad | Mejoras | Estado |
-|-----------|---------|--------|
-| Alta | #A SM en RECS_ROLE, #B Nivel Avanzado (4ª rec), #C Pregunta impedimentos | ✅ Completada 2026-04-12 `4c2f8ad` |
-| Media | #D teamType no-software, #E Alerta score-comentario, #F Benchmark segmentado | ✅ Completada 2026-04-12 `6b34da4` |
-| Baja | #G Salud del equipo, #H Ponderación preguntas, #I Guía llenado individual | ✅ Completada 2026-04-12 `cb5dafc` |
+| Prioridad | Mejoras                                                                      | Estado                             |
+| --------- | ---------------------------------------------------------------------------- | ---------------------------------- |
+| Alta      | #A SM en RECS_ROLE, #B Nivel Avanzado (4ª rec), #C Pregunta impedimentos     | ✅ Completada 2026-04-12 `4c2f8ad` |
+| Media     | #D teamType no-software, #E Alerta score-comentario, #F Benchmark segmentado | ✅ Completada 2026-04-12 `6b34da4` |
+| Baja      | #G Salud del equipo, #H Ponderación preguntas, #I Guía llenado individual    | ✅ Completada 2026-04-12 `cb5dafc` |
 
 #### Prioridad Alta — implementada `4c2f8ad`
 
 - **#A/#B** Nivel Avanzado en recomendaciones — `getRec` actualizado con umbral `pct<=82` para idx 2 y `pct>82` para idx 3. 4ª entrada añadida a `RECS` (6 dims) y `RECS_ROLE` (PO + Dev Team + SM × 6 dims = 18 textos). Equipos Avanzado dejan de recibir recomendaciones de Maduro. Tests: 94 → 96.
-- **#C** Pregunta de impedimentos en Transparencia — 4ª pregunta: *"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?"*. `DIMS.transparencia.max` 9 → 12. ⚠ Nota: datos históricos de transparencia muestran máx. 75% (9/12) — iniciar nuevo ciclo para comparaciones válidas.
+- **#C** Pregunta de impedimentos en Transparencia — 4ª pregunta: _"¿El equipo identifica y escala los impedimentos para que se resuelvan dentro del Sprint?"_. `DIMS.transparencia.max` 9 → 12. ⚠ Nota: datos históricos de transparencia muestran máx. 75% (9/12) — iniciar nuevo ciclo para comparaciones válidas.
 
 #### Prioridad Media — implementada `6b34da4`
 
@@ -614,11 +646,11 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 10 mejoras en 4 fases. Detalle completo en `PLAN_MEJORAS_V3.md`.
 
-| Fase | Mejoras | Estado |
-|------|---------|--------|
-| 1 — Credibilidad del dato | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable | ✅ Completada 2026-04-12 |
-| 2 — Análisis con IA | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API) | ✅ Completada 2026-04-12 |
-| 3 — Experiencia facilitación | #6 Modo facilitación in-session, #7 Automatización ciclos | ✅ Completada 2026-04-12 |
+| Fase                                              | Mejoras                                                                                                                                             | Estado                   |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 1 — Credibilidad del dato                         | #1 Contexto equipo, #2 Participación por rol, #3 Anonimato configurable                                                                             | ✅ Completada 2026-04-12 |
+| 2 — Análisis con IA                               | #4 Comentarios (display), #10 CF `analyzeTeamWithClaude` (Claude API)                                                                               | ✅ Completada 2026-04-12 |
+| 3 — Experiencia facilitación                      | #6 Modo facilitación in-session, #7 Automatización ciclos                                                                                           | ✅ Completada 2026-04-12 |
 | 4 — Flujo operacional, calidad y visión ejecutiva | #8 Tendencia org, #9 Export sesión, #11 Acciones en facilitar, #12 Contexto IA, #12b Imágenes IA (visión), #13 Respuestas rápidas, #14 Cierre ciclo | ✅ Completada 2026-04-12 |
 
 #### Fase 1 — implementada
@@ -654,12 +686,12 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 #### Correcciones de bugs
 
-| Bug | Causa raíz | Fix |
-|-----|-----------|-----|
-| `analyzeTeamWithClaude` devuelve 401 "No autenticado" | Todos los handlers de CF usaban la firma de v2 `(request)` con `request.auth` / `request.data`, pero el import era `firebase-functions/v1`. En v1, el primer parámetro es directamente el payload de datos — `request.auth` siempre era `undefined`. | Cambiados todos los handlers a la firma v1 `(data, context)` — `context.auth` para autenticación y `data.campo` para los parámetros. `assertSuperAdmin` recibe `context`. Afecta: `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `dispatchWebhook`, `analyzeTeamWithClaude`. |
-| "Unterminated string in JSON at position 3301" | `max_tokens: 1024` demasiado bajo para la respuesta JSON de 6 campos de Claude — la respuesta era truncada en mitad de un string. | `max_tokens: 4096`. |
-| Error de CORS policy en `analyzeTeamWithClaude` | Con 4096 tokens, la llamada a la API de Anthropic excedía el timeout de 60 s. Firebase mata el proceso sin enviar ninguna respuesta HTTP — el navegador interpreta la falta de cabeceras CORS como un error de política. | `timeoutSeconds: 300`, `memory: '512MB'` en el `runWith` de la función. Añadido try-catch global para que siempre se emita un `HttpsError` aunque el proceso tarde. |
-| Pills de rol muestran el total de todos los ciclos cuando hay filtro de ciclo activo | `roleCounts` se calculaba a partir de `teamResps` (sin filtrar por ciclo). `filteredByCycle` se declaraba después y no se usaba en los conteos. | Reordenadas las declaraciones en el render: `filteredByCycle` se calcula primero, y `roleCounts` / `filteredRoleCounts` se calculan a partir de `filteredByCycle`. |
+| Bug                                                                                  | Causa raíz                                                                                                                                                                                                                                           | Fix                                                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyzeTeamWithClaude` devuelve 401 "No autenticado"                                | Todos los handlers de CF usaban la firma de v2 `(request)` con `request.auth` / `request.data`, pero el import era `firebase-functions/v1`. En v1, el primer parámetro es directamente el payload de datos — `request.auth` siempre era `undefined`. | Cambiados todos los handlers a la firma v1 `(data, context)` — `context.auth` para autenticación y `data.campo` para los parámetros. `assertSuperAdmin` recibe `context`. Afecta: `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `dispatchWebhook`, `analyzeTeamWithClaude`. |
+| "Unterminated string in JSON at position 3301"                                       | `max_tokens: 1024` demasiado bajo para la respuesta JSON de 6 campos de Claude — la respuesta era truncada en mitad de un string.                                                                                                                    | `max_tokens: 4096`.                                                                                                                                                                                                                                                           |
+| Error de CORS policy en `analyzeTeamWithClaude`                                      | Con 4096 tokens, la llamada a la API de Anthropic excedía el timeout de 60 s. Firebase mata el proceso sin enviar ninguna respuesta HTTP — el navegador interpreta la falta de cabeceras CORS como un error de política.                             | `timeoutSeconds: 300`, `memory: '512MB'` en el `runWith` de la función. Añadido try-catch global para que siempre se emita un `HttpsError` aunque el proceso tarde.                                                                                                           |
+| Pills de rol muestran el total de todos los ciclos cuando hay filtro de ciclo activo | `roleCounts` se calculaba a partir de `teamResps` (sin filtrar por ciclo). `filteredByCycle` se declaraba después y no se usaba en los conteos.                                                                                                      | Reordenadas las declaraciones en el render: `filteredByCycle` se calcula primero, y `roleCounts` / `filteredRoleCounts` se calculan a partir de `filteredByCycle`.                                                                                                            |
 
 #### Nuevas funcionalidades
 
@@ -669,12 +701,12 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 **Seed V5 — 4 equipos con perfiles diferenciados** — reescritura completa de `seed-data.js`. Cada equipo tiene 1 SM (índice 0) + 1 PO (índice 1) + N devs:
 
-| Equipo | Devs | Tipo | Modalidad | Ciclos | Trayectoria |
-|--------|------|------|-----------|--------|-------------|
-| Fénix | 3 | Software | Remoto | Q1–Q3 | 44% → 60% → 71% (En desarrollo → Maduro) |
-| Orión | 5 | Software | Presencial | Q1–Q3 | 70% → 76% → 81% (Maduro estable) |
-| Titán | 8 | Software | Híbrido | Q1–Q3 | 32% → 40% → 52% (Inicial → En desarrollo) |
-| Nova | 7 | Conocimiento | Híbrido | Q2–Q3 | — → 55% → 73% (En desarrollo → Maduro) |
+| Equipo | Devs | Tipo         | Modalidad  | Ciclos | Trayectoria                               |
+| ------ | ---- | ------------ | ---------- | ------ | ----------------------------------------- |
+| Fénix  | 3    | Software     | Remoto     | Q1–Q3  | 44% → 60% → 71% (En desarrollo → Maduro)  |
+| Orión  | 5    | Software     | Presencial | Q1–Q3  | 70% → 76% → 81% (Maduro estable)          |
+| Titán  | 8    | Software     | Híbrido    | Q1–Q3  | 32% → 40% → 52% (Inicial → En desarrollo) |
+| Nova   | 7    | Conocimiento | Híbrido    | Q2–Q3  | — → 55% → 73% (En desarrollo → Maduro)    |
 
 12 planes de acción (3 por equipo). Titán tiene un plan con `updatedByTeam: true`. Fénix Q3 SM incluye comentario con "teatro" → activa badge ⚠ "Señal oculta". Los conteos correctos en vista "Todos" son: Orión SM=3/PO=3/Dev=15 (3 ciclos × 1/1/5).
 
@@ -682,75 +714,75 @@ Origen: revisión metodológica desde perspectiva de Agile coach experto.
 
 ## Historial de versiones (commits clave)
 
-| Commit | Descripción |
-|--------|-------------|
-| `82dc6fc` | Feat: preguntas personalizables por workspace — pestaña Configuración, configuraciones/{id}, overrides + custom questions (#14 V2) |
-| `3d0906b` | Feat: estados del plan actualizables por el equipo desde el portal — optimistic UI + regla Firestore con cross-validation (#12 V2) |
-| `c517c11` | Feat: portal del equipo — equipo.html pública con onSnapshot, radar, evolución y plan de acción (#11 V2) |
-| `352b690` | Feat: white-label básico — marca, logoUrl, colorAcento en workspaces; aplicado en formulario y reportes (#16 V2) |
-| `aeeb628` | Feat: guía de debriefing auto-generada — COACHING_QUESTIONS + generateDebriefGuide + ventana imprimible (#3 V2) |
-| `d507341` | Feat: tendencia histórica por dimensión — gráfico de líneas Chart.js en pestaña Evolución (#7 V2) |
-| `5631870` | Feat: detección de divergencia de percepción entre roles — sección colapsable y badges ⚡ por dimensión (#1 V2) |
-| `0311cff` | Feat: índice de momentum — indicador ↗/→/↘ con delta promedio por ciclo en tarjeta de equipo (#9 V2) |
-| `0f7c479` | Feat: análisis de consistencia por pregunta — badge "Opiniones divididas" en histogramas polarizados (#10 V2) |
-| `86abfc4` | Feat: briefing pre-assessment personalizable — pantalla de encuadre antes del formulario (#5 V2) |
-| `412812e` | Feat: contador de respuestas en tiempo real con onSnapshot y badge de comparación vs. ciclo anterior (#20 V2) |
-| `8370eb1` | Feat: historial de reportes compartidos en pestaña Equipos con botón Revocar (#19 V2) |
-| `36bae12` | Feat: umbral de anonimato MIN=3 — pills ⚠, banner advertencia y exclusión en card org (#6 V2) |
-| `1aee758` | Feat: notas del coach por equipo y ciclo — textarea con debounce en `equipos/{id}.notas` (#4 V2) |
-| `a00397d` | Docs: cerrar Fase 4 V2 — #8, #17, #18 completadas; #2 y #15 diferidas |
-| `12e4f4d` | Feat: exportación PPT por equipo con PptxGenJS — 4 slides, captura radar (#17 V2) |
-| `926810d` | Chore: actualizar runtime a Node.js 22 y firebase-functions v7 |
-| `233b13e` | Feat: contexto del equipo en formulario — pantalla intermedia + 4 campos opcionales + moda en admin (#1 V3) |
-| `a4096e8` | Feat: panel de participación por rol con semáforo de validez antes del radar (#2 V3) |
-| `7f5aecf` | Fix: semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona) |
-| `ffdfbfc` | Feat: anonimato configurable y footer de privacidad — 3 modos + toggle IA + footer sticky (#3 V3) |
-| `325f30a` | Feat: panel de comentarios por sección — groupCommentsBySection, renderCommentsPanel, badge densidad, role label, slide PPT (#4 V3) |
-| `b7c7a00` | Feat: análisis con IA — CF analyzeTeamWithClaude, buildTeamPrompt, caché analisis_ia, panel con 6 secciones (#10 V3) |
-| `42b11b0` | Feat: link persistente por equipo con param equipoId (#7.1 V3) |
-| `bdaca2b` | Feat: recordatorio de apertura de ciclo por cadencia — assessmentCadenceWeeks + banner + sección Configuración (#7.2 V3) |
-| `f7c953a` | Feat: modo facilitación in-session facilitar.html — slides navegables, notas coach, fallback COACHING_QUESTIONS, botón Facilitar → (#6 V3) |
-| `2e28f6f` | Feat: crear acciones del Plan de Acción desde facilitar.html — formulario slide de cierre, guarda en planes Firestore (#11 V3) |
-| `53c0dab` | Feat: contexto adicional para análisis IA — textarea contextoCoach, prepende al prompt de Claude, persiste en analisis_ia (#12 V3) |
-| `628db46` | Feat: detección de respuestas rápidas — startedAt + flaggedFast:true si <180s, badge ⚡ en participación (#13 V3) |
-| `a601164` | Feat: exportar sesión de facilitación — ventana imprimible con preguntas coaching, acciones y compromisos (#9 V3) |
-| `bb4f87b` | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3) |
-| `ab81706` | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3) |
-| `086b41f` | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3) |
-| `abfee42` | Fix: escapar HTML en 7 interpolaciones user-controlled de admin-render (auditoría XSS) |
-| `04caac9` | Chore: endurecer ESLint (no-var, prefer-const, eqeqeq) + Prettier 3.8.3 + pre-commit hook (simple-git-hooks + lint-staged) |
-| `9996d30` | Fix: role pill counts respetan filtro de ciclo — filteredByCycle calculado antes de roleCounts |
-| `7e7a8e4` | Feat: seed-data.js V5 — 4 equipos (Fénix/Orión/Titán/Nova), SM+PO+devs diferenciados, 3 ciclos, 12 planes |
-| `f383b75` | Feat: exportAnalisisPDF — PDF "Informe de Facilitación" con score, dimensiones, narrativa, alertas, agenda |
-| `fb3e5d7` | Feat: sección IA colapsable — teamAIExpanded en state, toggleTeamAI, collapse-section en renderAIPanel |
-| `d1627dc` | Fix: CF analyzeTeamWithClaude CORS — timeoutSeconds:300, memory:512MB, try-catch global |
-| `8dbd22b` | Fix: CF analyzeTeamWithClaude max_tokens 1024→4096 — evita truncamiento de JSON |
-| `805d850` | Fix: CF analyzeTeamWithClaude — firma v1 (data,context) en todos los handlers; context.auth para autenticación |
-| `cb5dafc` | Feat: salud del equipo, ponderación fundacionales 1.5x (normalizada), guía llenado individual (#G #H #I V4) |
-| `6b34da4` | Feat: teamType no-software, detectCommentRisk keywords, benchmark segmentado por categoría (#D #E #F V4) |
-| `4c2f8ad` | Feat: mejoras metodológicas — nivel Avanzado en RECS/RECS_ROLE, pregunta impedimentos en Transparencia, max 9→12 (#A #B #C V4) |
-| `76ac19a` | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2) |
-| `e4915bc` | Feat: benchmark org en radar y header de cada equipo (#8 V2) |
-| `5bf4d35` | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027 |
-| `8a7c607` | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos |
-| `4d33ea7` | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10) |
-| `0770bc7` | Feat: botón "↓ Descargar PDF" en reporte compartible |
-| `5a5d325` | Feat: reporte compartible para stakeholders — `reporte.html`, `reportes/{token}`, botón en tarjetas (#5) |
-| `4ce2d8f` | Docs: actualizar MDs con mejoras #4 y #6 completadas |
-| `1c7c6c6` | Feat: preguntas abiertas por sección y citas anónimas en panel admin |
-| `871c0e1` | Feat: comparativa multi-equipo — radar superpuesto + tabla heatmap |
-| `d0bd0cd` | Feat: vinculación Plan de Acción ↔ dimensiones en pestaña Evolución |
-| `2550209` | Feat: secciones colapsables y detalle por pregunta con histogramas |
-| `1f1aec6` | Feat: exportar Plan de Acción a PDF con agrupación por estado |
-| `90b6b29` | Feat: gráfico de radar por equipo en pestaña Análisis (Chart.js) |
-| `d494e7a` | Feat: nota contextual por rol en secciones del formulario |
-| (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render |
-| (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main |
-| (anterior) | Tests: suite Vitest — 96 tests en scoring (27), analysis (52) y evolution (17) |
-| (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)` |
-| (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth |
-| (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze |
-| (anterior) | Feat: sistema multi-tenant — Firebase Auth, pestaña Usuarios, filtrado por ownerId |
-| `58e5a14` | Feat: mejoras assessment — config centralizada, 6 dimensiones, contexto equipo, alineación, plan de acción, QR, evolución por pregunta |
-| `1f0c8d4` | Feat: migración a Firebase + ciclos de medición + exportación + filtros por rol |
-| `2d0d339` | Initial commit |
+| Commit     | Descripción                                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `82dc6fc`  | Feat: preguntas personalizables por workspace — pestaña Configuración, configuraciones/{id}, overrides + custom questions (#14 V2)         |
+| `3d0906b`  | Feat: estados del plan actualizables por el equipo desde el portal — optimistic UI + regla Firestore con cross-validation (#12 V2)         |
+| `c517c11`  | Feat: portal del equipo — equipo.html pública con onSnapshot, radar, evolución y plan de acción (#11 V2)                                   |
+| `352b690`  | Feat: white-label básico — marca, logoUrl, colorAcento en workspaces; aplicado en formulario y reportes (#16 V2)                           |
+| `aeeb628`  | Feat: guía de debriefing auto-generada — COACHING_QUESTIONS + generateDebriefGuide + ventana imprimible (#3 V2)                            |
+| `d507341`  | Feat: tendencia histórica por dimensión — gráfico de líneas Chart.js en pestaña Evolución (#7 V2)                                          |
+| `5631870`  | Feat: detección de divergencia de percepción entre roles — sección colapsable y badges ⚡ por dimensión (#1 V2)                            |
+| `0311cff`  | Feat: índice de momentum — indicador ↗/→/↘ con delta promedio por ciclo en tarjeta de equipo (#9 V2)                                       |
+| `0f7c479`  | Feat: análisis de consistencia por pregunta — badge "Opiniones divididas" en histogramas polarizados (#10 V2)                              |
+| `86abfc4`  | Feat: briefing pre-assessment personalizable — pantalla de encuadre antes del formulario (#5 V2)                                           |
+| `412812e`  | Feat: contador de respuestas en tiempo real con onSnapshot y badge de comparación vs. ciclo anterior (#20 V2)                              |
+| `8370eb1`  | Feat: historial de reportes compartidos en pestaña Equipos con botón Revocar (#19 V2)                                                      |
+| `36bae12`  | Feat: umbral de anonimato MIN=3 — pills ⚠, banner advertencia y exclusión en card org (#6 V2)                                              |
+| `1aee758`  | Feat: notas del coach por equipo y ciclo — textarea con debounce en `equipos/{id}.notas` (#4 V2)                                           |
+| `a00397d`  | Docs: cerrar Fase 4 V2 — #8, #17, #18 completadas; #2 y #15 diferidas                                                                      |
+| `12e4f4d`  | Feat: exportación PPT por equipo con PptxGenJS — 4 slides, captura radar (#17 V2)                                                          |
+| `926810d`  | Chore: actualizar runtime a Node.js 22 y firebase-functions v7                                                                             |
+| `233b13e`  | Feat: contexto del equipo en formulario — pantalla intermedia + 4 campos opcionales + moda en admin (#1 V3)                                |
+| `a4096e8`  | Feat: panel de participación por rol con semáforo de validez antes del radar (#2 V3)                                                       |
+| `7f5aecf`  | Fix: semáforo de validez solo para Dev Team (PO y SM son roles de 1 persona)                                                               |
+| `ffdfbfc`  | Feat: anonimato configurable y footer de privacidad — 3 modos + toggle IA + footer sticky (#3 V3)                                          |
+| `325f30a`  | Feat: panel de comentarios por sección — groupCommentsBySection, renderCommentsPanel, badge densidad, role label, slide PPT (#4 V3)        |
+| `b7c7a00`  | Feat: análisis con IA — CF analyzeTeamWithClaude, buildTeamPrompt, caché analisis_ia, panel con 6 secciones (#10 V3)                       |
+| `42b11b0`  | Feat: link persistente por equipo con param equipoId (#7.1 V3)                                                                             |
+| `bdaca2b`  | Feat: recordatorio de apertura de ciclo por cadencia — assessmentCadenceWeeks + banner + sección Configuración (#7.2 V3)                   |
+| `f7c953a`  | Feat: modo facilitación in-session facilitar.html — slides navegables, notas coach, fallback COACHING_QUESTIONS, botón Facilitar → (#6 V3) |
+| `2e28f6f`  | Feat: crear acciones del Plan de Acción desde facilitar.html — formulario slide de cierre, guarda en planes Firestore (#11 V3)             |
+| `53c0dab`  | Feat: contexto adicional para análisis IA — textarea contextoCoach, prepende al prompt de Claude, persiste en analisis_ia (#12 V3)         |
+| `628db46`  | Feat: detección de respuestas rápidas — startedAt + flaggedFast:true si <180s, badge ⚡ en participación (#13 V3)                          |
+| `a601164`  | Feat: exportar sesión de facilitación — ventana imprimible con preguntas coaching, acciones y compromisos (#9 V3)                          |
+| `bb4f87b`  | Feat: cierre formal del ciclo — modal con stats, botón ⊘ Cerrar ciclo en Análisis, toggleCycle + webhook (#14 V3)                          |
+| `ab81706`  | Feat: tendencia organizacional por ciclo — calcOrgTrend(), Chart.js líneas en Análisis, badge delta, tooltip (#8 V3)                       |
+| `086b41f`  | Feat: subida de imágenes para análisis con IA — handleImageUpload, content mixto (vision API), máx. 3 PNG/JPG 2 MB c/u (#12b V3)           |
+| `abfee42`  | Fix: escapar HTML en 7 interpolaciones user-controlled de admin-render (auditoría XSS)                                                     |
+| `04caac9`  | Chore: endurecer ESLint (no-var, prefer-const, eqeqeq) + Prettier 3.8.3 + pre-commit hook (simple-git-hooks + lint-staged)                 |
+| `9996d30`  | Fix: role pill counts respetan filtro de ciclo — filteredByCycle calculado antes de roleCounts                                             |
+| `7e7a8e4`  | Feat: seed-data.js V5 — 4 equipos (Fénix/Orión/Titán/Nova), SM+PO+devs diferenciados, 3 ciclos, 12 planes                                  |
+| `f383b75`  | Feat: exportAnalisisPDF — PDF "Informe de Facilitación" con score, dimensiones, narrativa, alertas, agenda                                 |
+| `fb3e5d7`  | Feat: sección IA colapsable — teamAIExpanded en state, toggleTeamAI, collapse-section en renderAIPanel                                     |
+| `d1627dc`  | Fix: CF analyzeTeamWithClaude CORS — timeoutSeconds:300, memory:512MB, try-catch global                                                    |
+| `8dbd22b`  | Fix: CF analyzeTeamWithClaude max_tokens 1024→4096 — evita truncamiento de JSON                                                            |
+| `805d850`  | Fix: CF analyzeTeamWithClaude — firma v1 (data,context) en todos los handlers; context.auth para autenticación                             |
+| `cb5dafc`  | Feat: salud del equipo, ponderación fundacionales 1.5x (normalizada), guía llenado individual (#G #H #I V4)                                |
+| `6b34da4`  | Feat: teamType no-software, detectCommentRisk keywords, benchmark segmentado por categoría (#D #E #F V4)                                   |
+| `4c2f8ad`  | Feat: mejoras metodológicas — nivel Avanzado en RECS/RECS_ROLE, pregunta impedimentos en Transparencia, max 9→12 (#A #B #C V4)             |
+| `76ac19a`  | Feat: webhooks configurables por workspace — dispatchWebhook + onPlanUpdatedByTeam (#18 V2)                                                |
+| `e4915bc`  | Feat: benchmark org en radar y header de cada equipo (#8 V2)                                                                               |
+| `5bf4d35`  | Docs: PLAN_MEJORAS_V2.md — 20 mejoras en 4 fases, roadmap Q2 2026 – Q1 2027                                                                |
+| `8a7c607`  | Fix: bloquear acceso al formulario sin workspaceId — muestra error en lugar de listar todos los equipos                                    |
+| `4d33ea7`  | Feat: toggle "Excluir Otro" del promedio, N de respuestas en pills de rol (#10)                                                            |
+| `0770bc7`  | Feat: botón "↓ Descargar PDF" en reporte compartible                                                                                       |
+| `5a5d325`  | Feat: reporte compartible para stakeholders — `reporte.html`, `reportes/{token}`, botón en tarjetas (#5)                                   |
+| `4ce2d8f`  | Docs: actualizar MDs con mejoras #4 y #6 completadas                                                                                       |
+| `1c7c6c6`  | Feat: preguntas abiertas por sección y citas anónimas en panel admin                                                                       |
+| `871c0e1`  | Feat: comparativa multi-equipo — radar superpuesto + tabla heatmap                                                                         |
+| `d0bd0cd`  | Feat: vinculación Plan de Acción ↔ dimensiones en pestaña Evolución                                                                        |
+| `2550209`  | Feat: secciones colapsables y detalle por pregunta con histogramas                                                                         |
+| `1f1aec6`  | Feat: exportar Plan de Acción a PDF con agrupación por estado                                                                              |
+| `90b6b29`  | Feat: gráfico de radar por equipo en pestaña Análisis (Chart.js)                                                                           |
+| `d494e7a`  | Feat: nota contextual por rol en secciones del formulario                                                                                  |
+| (anterior) | Fix: restaurar foco y cursor en inputs controlados tras re-render                                                                          |
+| (anterior) | CI/CD: GitHub Actions — lint+tests en cada push/PR, deploy automático a Firebase en push a main                                            |
+| (anterior) | Tests: suite Vitest — 96 tests en scoring (27), analysis (52) y evolution (17)                                                             |
+| (anterior) | Refactor: estado centralizado — objeto `state` + `setState(patch)`                                                                         |
+| (anterior) | Refactor: separar admin.html en módulos — assets/ con css, state, api, render, export, auth                                                |
+| (anterior) | Feat: Cloud Functions para gestión de usuarios + Firestore rules server-side + plan Blaze                                                  |
+| (anterior) | Feat: sistema multi-tenant — Firebase Auth, pestaña Usuarios, filtrado por ownerId                                                         |
+| `58e5a14`  | Feat: mejoras assessment — config centralizada, 6 dimensiones, contexto equipo, alineación, plan de acción, QR, evolución por pregunta     |
+| `1f0c8d4`  | Feat: migración a Firebase + ciclos de medición + exportación + filtros por rol                                                            |
+| `2d0d339`  | Initial commit                                                                                                                             |

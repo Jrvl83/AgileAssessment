@@ -1,495 +1,652 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Assessment de Madurez Agile</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --ink: #0f1117;
-    --ink-muted: #5a5f72;
-    --ink-faint: #9198aa;
-    --surface: #fafaf8;
-    --surface-2: #f2f1ed;
-    --surface-3: #e8e7e1;
-    --accent: #1a4fd6;
-    --accent-light: #dce6ff;
-    --accent-dark: #0f35a0;
-    --green: #0d7a52;
-    --green-light: #d4f0e5;
-    --amber: #a05c0a;
-    --amber-light: #fdefd6;
-    --red: #c0282a;
-    --red-light: #fce8e8;
-    --border: #dddbd4;
-    --radius: 12px;
-    --radius-sm: 8px;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assessment de Madurez Agile</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --ink: #0f1117;
+        --ink-muted: #5a5f72;
+        --ink-faint: #9198aa;
+        --surface: #fafaf8;
+        --surface-2: #f2f1ed;
+        --surface-3: #e8e7e1;
+        --accent: #1a4fd6;
+        --accent-light: #dce6ff;
+        --accent-dark: #0f35a0;
+        --green: #0d7a52;
+        --green-light: #d4f0e5;
+        --amber: #a05c0a;
+        --amber-light: #fdefd6;
+        --red: #c0282a;
+        --red-light: #fce8e8;
+        --border: #dddbd4;
+        --radius: 12px;
+        --radius-sm: 8px;
+      }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--surface);
-    color: var(--ink);
-    min-height: 100vh;
-    font-size: 16px;
-    line-height: 1.6;
-  }
+      body {
+        font-family: 'DM Sans', sans-serif;
+        background: var(--surface);
+        color: var(--ink);
+        min-height: 100vh;
+        font-size: 16px;
+        line-height: 1.6;
+      }
 
-  /* Layout */
-  .shell {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 20px 100px;
-  }
+      /* Layout */
+      .shell {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 0 20px 100px;
+      }
 
-  /* Header */
-  .header {
-    padding: 48px 0 40px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 40px;
-  }
-  .header-eyebrow {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 12px;
-  }
-  .header h1 {
-    font-family: 'DM Serif Display', serif;
-    font-size: clamp(28px, 5vw, 44px);
-    line-height: 1.1;
-    color: var(--ink);
-    margin-bottom: 14px;
-  }
-  .header p {
-    font-size: 16px;
-    color: var(--ink-muted);
-    max-width: 520px;
-    line-height: 1.65;
-  }
+      /* Header */
+      .header {
+        padding: 48px 0 40px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 40px;
+      }
+      .header-eyebrow {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 12px;
+      }
+      .header h1 {
+        font-family: 'DM Serif Display', serif;
+        font-size: clamp(28px, 5vw, 44px);
+        line-height: 1.1;
+        color: var(--ink);
+        margin-bottom: 14px;
+      }
+      .header p {
+        font-size: 16px;
+        color: var(--ink-muted);
+        max-width: 520px;
+        line-height: 1.65;
+      }
 
-  /* Progress */
-  .progress-wrap {
-    margin-bottom: 36px;
-  }
-  .progress-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-  }
-  .progress-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink-muted);
-  }
-  .progress-count {
-    font-size: 13px;
-    color: var(--ink-faint);
-  }
-  .progress-track {
-    height: 3px;
-    background: var(--surface-3);
-    border-radius: 99px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 99px;
-    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
-  }
+      /* Progress */
+      .progress-wrap {
+        margin-bottom: 36px;
+      }
+      .progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 10px;
+      }
+      .progress-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink-muted);
+      }
+      .progress-count {
+        font-size: 13px;
+        color: var(--ink-faint);
+      }
+      .progress-track {
+        height: 3px;
+        background: var(--surface-3);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 99px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-  /* Section */
-  .section-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: var(--accent-light);
-    padding: 4px 10px;
-    border-radius: 99px;
-    margin-bottom: 10px;
-  }
-  .section-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 22px;
-    color: var(--ink);
-    margin-bottom: 6px;
-  }
-  .section-desc {
-    font-size: 14px;
-    color: var(--ink-muted);
-    margin-bottom: 28px;
-  }
-  .role-tag {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--ink-faint);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    padding: 2px 8px;
-    border-radius: 99px;
-    margin-left: 8px;
-  }
+      /* Section */
+      .section-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-light);
+        padding: 4px 10px;
+        border-radius: 99px;
+        margin-bottom: 10px;
+      }
+      .section-title {
+        font-family: 'DM Serif Display', serif;
+        font-size: 22px;
+        color: var(--ink);
+        margin-bottom: 6px;
+      }
+      .section-desc {
+        font-size: 14px;
+        color: var(--ink-muted);
+        margin-bottom: 28px;
+      }
+      .role-tag {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--ink-faint);
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        padding: 2px 8px;
+        border-radius: 99px;
+        margin-left: 8px;
+      }
 
-  /* Question */
-  .question {
-    margin-bottom: 24px;
-  }
-  .question-text {
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--ink);
-    margin-bottom: 12px;
-    line-height: 1.5;
-  }
-  .question-num {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--accent);
-    margin-right: 6px;
-  }
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .option {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 14px;
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, transform 0.1s;
-    text-align: left;
-    width: 100%;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .option:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
-    transform: translateX(2px);
-  }
-  .option.selected {
-    border-color: var(--accent);
-    background: var(--accent-light);
-  }
-  .option-score {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--ink-faint);
-    flex-shrink: 0;
-    margin-top: 1px;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
-  }
-  .option.selected .option-score {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-  }
-  .option-label {
-    font-size: 14px;
-    color: var(--ink);
-    line-height: 1.5;
-  }
+      /* Question */
+      .question {
+        margin-bottom: 24px;
+      }
+      .question-text {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ink);
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+      .question-num {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+        margin-right: 6px;
+      }
+      .options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .option {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          border-color 0.15s,
+          background 0.15s,
+          transform 0.1s;
+        text-align: left;
+        width: 100%;
+        font-family: 'DM Sans', sans-serif;
+      }
+      .option:hover {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        transform: translateX(2px);
+      }
+      .option.selected {
+        border-color: var(--accent);
+        background: var(--accent-light);
+      }
+      .option-score {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-faint);
+        flex-shrink: 0;
+        margin-top: 1px;
+        transition:
+          background 0.15s,
+          color 0.15s,
+          border-color 0.15s;
+      }
+      .option.selected .option-score {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .option-label {
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.5;
+      }
 
-  /* Nav */
-  .nav {
-    display: flex;
-    gap: 10px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-  }
-  .btn {
-    padding: 11px 22px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1.5px solid var(--border);
-    background: white;
-    color: var(--ink);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-  .btn:hover { background: var(--surface-2); border-color: var(--ink-faint); }
-  .btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
-    margin-left: auto;
-  }
-  .btn.primary:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-  .btn:disabled:hover { background: white; border-color: var(--border); }
+      /* Nav */
+      .nav {
+        display: flex;
+        gap: 10px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+      }
+      .btn {
+        padding: 11px 22px;
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid var(--border);
+        background: white;
+        color: var(--ink);
+        font-family: 'DM Sans', sans-serif;
+        transition: all 0.15s;
+      }
+      .btn:hover {
+        background: var(--surface-2);
+        border-color: var(--ink-faint);
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        margin-left: auto;
+      }
+      .btn.primary:hover {
+        background: var(--accent-dark);
+        border-color: var(--accent-dark);
+      }
+      .btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+      .btn:disabled:hover {
+        background: white;
+        border-color: var(--border);
+      }
 
-  /* Results */
-  .results-header {
-    margin-bottom: 36px;
-  }
-  .results-header h2 {
-    font-family: 'DM Serif Display', serif;
-    font-size: 32px;
-    color: var(--ink);
-    margin-bottom: 8px;
-  }
-  .results-header p { font-size: 15px; color: var(--ink-muted); }
+      /* Results */
+      .results-header {
+        margin-bottom: 36px;
+      }
+      .results-header h2 {
+        font-family: 'DM Serif Display', serif;
+        font-size: 32px;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .results-header p {
+        font-size: 15px;
+        color: var(--ink-muted);
+      }
 
-  .score-banner {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px 28px;
-    margin-bottom: 28px;
-  }
-  .score-ring {
-    width: 80px;
-    height: 80px;
-    flex-shrink: 0;
-    position: relative;
-  }
-  .score-ring svg { width: 80px; height: 80px; transform: rotate(-90deg); }
-  .score-ring-label {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .score-ring-num { font-size: 20px; font-weight: 600; color: var(--ink); line-height: 1; }
-  .score-ring-pct { font-size: 11px; color: var(--ink-faint); }
-  .score-info { flex: 1; }
-  .score-level {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 99px;
-    margin-bottom: 8px;
-  }
-  .score-desc { font-size: 14px; color: var(--ink-muted); line-height: 1.55; }
+      .score-banner {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px 28px;
+        margin-bottom: 28px;
+      }
+      .score-ring {
+        width: 80px;
+        height: 80px;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .score-ring svg {
+        width: 80px;
+        height: 80px;
+        transform: rotate(-90deg);
+      }
+      .score-ring-label {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .score-ring-num {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1;
+      }
+      .score-ring-pct {
+        font-size: 11px;
+        color: var(--ink-faint);
+      }
+      .score-info {
+        flex: 1;
+      }
+      .score-level {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 99px;
+        margin-bottom: 8px;
+      }
+      .score-desc {
+        font-size: 14px;
+        color: var(--ink-muted);
+        line-height: 1.55;
+      }
 
-  .dims-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-  @media(max-width: 500px) { .dims-grid { grid-template-columns: 1fr; } }
-  .dim-card {
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 16px 18px;
-  }
-  .dim-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
-  .dim-track { height: 4px; background: var(--surface-2); border-radius: 99px; margin-bottom: 6px; overflow: hidden; }
-  .dim-fill { height: 100%; border-radius: 99px; }
-  .dim-meta { font-size: 12px; color: var(--ink-faint); }
+      .dims-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      @media (max-width: 500px) {
+        .dims-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .dim-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px 18px;
+      }
+      .dim-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--ink);
+        margin-bottom: 8px;
+      }
+      .dim-track {
+        height: 4px;
+        background: var(--surface-2);
+        border-radius: 99px;
+        margin-bottom: 6px;
+        overflow: hidden;
+      }
+      .dim-fill {
+        height: 100%;
+        border-radius: 99px;
+      }
+      .dim-meta {
+        font-size: 12px;
+        color: var(--ink-faint);
+      }
 
-  .recs-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--ink);
-    margin-bottom: 14px;
-  }
-  .rec {
-    display: flex;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .rec:last-child { border-bottom: none; }
-  .rec-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 7px;
-  }
-  .rec-body { font-size: 14px; color: var(--ink); line-height: 1.55; }
-  .rec-body strong { font-weight: 600; display: block; margin-bottom: 2px; }
+      .recs-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 14px;
+      }
+      .rec {
+        display: flex;
+        gap: 14px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .rec:last-child {
+        border-bottom: none;
+      }
+      .rec-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 7px;
+      }
+      .rec-body {
+        font-size: 14px;
+        color: var(--ink);
+        line-height: 1.55;
+      }
+      .rec-body strong {
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+      }
 
-  .result-nav {
-    display: flex;
-    gap: 10px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
+      .result-nav {
+        display: flex;
+        gap: 10px;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
 
-  /* Intro screen */
-  .intro { padding: 8px 0; }
-  .intro-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 28px 0;
-  }
-  @media(max-width:500px){ .intro-cards { grid-template-columns: 1fr; } }
-  .intro-card {
-    background: white;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 16px 18px;
-  }
-  .intro-card-icon { font-size: 20px; margin-bottom: 8px; }
-  .intro-card-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-  .intro-card-desc { font-size: 13px; color: var(--ink-muted); }
+      /* Intro screen */
+      .intro {
+        padding: 8px 0;
+      }
+      .intro-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin: 28px 0;
+      }
+      @media (max-width: 500px) {
+        .intro-cards {
+          grid-template-columns: 1fr;
+        }
+      }
+      .intro-card {
+        background: white;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 16px 18px;
+      }
+      .intro-card-icon {
+        font-size: 20px;
+        margin-bottom: 8px;
+      }
+      .intro-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 4px;
+      }
+      .intro-card-desc {
+        font-size: 13px;
+        color: var(--ink-muted);
+      }
 
-  .role-select { margin-bottom: 0; }
-  .role-select label { font-size: 15px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 10px; }
-  .role-opts { display: flex; gap: 10px; flex-wrap: wrap; }
-  .role-btn {
-    padding: 9px 18px;
-    border: 1.5px solid var(--border);
-    border-radius: 99px;
-    background: white;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    color: var(--ink);
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.15s;
-  }
-  .role-btn:hover, .role-btn.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); }
+      .role-select {
+        margin-bottom: 0;
+      }
+      .role-select label {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ink);
+        display: block;
+        margin-bottom: 10px;
+      }
+      .role-opts {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .role-btn {
+        padding: 9px 18px;
+        border: 1.5px solid var(--border);
+        border-radius: 99px;
+        background: white;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        color: var(--ink);
+        font-family: 'DM Sans', sans-serif;
+        transition: all 0.15s;
+      }
+      .role-btn:hover,
+      .role-btn.selected {
+        background: var(--accent-light);
+        border-color: var(--accent);
+        color: var(--accent-dark);
+      }
 
-  .field-group { margin-bottom: 20px; }
-  .field-group > label { font-size: 15px; font-weight: 500; color: var(--ink); display: block; margin-bottom: 10px; }
-  .field-input {
-    width: 100%; padding: 10px 12px;
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 14px; font-family: 'DM Sans', sans-serif;
-    background: white; color: var(--ink);
-    outline: none; transition: border-color 0.15s;
-    appearance: none; -webkit-appearance: none;
-  }
-  .field-input:focus { border-color: var(--accent); }
-  select.field-input { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239198aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
-  .teams-loading { font-size: 13px; color: var(--ink-faint); padding: 10px 0; }
+      .field-group {
+        margin-bottom: 20px;
+      }
+      .field-group > label {
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--ink);
+        display: block;
+        margin-bottom: 10px;
+      }
+      .field-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1.5px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-size: 14px;
+        font-family: 'DM Sans', sans-serif;
+        background: white;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.15s;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+      .field-input:focus {
+        border-color: var(--accent);
+      }
+      select.field-input {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239198aa' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 32px;
+      }
+      .teams-loading {
+        font-size: 13px;
+        color: var(--ink-faint);
+        padding: 10px 0;
+      }
 
-  .fade-in { animation: fadeUp 0.35s ease both; }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+      .fade-in {
+        animation: fadeUp 0.35s ease both;
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-  /* Open question */
-  .open-question { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
-  textarea.field-input { resize: vertical; min-height: 72px; line-height: 1.5; }
+      /* Open question */
+      .open-question {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+      textarea.field-input {
+        resize: vertical;
+        min-height: 72px;
+        line-height: 1.5;
+      }
 
-  /* Anon footer */
-  .anon-footer {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: rgba(250,250,248,0.96);
-    border-top: 1px solid var(--border);
-    padding: 10px 20px;
-    font-size: 12px;
-    color: var(--ink-muted);
-    text-align: center;
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    line-height: 1.5;
-  }
-</style>
-</head>
-<body>
-<div id="anon-footer" class="anon-footer" style="display:none;"></div>
-<div class="shell">
-  <div class="header">
-    <div id="header-eyebrow" class="header-eyebrow">Scrum Guide Standard</div>
-    <h1 id="header-h1">Assessment de<br>Madurez Agile</h1>
-    <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 20 preguntas · ~12 minutos.</p>
-  </div>
-  <div id="app"></div>
-</div>
+      /* Anon footer */
+      .anon-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(250, 250, 248, 0.96);
+        border-top: 1px solid var(--border);
+        padding: 10px 20px;
+        font-size: 12px;
+        color: var(--ink-muted);
+        text-align: center;
+        backdrop-filter: blur(4px);
+        z-index: 100;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="anon-footer" class="anon-footer" style="display: none"></div>
+    <div class="shell">
+      <div class="header">
+        <div id="header-eyebrow" class="header-eyebrow">Scrum Guide Standard</div>
+        <h1 id="header-h1">Assessment de<br />Madurez Agile</h1>
+        <p>Evaluación del nivel de adopción de Scrum para Product Owners y Dev Teams. 20 preguntas · ~12 minutos.</p>
+      </div>
+      <div id="app"></div>
+    </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="assets/escape.js"></script>
-<script src="assessment-config.js"></script>
-<script>
-// ── Firebase config ──────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM",
-  authDomain: "agile-assessment-5a117.firebaseapp.com",
-  projectId: "agile-assessment-5a117",
-  storageBucket: "agile-assessment-5a117.firebasestorage.app",
-  messagingSenderId: "41571782884",
-  appId: "1:41571782884:web:e8b96178aeffc4649edcf1"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-// ────────────────────────────────────────────────────────────────
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="assets/escape.js"></script>
+    <script src="assessment-config.js"></script>
+    <script>
+      // ── Firebase config ──────────────────────────────────────────────
+      const firebaseConfig = {
+        apiKey: 'AIzaSyDcsMNbGqwmkbgg3k41dPfKCEgWMnX0SaM',
+        authDomain: 'agile-assessment-5a117.firebaseapp.com',
+        projectId: 'agile-assessment-5a117',
+        storageBucket: 'agile-assessment-5a117.firebasestorage.app',
+        messagingSenderId: '41571782884',
+        appId: '1:41571782884:web:e8b96178aeffc4649edcf1',
+      };
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      // ────────────────────────────────────────────────────────────────
 
-// SECTIONS, LEVELS, DIMS, DIM_COLORS, RECS, RECS_ROLE, getLevel, getRec
-// → cargados desde assessment-config.js
+      // SECTIONS, LEVELS, DIMS, DIM_COLORS, RECS, RECS_ROLE, getLevel, getRec
+      // → cargados desde assessment-config.js
 
-let screen = "loading"; // loading | briefing | intro | section | results
-let currentSection = 0;
-let answers = {};
-let customAnswers = {}; // { [cqId]: 0-3 } — respuestas a preguntas personalizadas (no afectan score)
-let role = "";
-let teams = [];          // [{ id, name }] cargado desde Airtable
-let teamId = "";
-let teamName = "";
-let participantName = "";
-let submitStatus = "";   // "" | "sending" | "ok" | "error"
-let cicloNombre = "";
-let teamSize = "";   // "1-5" | "6-9" | "10+"
-let scrumTime = "";  // legacy — ya no se recolecta en la UI
-let teamAge = "";    // "< 3 meses" | "3–12 meses" | "1–2 años" | "> 2 años"
-let dedicatedPO = ""; // "Sí" | "No" | "Compartido"
-let workMode = "";   // "Presencial" | "Híbrido" | "Totalmente remoto"
-let teamType = '';   // "Sí" | "No" — adapta preguntas de Excelencia Técnica
-let openTexts = {};  // { [sectionId]: string } — comentarios abiertos por sección
-let startedAt = null;  // timestamp (ms) cuando el participante inicia la primera sección
-let briefingTexto = "";
-let anonymityMode = "full";  // "full" | "semi" | "nominal"
-let aiEnabled = false;
-let healthEnabled = false;   // activa la pantalla de salud del equipo al final
-let healthAnswers = {};      // respuestas a HEALTH_QUESTIONS
-let guidanceText = '';       // mensaje personalizado del coach en la pantalla de inicio
-let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
+      let screen = 'loading'; // loading | briefing | intro | section | results
+      let currentSection = 0;
+      let answers = {};
+      let customAnswers = {}; // { [cqId]: 0-3 } — respuestas a preguntas personalizadas (no afectan score)
+      let role = '';
+      let teams = []; // [{ id, name }] cargado desde Airtable
+      let teamId = '';
+      let teamName = '';
+      let participantName = '';
+      let submitStatus = ''; // "" | "sending" | "ok" | "error"
+      let cicloNombre = '';
+      let teamSize = ''; // "1-5" | "6-9" | "10+"
+      let scrumTime = ''; // legacy — ya no se recolecta en la UI
+      let teamAge = ''; // "< 3 meses" | "3–12 meses" | "1–2 años" | "> 2 años"
+      let dedicatedPO = ''; // "Sí" | "No" | "Compartido"
+      let workMode = ''; // "Presencial" | "Híbrido" | "Totalmente remoto"
+      let teamType = ''; // "Sí" | "No" — adapta preguntas de Excelencia Técnica
+      let openTexts = {}; // { [sectionId]: string } — comentarios abiertos por sección
+      let startedAt = null; // timestamp (ms) cuando el participante inicia la primera sección
+      let briefingTexto = '';
+      let anonymityMode = 'full'; // "full" | "semi" | "nominal"
+      let aiEnabled = false;
+      let healthEnabled = false; // activa la pantalla de salud del equipo al final
+      let healthAnswers = {}; // respuestas a HEALTH_QUESTIONS
+      let guidanceText = ''; // mensaje personalizado del coach en la pantalla de inicio
+      let wsConfig = { questionOverrides: {}, customQuestions: {} }; // configuración del workspace
 
-function setTeam(id, text) {
-  teamId = id;
-  teamName = id ? text : '';
-  render();
-}
+      function setTeam(id, text) {
+        teamId = id;
+        teamName = id ? text : '';
+        render();
+      }
 
-async function loadTeams() {
-  const params = new URLSearchParams(window.location.search);
-  const workspaceId = params.get('workspaceId');
+      async function loadTeams() {
+        const params = new URLSearchParams(window.location.search);
+        const workspaceId = params.get('workspaceId');
 
-  if (!workspaceId) {
-    document.getElementById('app').innerHTML = `
+        if (!workspaceId) {
+          document.getElementById('app').innerHTML = `
       <div style="text-align:center;padding:64px 20px;">
         <div style="font-size:40px;margin-bottom:20px;">🔗</div>
         <h2 style="font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:12px;">Link incompleto</h2>
@@ -498,150 +655,166 @@ async function loadTeams() {
           <span style="font-size:13px;color:var(--ink-faint);">Ese link incluye el código de tu equipo y workspace.</span>
         </p>
       </div>`;
-    return;
-  }
-
-  try {
-    const tSnap = await db.collection('equipos').where('ownerId', '==', workspaceId).get();
-    teams = tSnap.docs
-      .filter(d => d.data().activo === true)
-      .map(d => ({ id: d.id, name: d.data().nombre }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  } catch(e) {
-    teams = [];
-  }
-  try {
-    const cSnap = await db.collection('ciclos').where('ownerId', '==', workspaceId).get();
-    const active = cSnap.docs.find(d => !!d.data().activo);
-    cicloNombre = active ? (active.data().nombre || '') : '';
-  } catch(e) {
-    cicloNombre = '';
-  }
-  // Pre-seleccionar equipo desde URL param (QR code) — equipoId es el nombre canónico; teamId por compat con QRs anteriores
-  const presetId = params.get('equipoId') || params.get('teamId');
-  if (presetId) {
-    const found = teams.find(t => t.id === presetId);
-    if (found) { teamId = found.id; teamName = found.name; }
-  }
-  // Cargar configuración del workspace (briefing + branding)
-  try {
-    const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
-    const wsData = wsSnap.exists ? wsSnap.data() : {};
-    briefingTexto = wsData.briefingTexto || '';
-    anonymityMode = wsData.anonymityMode || 'full';
-    aiEnabled     = wsData.aiEnabled       || false;
-    healthEnabled = wsData.teamHealthEnabled || false;
-    guidanceText  = wsData.guidanceText    || '';
-    // Aplicar branding
-    if (wsData.colorAcento) document.documentElement.style.setProperty('--accent', wsData.colorAcento);
-    if (wsData.marca || wsData.logoUrl) {
-      const eyebrow = document.getElementById('header-eyebrow');
-      const h1      = document.getElementById('header-h1');
-      if (eyebrow && wsData.marca) eyebrow.textContent = wsData.marca;
-      if (h1) {
-        if (wsData.logoUrl) {
-          h1.innerHTML = `<img src="${e(wsData.logoUrl)}" alt="${e(wsData.marca || '')}" style="max-height:48px;max-width:200px;object-fit:contain;display:block;">`;
-        } else if (wsData.marca) {
-          h1.textContent = wsData.marca;
+          return;
         }
+
+        try {
+          const tSnap = await db.collection('equipos').where('ownerId', '==', workspaceId).get();
+          teams = tSnap.docs
+            .filter((d) => d.data().activo === true)
+            .map((d) => ({ id: d.id, name: d.data().nombre }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+        } catch (e) {
+          teams = [];
+        }
+        try {
+          const cSnap = await db.collection('ciclos').where('ownerId', '==', workspaceId).get();
+          const active = cSnap.docs.find((d) => !!d.data().activo);
+          cicloNombre = active ? active.data().nombre || '' : '';
+        } catch (e) {
+          cicloNombre = '';
+        }
+        // Pre-seleccionar equipo desde URL param (QR code) — equipoId es el nombre canónico; teamId por compat con QRs anteriores
+        const presetId = params.get('equipoId') || params.get('teamId');
+        if (presetId) {
+          const found = teams.find((t) => t.id === presetId);
+          if (found) {
+            teamId = found.id;
+            teamName = found.name;
+          }
+        }
+        // Cargar configuración del workspace (briefing + branding)
+        try {
+          const wsSnap = await db.collection('workspaces').doc(workspaceId).get();
+          const wsData = wsSnap.exists ? wsSnap.data() : {};
+          briefingTexto = wsData.briefingTexto || '';
+          anonymityMode = wsData.anonymityMode || 'full';
+          aiEnabled = wsData.aiEnabled || false;
+          healthEnabled = wsData.teamHealthEnabled || false;
+          guidanceText = wsData.guidanceText || '';
+          // Aplicar branding
+          if (wsData.colorAcento) document.documentElement.style.setProperty('--accent', wsData.colorAcento);
+          if (wsData.marca || wsData.logoUrl) {
+            const eyebrow = document.getElementById('header-eyebrow');
+            const h1 = document.getElementById('header-h1');
+            if (eyebrow && wsData.marca) eyebrow.textContent = wsData.marca;
+            if (h1) {
+              if (wsData.logoUrl) {
+                h1.innerHTML = `<img src="${e(wsData.logoUrl)}" alt="${e(wsData.marca || '')}" style="max-height:48px;max-width:200px;object-fit:contain;display:block;">`;
+              } else if (wsData.marca) {
+                h1.textContent = wsData.marca;
+              }
+            }
+          }
+        } catch (e) {
+          briefingTexto = '';
+        }
+
+        // Cargar configuración de preguntas del workspace
+        try {
+          const cfgSnap = await db.collection('configuraciones').doc(workspaceId).get();
+          wsConfig = cfgSnap.exists
+            ? {
+                questionOverrides: cfgSnap.data().questionOverrides || {},
+                customQuestions: cfgSnap.data().customQuestions || {},
+              }
+            : { questionOverrides: {}, customQuestions: {} };
+        } catch (e) {
+          wsConfig = { questionOverrides: {}, customQuestions: {} };
+        }
+
+        screen = briefingTexto.trim() ? 'briefing' : 'intro';
+        render();
       }
-    }
-  } catch(e) { briefingTexto = ''; }
 
-  // Cargar configuración de preguntas del workspace
-  try {
-    const cfgSnap = await db.collection('configuraciones').doc(workspaceId).get();
-    wsConfig = cfgSnap.exists ? {
-      questionOverrides: cfgSnap.data().questionOverrides || {},
-      customQuestions:   cfgSnap.data().customQuestions   || {}
-    } : { questionOverrides: {}, customQuestions: {} };
-  } catch(e) { wsConfig = { questionOverrides: {}, customQuestions: {} }; }
+      async function submitResults() {
+        if (submitStatus === 'ok' || submitStatus === 'sending') return;
+        submitStatus = 'sending';
+        render();
+        const { pct, dims } = calcResults();
+        const level = getLevel(pct);
+        try {
+          // Fetch active ciclo fresh at submit time
+          let cicloFinal = cicloNombre;
+          if (!cicloFinal) {
+            const cSnap = await db.collection('ciclos').get();
+            const active = cSnap.docs.find((d) => !!d.data().activo);
+            cicloFinal = active ? active.data().nombre || '' : '';
+          }
+          const scoreFields = {};
+          DIMS.forEach((d) => {
+            scoreFields[d.storeKey] = dims[d.key] ? dims[d.key].score : 0;
+          });
+          const completionSeconds = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
+          const flaggedFast = completionSeconds !== null && completionSeconds < 180;
+          const respDoc = {
+            equipoId: teamId,
+            equipoNombre: teamName,
+            participante: participantName.trim() || 'Anónimo',
+            rol: role,
+            ciclo: cicloFinal,
+            tamanoEquipo: '',
+            tiempoScrum: '',
+            teamAge: teamAge || '',
+            teamSize: teamSize || '',
+            dedicatedPO: dedicatedPO || '',
+            workMode: workMode || '',
+            teamType: teamType === 'No' ? 'knowledge' : 'software',
+            ...scoreFields,
+            scoreTotalPct: pct,
+            nivel: level.label,
+            answers: { ...answers },
+            comments: { ...openTexts },
+            customAnswers: { ...customAnswers },
+            fecha: firebase.firestore.FieldValue.serverTimestamp(),
+          };
+          if (completionSeconds !== null) respDoc.completionSeconds = completionSeconds;
+          if (flaggedFast) respDoc.flaggedFast = true;
+          if (healthEnabled && Object.keys(healthAnswers).length > 0) {
+            const hSum = Object.values(healthAnswers).reduce((a, b) => a + b, 0);
+            respDoc.teamHealthScore = Math.round((hSum / (HEALTH_QUESTIONS.length * 3)) * 100);
+            respDoc.healthAnswers = { ...healthAnswers };
+          }
+          await db.collection('respuestas').add(respDoc);
+          submitStatus = 'ok';
+          try {
+            localStorage.setItem('assessment_' + cicloFinal + '_' + teamId, '1');
+          } catch (e) {}
+        } catch (e) {
+          submitStatus = 'error';
+        }
+        render();
+      }
 
-  screen = briefingTexto.trim() ? 'briefing' : 'intro';
-  render();
-}
+      function calcResults() {
+        let total = 0,
+          max = 0;
+        const dims = {};
+        const ov = wsConfig.questionOverrides || {};
+        SECTIONS.forEach((sec) => {
+          let wSum = 0,
+            wMax = 0;
+          const _qs = sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions ? sec.altQuestions : sec.questions;
+          _qs.forEach((q, qi) => {
+            const qKey = `${sec.id}_${qi}`;
+            if ((ov[qKey] || {}).disabled) return; // excluir preguntas desactivadas
+            const w = q.weight || 1; // fundacionales tienen weight:1.5
+            wMax += 3 * w;
+            wSum += (answers[qKey] || 0) * w;
+          });
+          // Normalizar al rango del DIMS.max para mantener comparabilidad con datos históricos
+          const dimEntry = DIMS.find((d) => d.key === sec.id);
+          const dimMax = dimEntry ? dimEntry.max : wMax > 0 ? wMax : _qs.length * 3;
+          const score = wMax > 0 ? Math.round((wSum / wMax) * dimMax) : 0;
+          dims[sec.id] = { score, max: dimMax, pct: Math.round((score / dimMax) * 100), name: sec.title };
+          total += score;
+          max += dimMax;
+        });
+        return { total, max, pct: Math.round((total / max) * 100), dims };
+      }
 
-async function submitResults() {
-  if (submitStatus === 'ok' || submitStatus === 'sending') return;
-  submitStatus = 'sending';
-  render();
-  const { pct, dims } = calcResults();
-  const level = getLevel(pct);
-  try {
-    // Fetch active ciclo fresh at submit time
-    let cicloFinal = cicloNombre;
-    if (!cicloFinal) {
-      const cSnap = await db.collection('ciclos').get();
-      const active = cSnap.docs.find(d => !!d.data().activo);
-      cicloFinal = active ? (active.data().nombre || '') : '';
-    }
-    const scoreFields = {};
-    DIMS.forEach(d => { scoreFields[d.storeKey] = dims[d.key] ? dims[d.key].score : 0; });
-    const completionSeconds = startedAt ? Math.round((Date.now() - startedAt) / 1000) : null;
-    const flaggedFast = completionSeconds !== null && completionSeconds < 180;
-    const respDoc = {
-      equipoId: teamId,
-      equipoNombre: teamName,
-      participante: participantName.trim() || 'Anónimo',
-      rol: role,
-      ciclo: cicloFinal,
-      tamanoEquipo: '',
-      tiempoScrum: '',
-      teamAge: teamAge || '',
-      teamSize: teamSize || '',
-      dedicatedPO: dedicatedPO || '',
-      workMode: workMode || '',
-      teamType: teamType === 'No' ? 'knowledge' : 'software',
-      ...scoreFields,
-      scoreTotalPct: pct,
-      nivel: level.label,
-      answers: {...answers},
-      comments: {...openTexts},
-      customAnswers: {...customAnswers},
-      fecha: firebase.firestore.FieldValue.serverTimestamp()
-    };
-    if (completionSeconds !== null) respDoc.completionSeconds = completionSeconds;
-    if (flaggedFast) respDoc.flaggedFast = true;
-    if (healthEnabled && Object.keys(healthAnswers).length > 0) {
-      const hSum = Object.values(healthAnswers).reduce((a, b) => a + b, 0);
-      respDoc.teamHealthScore = Math.round(hSum / (HEALTH_QUESTIONS.length * 3) * 100);
-      respDoc.healthAnswers = { ...healthAnswers };
-    }
-    await db.collection('respuestas').add(respDoc);
-    submitStatus = 'ok';
-    try { localStorage.setItem('assessment_' + cicloFinal + '_' + teamId, '1'); } catch(e) {}
-  } catch(e) {
-    submitStatus = 'error';
-  }
-  render();
-}
-
-function calcResults() {
-  let total=0, max=0;
-  const dims = {};
-  const ov = wsConfig.questionOverrides || {};
-  SECTIONS.forEach(sec => {
-    let wSum=0, wMax=0;
-    const _qs = (sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions) ? sec.altQuestions : sec.questions;
-    _qs.forEach((q,qi)=>{
-      const qKey = `${sec.id}_${qi}`;
-      if ((ov[qKey] || {}).disabled) return; // excluir preguntas desactivadas
-      const w = q.weight || 1; // fundacionales tienen weight:1.5
-      wMax += 3 * w;
-      wSum += (answers[qKey] || 0) * w;
-    });
-    // Normalizar al rango del DIMS.max para mantener comparabilidad con datos históricos
-    const dimEntry = DIMS.find(d => d.key === sec.id);
-    const dimMax = dimEntry ? dimEntry.max : (wMax > 0 ? wMax : _qs.length * 3);
-    const score = wMax > 0 ? Math.round(wSum / wMax * dimMax) : 0;
-    dims[sec.id] = { score, max:dimMax, pct:Math.round(score/dimMax*100), name:sec.title };
-    total+=score; max+=dimMax;
-  });
-  return { total, max, pct:Math.round(total/max*100), dims };
-}
-
-function renderBriefing() {
-  return `
+      function renderBriefing() {
+        return `
     <div style="padding:8px 0;">
       <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:16px;">Antes de comenzar</div>
       <div style="font-size:16px;line-height:1.75;color:var(--ink-muted);white-space:pre-wrap;">${e(briefingTexto)}</div>
@@ -649,49 +822,55 @@ function renderBriefing() {
         <button class="btn primary" onclick="screen='intro';render()">Entendido, comenzar →</button>
       </div>
     </div>`;
-}
+      }
 
-function renderAnonFooter() {
-  const el = document.getElementById('anon-footer');
-  if (!el) return;
-  if (!['intro','context','section','health'].includes(screen)) { el.style.display = 'none'; return; }
-  const msgs = {
-    full:    'Tus respuestas son completamente anónimas. Solo se registra tu rol.',
-    semi:    'Tus respuestas se guardan con un identificador de rol. El coach no ve tu nombre.',
-    nominal: 'Tus respuestas están vinculadas a tu nombre.'
-  };
-  const msg = msgs[anonymityMode] || msgs.full;
-  const aiMsg = aiEnabled
-    ? ' · Los comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores.'
-    : '';
-  el.style.display = 'block';
-  el.innerHTML = `<span style="margin-right:6px;">🔒</span>${msg}${aiMsg ? `<span style="color:var(--ink-faint);">${aiMsg}</span>` : ''}`;
-}
+      function renderAnonFooter() {
+        const el = document.getElementById('anon-footer');
+        if (!el) return;
+        if (!['intro', 'context', 'section', 'health'].includes(screen)) {
+          el.style.display = 'none';
+          return;
+        }
+        const msgs = {
+          full: 'Tus respuestas son completamente anónimas. Solo se registra tu rol.',
+          semi: 'Tus respuestas se guardan con un identificador de rol. El coach no ve tu nombre.',
+          nominal: 'Tus respuestas están vinculadas a tu nombre.',
+        };
+        const msg = msgs[anonymityMode] || msgs.full;
+        const aiMsg = aiEnabled
+          ? ' · Los comentarios pueden analizarse de forma agregada por IA para generar recomendaciones. Nunca se identifican autores.'
+          : '';
+        el.style.display = 'block';
+        el.innerHTML = `<span style="margin-right:6px;">🔒</span>${msg}${aiMsg ? `<span style="color:var(--ink-faint);">${aiMsg}</span>` : ''}`;
+      }
 
-function render() {
-  const app = document.getElementById('app');
-  if(screen==='loading') app.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--ink-faint);font-size:15px;">Cargando…</div>';
-  else if(screen==='briefing') app.innerHTML = renderBriefing();
-  else if(screen==='intro') app.innerHTML = renderIntro();
-  else if(screen==='context') app.innerHTML = renderContext();
-  else if(screen==='section') app.innerHTML = renderSection();
-  else if(screen==='health') app.innerHTML = renderHealth();
-  else app.innerHTML = renderResults();
-  app.classList.remove('fade-in');
-  void app.offsetWidth;
-  app.classList.add('fade-in');
-  renderAnonFooter();
-}
+      function render() {
+        const app = document.getElementById('app');
+        if (screen === 'loading')
+          app.innerHTML =
+            '<div style="text-align:center;padding:80px 20px;color:var(--ink-faint);font-size:15px;">Cargando…</div>';
+        else if (screen === 'briefing') app.innerHTML = renderBriefing();
+        else if (screen === 'intro') app.innerHTML = renderIntro();
+        else if (screen === 'context') app.innerHTML = renderContext();
+        else if (screen === 'section') app.innerHTML = renderSection();
+        else if (screen === 'health') app.innerHTML = renderHealth();
+        else app.innerHTML = renderResults();
+        app.classList.remove('fade-in');
+        void app.offsetWidth;
+        app.classList.add('fade-in');
+        renderAnonFooter();
+      }
 
-function renderIntro() {
-  const teamsField = teams.length === 0
-    ? `<div class="teams-loading">Cargando equipos…</div>`
-    : `<select class="field-input" onchange="setTeam(this.value, this.options[this.selectedIndex].text)">
+      function renderIntro() {
+        const teamsField =
+          teams.length === 0
+            ? `<div class="teams-loading">Cargando equipos…</div>`
+            : `<select class="field-input" onchange="setTeam(this.value, this.options[this.selectedIndex].text)">
         <option value="">— Selecciona tu equipo —</option>
-        ${teams.map(t=>`<option value="${e(t.id)}" ${teamId===t.id?'selected':''}>${e(t.name)}</option>`).join('')}
+        ${teams.map((t) => `<option value="${e(t.id)}" ${teamId === t.id ? 'selected' : ''}>${e(t.name)}</option>`).join('')}
        </select>`;
 
-  return `
+        return `
     <div class="intro">
       <div class="intro-cards">
         <div class="intro-card"><div class="intro-card-icon">📋</div><div class="intro-card-title">20 preguntas</div><div class="intro-card-desc">6 dimensiones de madurez Scrum</div></div>
@@ -703,113 +882,140 @@ function renderIntro() {
         <label>¿A qué equipo perteneces?</label>
         ${teamsField}
       </div>
-      ${anonymityMode === 'full' ? '' : `
+      ${
+        anonymityMode === 'full'
+          ? ''
+          : `
       <div class="field-group">
         <label>${anonymityMode === 'nominal' ? 'Tu nombre' : 'Identificador de rol'} <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
         <input class="field-input" type="text"
           placeholder="${anonymityMode === 'nominal' ? 'Ej. María García' : 'Ej. Dev1, Dev2'}"
           value="${e(participantName)}" oninput="participantName=this.value" autocomplete="off"/>
-      </div>`}
+      </div>`
+      }
       <div class="role-select">
         <label>¿Cuál es tu rol en el equipo?</label>
         <div class="role-opts">
-          ${["Product Owner","Dev Team","Scrum Master","Otro"].map(r=>`<button class="role-btn ${role===r?'selected':''}" onclick="setRole('${r}')">${r}</button>`).join('')}
+          ${['Product Owner', 'Dev Team', 'Scrum Master', 'Otro'].map((r) => `<button class="role-btn ${role === r ? 'selected' : ''}" onclick="setRole('${r}')">${r}</button>`).join('')}
         </div>
-        ${role==='Scrum Master'?`<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>`:''}
-        ${(()=>{ try { return teamId && cicloNombre && localStorage.getItem('assessment_'+cicloNombre+'_'+teamId) ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${e(cicloNombre)}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>` : ''; } catch(err){ return ''; } })()}
+        ${role === 'Scrum Master' ? `<p style="margin-top:12px;font-size:13px;color:var(--amber);background:var(--amber-light);border-radius:var(--radius-sm);padding:10px 14px;">Como Scrum Master, responde desde la perspectiva del equipo completo. Las preguntas evalúan las prácticas del equipo, no solo las tuyas.</p>` : ''}
+        ${(() => {
+          try {
+            return teamId && cicloNombre && localStorage.getItem('assessment_' + cicloNombre + '_' + teamId)
+              ? `<p style="margin-top:10px;font-size:13px;color:var(--accent);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">Ya respondiste el assessment en el ciclo <strong>${e(cicloNombre)}</strong>. Puedes volver a responder si quieres actualizar tu respuesta.</p>`
+              : '';
+          } catch (err) {
+            return '';
+          }
+        })()}
       </div>
       <div style="background:var(--surface-2);border-left:3px solid var(--accent);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:10px 14px;margin-top:16px;font-size:13px;color:var(--ink-muted);line-height:1.6;">
         ${guidanceText ? e(guidanceText) : `Este assessment está diseñado para completarse de forma <strong>individual</strong>, sin coordinarlo con tus compañeros. ${anonymityMode === 'full' ? 'Tus respuestas son completamente anónimas.' : anonymityMode === 'semi' ? 'Tus respuestas se guardan con un identificador de rol.' : 'Tus respuestas están vinculadas a tu nombre.'} No hay respuestas correctas o incorrectas.`}
       </div>
       <div class="nav" style="border-top:none;padding-top:0;margin-top:28px;">
-        <button class="btn primary" onclick="startAssessment()" ${(!role||!teamId)?'disabled':''}>Comenzar assessment →</button>
+        <button class="btn primary" onclick="startAssessment()" ${!role || !teamId ? 'disabled' : ''}>Comenzar assessment →</button>
       </div>
     </div>`;
-}
+      }
 
-function getSectionNote(secRole, userRole) {
-  const notes = {
-    "Product Owner": {
-      "Dev Team":      "Responde desde lo que has observado sobre cómo se gestiona el backlog y la relación con el PO.",
-      "Scrum Master":  "Responde desde tu perspectiva como facilitador de la relación entre el PO y el equipo.",
-      "Otro":          "Responde desde lo que has podido observar en el equipo.",
-    },
-    "Dev Team": {
-      "Product Owner": "Responde desde lo que has podido observar sobre las prácticas del equipo de desarrollo.",
-      "Scrum Master":  "Responde desde tu perspectiva como facilitador del equipo.",
-      "Otro":          "Responde desde lo que has podido observar en el equipo.",
-    },
-    "PO + Dev Team": {
-      "Scrum Master":  "Responde desde tu perspectiva como facilitador: observas estas prácticas de cerca y tu percepción es valiosa.",
-      "Otro":          "Responde desde lo que has podido observar en el equipo.",
-    },
-  };
-  const note = notes[secRole]?.[userRole];
-  if (!note) return '';
-  return `<p style="margin:0 0 20px;font-size:13px;color:var(--accent-dark);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">
+      function getSectionNote(secRole, userRole) {
+        const notes = {
+          'Product Owner': {
+            'Dev Team':
+              'Responde desde lo que has observado sobre cómo se gestiona el backlog y la relación con el PO.',
+            'Scrum Master': 'Responde desde tu perspectiva como facilitador de la relación entre el PO y el equipo.',
+            Otro: 'Responde desde lo que has podido observar en el equipo.',
+          },
+          'Dev Team': {
+            'Product Owner': 'Responde desde lo que has podido observar sobre las prácticas del equipo de desarrollo.',
+            'Scrum Master': 'Responde desde tu perspectiva como facilitador del equipo.',
+            Otro: 'Responde desde lo que has podido observar en el equipo.',
+          },
+          'PO + Dev Team': {
+            'Scrum Master':
+              'Responde desde tu perspectiva como facilitador: observas estas prácticas de cerca y tu percepción es valiosa.',
+            Otro: 'Responde desde lo que has podido observar en el equipo.',
+          },
+        };
+        const note = notes[secRole]?.[userRole];
+        if (!note) return '';
+        return `<p style="margin:0 0 20px;font-size:13px;color:var(--accent-dark);background:var(--accent-light);border-radius:var(--radius-sm);padding:10px 14px;">
     <strong>Nota:</strong> ${note}
   </p>`;
-}
+      }
 
-function renderSection() {
-  const sec = SECTIONS[currentSection];
-  const ov = wsConfig.questionOverrides || {};
-  const cqs = (wsConfig.customQuestions || {})[sec.id] || [];
+      function renderSection() {
+        const sec = SECTIONS[currentSection];
+        const ov = wsConfig.questionOverrides || {};
+        const cqs = (wsConfig.customQuestions || {})[sec.id] || [];
 
-  // Preguntas estándar activas (no desactivadas)
-  // Para la sección técnica: usar altQuestions si el equipo declaró ser no-software
-  const _secQs = (sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions) ? sec.altQuestions : sec.questions;
-  const activeQs = _secQs.map((q, qi) => ({ q, qi }))
-    .filter(({ qi }) => !((ov[`${sec.id}_${qi}`] || {}).disabled));
+        // Preguntas estándar activas (no desactivadas)
+        // Para la sección técnica: usar altQuestions si el equipo declaró ser no-software
+        const _secQs = sec.id === 'tecnico' && teamType === 'No' && sec.altQuestions ? sec.altQuestions : sec.questions;
+        const activeQs = _secQs.map((q, qi) => ({ q, qi })).filter(({ qi }) => !(ov[`${sec.id}_${qi}`] || {}).disabled);
 
-  // Total de preguntas estándar activas en todo el formulario
-  const totalQ = SECTIONS.reduce((a, s) => {
-    const _qs = (s.id === 'tecnico' && teamType === 'No' && s.altQuestions) ? s.altQuestions : s.questions;
-    return a + _qs.filter((_, qi) => !((ov[`${s.id}_${qi}`] || {}).disabled)).length;
-  }, 0);
-  const answered = Object.keys(answers).length;
-  const pct = Math.round(answered / totalQ * 100);
+        // Total de preguntas estándar activas en todo el formulario
+        const totalQ = SECTIONS.reduce((a, s) => {
+          const _qs = s.id === 'tecnico' && teamType === 'No' && s.altQuestions ? s.altQuestions : s.questions;
+          return a + _qs.filter((_, qi) => !(ov[`${s.id}_${qi}`] || {}).disabled).length;
+        }, 0);
+        const answered = Object.keys(answers).length;
+        const pct = Math.round((answered / totalQ) * 100);
 
-  // La sección está completa cuando todas las preguntas activas están respondidas
-  const secDone = activeQs.every(({ qi }) => answers[`${sec.id}_${qi}`] !== undefined);
-  const isLast = currentSection === SECTIONS.length - 1;
-  let qNum = 0;
+        // La sección está completa cuando todas las preguntas activas están respondidas
+        const secDone = activeQs.every(({ qi }) => answers[`${sec.id}_${qi}`] !== undefined);
+        const isLast = currentSection === SECTIONS.length - 1;
+        let qNum = 0;
 
-  let qs = activeQs.map(({ q, qi }) => {
-    qNum++;
-    const key = `${sec.id}_${qi}`;
-    const sel = answers[key];
-    const displayText = (ov[key] && ov[key].texto) ? ov[key].texto : q.text;
-    return `<div class="question">
+        let qs = activeQs
+          .map(({ q, qi }) => {
+            qNum++;
+            const key = `${sec.id}_${qi}`;
+            const sel = answers[key];
+            const displayText = ov[key] && ov[key].texto ? ov[key].texto : q.text;
+            return `<div class="question">
       <div class="question-text"><span class="question-num">P${qNum}</span>${e(displayText)}</div>
       <div class="options" role="radiogroup" aria-label="${e(displayText)}">
-        ${q.opts.map((opt, oi) => `
-          <button class="option ${sel===oi?'selected':''}" onclick="pick('${key}',${oi})" role="radio" aria-checked="${sel===oi}">
-            <span class="option-score">${oi+1}</span>
+        ${q.opts
+          .map(
+            (opt, oi) => `
+          <button class="option ${sel === oi ? 'selected' : ''}" onclick="pick('${key}',${oi})" role="radio" aria-checked="${sel === oi}">
+            <span class="option-score">${oi + 1}</span>
             <span class="option-label">${e(opt)}</span>
-          </button>`).join('')}
+          </button>`
+          )
+          .join('')}
       </div>
     </div>`;
-  }).join('');
+          })
+          .join('');
 
-  // Preguntas personalizadas al final de la sección
-  const customQHtml = cqs.filter(cq => cq.texto && cq.opts.filter(Boolean).length >= 2).map(cq => {
-    const sel = customAnswers[cq.id];
-    qNum++;
-    return `<div class="question" style="border-top:2px dashed var(--border);padding-top:20px;margin-top:4px;">
+        // Preguntas personalizadas al final de la sección
+        const customQHtml = cqs
+          .filter((cq) => cq.texto && cq.opts.filter(Boolean).length >= 2)
+          .map((cq) => {
+            const sel = customAnswers[cq.id];
+            qNum++;
+            return `<div class="question" style="border-top:2px dashed var(--border);padding-top:20px;margin-top:4px;">
       <div style="font-size:10px;font-weight:600;color:var(--accent);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;">Pregunta adicional</div>
       <div class="question-text"><span class="question-num">P${qNum}</span>${e(cq.texto)}</div>
       <div class="options" role="radiogroup">
-        ${cq.opts.filter(Boolean).map((opt, oi) => `
-          <button class="option ${sel===oi?'selected':''}" onclick="pickCustom('${e(cq.id)}',${oi})" role="radio" aria-checked="${sel===oi}">
-            <span class="option-score">${oi+1}</span>
+        ${cq.opts
+          .filter(Boolean)
+          .map(
+            (opt, oi) => `
+          <button class="option ${sel === oi ? 'selected' : ''}" onclick="pickCustom('${e(cq.id)}',${oi})" role="radio" aria-checked="${sel === oi}">
+            <span class="option-score">${oi + 1}</span>
             <span class="option-label">${e(opt)}</span>
-          </button>`).join('')}
+          </button>`
+          )
+          .join('')}
       </div>
     </div>`;
-  }).join('');
+          })
+          .join('');
 
-  return `
+        return `
     <div class="progress-wrap">
       <div class="progress-meta">
         <span class="progress-label">${sec.tag}</span>
@@ -819,7 +1025,7 @@ function renderSection() {
     </div>
     <div class="section-chip">${sec.tag}<span class="role-tag">${sec.role}</span></div>
     <div class="section-title">${sec.title}</div>
-    <div class="section-desc">${(sec.id === 'tecnico' && teamType === 'No' && sec.altDesc) ? sec.altDesc : sec.desc}${sec.id === 'tecnico' && teamType === 'No' ? ' <span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:4px;vertical-align:middle;">Equipo no-software</span>' : ''}</div>
+    <div class="section-desc">${sec.id === 'tecnico' && teamType === 'No' && sec.altDesc ? sec.altDesc : sec.desc}${sec.id === 'tecnico' && teamType === 'No' ? ' <span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:11px;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:4px;vertical-align:middle;">Equipo no-software</span>' : ''}</div>
     ${getSectionNote(sec.role, role)}
     ${qs}
     ${customQHtml}
@@ -828,51 +1034,77 @@ function renderSection() {
         <strong style="font-weight:500;color:var(--ink);">Comentario abierto</strong>
         <span style="color:var(--ink-faint);font-weight:400;"> — ¿Qué está bloqueando más a tu equipo en esta área? (opcional)</span>
       </label>
-      <textarea class="field-input" id="open-${sec.id}" placeholder="Escribe tu observación aquí…" oninput="openTexts['${sec.id}']=this.value">${e(openTexts[sec.id]||'')}</textarea>
+      <textarea class="field-input" id="open-${sec.id}" placeholder="Escribe tu observación aquí…" oninput="openTexts['${sec.id}']=this.value">${e(openTexts[sec.id] || '')}</textarea>
     </div>
     <div class="nav">
-      ${currentSection>0?`<button class="btn" onclick="prev()">← Anterior</button>`:''}
-      <button class="btn primary" onclick="${isLast ? (healthEnabled ? 'goToHealth()' : 'showResults()') : 'next()'}" ${!secDone?'disabled':''}>
+      ${currentSection > 0 ? `<button class="btn" onclick="prev()">← Anterior</button>` : ''}
+      <button class="btn primary" onclick="${isLast ? (healthEnabled ? 'goToHealth()' : 'showResults()') : 'next()'}" ${!secDone ? 'disabled' : ''}>
         ${isLast ? (healthEnabled ? 'Siguiente: Salud del equipo →' : 'Ver resultados →') : 'Siguiente →'}
       </button>
     </div>`;
-}
+      }
 
-function renderResults() {
-  return `
+      function renderResults() {
+        return `
     <div style="text-align:center;padding:56px 0 40px;">
       <div style="width:72px;height:72px;border-radius:50%;background:var(--green-light);display:flex;align-items:center;justify-content:center;margin:0 auto 28px;font-size:32px;color:var(--green);">✓</div>
       <h2 style="font-family:'DM Serif Display',serif;font-size:clamp(24px,4vw,32px);line-height:1.15;margin-bottom:14px;">¡Gracias por completar<br>el assessment!</h2>
       <p style="font-size:15px;color:var(--ink-muted);max-width:420px;margin:0 auto 32px;line-height:1.7;">Tu respuesta ha sido registrada. El líder del equipo tendrá acceso al análisis de resultados y las recomendaciones de mejora.</p>
-      ${submitStatus==='sending' ? `<p style="font-size:13px;color:var(--ink-faint);margin-bottom:20px;">Guardando respuesta…</p>`
-        : submitStatus==='ok'    ? `<p style="font-size:13px;color:var(--green);margin-bottom:20px);">✓ Respuesta guardada correctamente.</p>`
-        : submitStatus==='error' ? `<p style="font-size:13px;color:var(--red);margin-bottom:20px;">Error al guardar. <button class="btn" onclick="submitResults()" style="padding:3px 10px;font-size:12px;margin-left:6px;">Reintentar</button></p>`
-        : ''}
+      ${
+        submitStatus === 'sending'
+          ? `<p style="font-size:13px;color:var(--ink-faint);margin-bottom:20px;">Guardando respuesta…</p>`
+          : submitStatus === 'ok'
+            ? `<p style="font-size:13px;color:var(--green);margin-bottom:20px);">✓ Respuesta guardada correctamente.</p>`
+            : submitStatus === 'error'
+              ? `<p style="font-size:13px;color:var(--red);margin-bottom:20px;">Error al guardar. <button class="btn" onclick="submitResults()" style="padding:3px 10px;font-size:12px;margin-left:6px;">Reintentar</button></p>`
+              : ''
+      }
       <button class="btn" onclick="restart()">← Hacer otro assessment</button>
     </div>`;
-}
+      }
 
-function setRole(r) { role=r; render(); }
-function startAssessment() { if(role && teamId){ screen='context'; render(); } }
-function startContext() { screen='section'; currentSection=0; startedAt = Date.now(); render(); }
-function goToHealth() { screen='health'; render(); window.scrollTo({top:0,behavior:'smooth'}); }
+      function setRole(r) {
+        role = r;
+        render();
+      }
+      function startAssessment() {
+        if (role && teamId) {
+          screen = 'context';
+          render();
+        }
+      }
+      function startContext() {
+        screen = 'section';
+        currentSection = 0;
+        startedAt = Date.now();
+        render();
+      }
+      function goToHealth() {
+        screen = 'health';
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 
-function renderHealth() {
-  const allDone = HEALTH_QUESTIONS.every(q => healthAnswers[q.id] !== undefined);
-  const qs = HEALTH_QUESTIONS.map((q, qi) => {
-    const sel = healthAnswers[q.id];
-    return `<div class="question">
-      <div class="question-text"><span class="question-num">P${qi+1}</span>${q.text}</div>
+      function renderHealth() {
+        const allDone = HEALTH_QUESTIONS.every((q) => healthAnswers[q.id] !== undefined);
+        const qs = HEALTH_QUESTIONS.map((q, qi) => {
+          const sel = healthAnswers[q.id];
+          return `<div class="question">
+      <div class="question-text"><span class="question-num">P${qi + 1}</span>${q.text}</div>
       <div class="options" role="radiogroup">
-        ${q.opts.map((opt, oi) => `
-          <button class="option ${sel===oi?'selected':''}" onclick="healthAnswers['${q.id}']=${oi};render()" role="radio" aria-checked="${sel===oi}">
-            <span class="option-score">${oi+1}</span>
+        ${q.opts
+          .map(
+            (opt, oi) => `
+          <button class="option ${sel === oi ? 'selected' : ''}" onclick="healthAnswers['${q.id}']=${oi};render()" role="radio" aria-checked="${sel === oi}">
+            <span class="option-score">${oi + 1}</span>
             <span class="option-label">${opt}</span>
-          </button>`).join('')}
+          </button>`
+          )
+          .join('')}
       </div>
     </div>`;
-  }).join('');
-  return `
+        }).join('');
+        return `
     <div class="progress-wrap">
       <div class="progress-meta">
         <span class="progress-label" style="color:var(--green);">Salud del equipo</span>
@@ -885,70 +1117,125 @@ function renderHealth() {
     <div class="section-desc">Estas 3 preguntas son opcionales. Evalúan el clima de confianza del equipo. Los resultados son independientes del score de madurez Scrum.</div>
     ${qs}
     <div class="nav">
-      <button class="btn" onclick="screen='section';currentSection=${SECTIONS.length-1};render()">← Volver</button>
-      <button class="btn primary" onclick="showResults()" ${!allDone?'disabled':''}>Ver resultados →</button>
+      <button class="btn" onclick="screen='section';currentSection=${SECTIONS.length - 1};render()">← Volver</button>
+      <button class="btn primary" onclick="showResults()" ${!allDone ? 'disabled' : ''}>Ver resultados →</button>
     </div>`;
-}
+      }
 
-function renderContext() {
-  function pillGroup(label, opts, current, setter) {
-    return `<div class="field-group">
+      function renderContext() {
+        function pillGroup(label, opts, current, setter) {
+          return `<div class="field-group">
       <label>${label} <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
       <div class="role-opts" style="flex-wrap:wrap;margin-top:6px;">
-        ${opts.map(o => `<button class="role-btn ${current===o?'selected':''}" onclick="${setter}='${o}';render()">${o}</button>`).join('')}
+        ${opts.map((o) => `<button class="role-btn ${current === o ? 'selected' : ''}" onclick="${setter}='${o}';render()">${o}</button>`).join('')}
       </div>
     </div>`;
-  }
-  return `
+        }
+        return `
     <div class="intro">
       <div style="font-size:12px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Contexto del equipo</div>
       <p style="font-size:15px;color:var(--ink-muted);margin-bottom:28px;line-height:1.65;">Estas preguntas ayudan a personalizar el assessment. La primera adapta la sección Excelencia Técnica a tu tipo de equipo.</p>
       <div class="field-group">
         <label>¿El equipo trabaja en desarrollo de software? <span style="background:#eef2ff;color:#1a4fd6;font-size:10px;font-weight:600;padding:1px 8px;border-radius:99px;margin-left:6px;">Adapta las preguntas técnicas</span></label>
         <div class="role-opts" style="flex-wrap:wrap;margin-top:6px;">
-          ${['Sí','No'].map(o => `<button class="role-btn ${teamType===o?'selected':''}" onclick="teamType='${o}';render()">${o}</button>`).join('')}
+          ${['Sí', 'No'].map((o) => `<button class="role-btn ${teamType === o ? 'selected' : ''}" onclick="teamType='${o}';render()">${o}</button>`).join('')}
         </div>
       </div>
-      ${pillGroup('¿Cuánto tiempo lleva el equipo trabajando con Scrum?',
-        ['< 3 meses','3–12 meses','1–2 años','> 2 años'], teamAge, 'teamAge')}
-      ${pillGroup('¿Cuántas personas hay en el equipo?',
-        ['3–5','6–8','9+'], teamSize, 'teamSize')}
-      ${pillGroup('¿El Product Owner tiene dedicación exclusiva a este equipo?',
-        ['Sí','No','Compartido'], dedicatedPO, 'dedicatedPO')}
-      ${pillGroup('¿Cómo trabaja el equipo?',
-        ['Presencial','Híbrido','Totalmente remoto'], workMode, 'workMode')}
+      ${pillGroup(
+        '¿Cuánto tiempo lleva el equipo trabajando con Scrum?',
+        ['< 3 meses', '3–12 meses', '1–2 años', '> 2 años'],
+        teamAge,
+        'teamAge'
+      )}
+      ${pillGroup('¿Cuántas personas hay en el equipo?', ['3–5', '6–8', '9+'], teamSize, 'teamSize')}
+      ${pillGroup(
+        '¿El Product Owner tiene dedicación exclusiva a este equipo?',
+        ['Sí', 'No', 'Compartido'],
+        dedicatedPO,
+        'dedicatedPO'
+      )}
+      ${pillGroup('¿Cómo trabaja el equipo?', ['Presencial', 'Híbrido', 'Totalmente remoto'], workMode, 'workMode')}
       <div class="nav" style="border-top:none;padding-top:0;margin-top:8px;">
         <button class="btn" onclick="screen='intro';render()">← Volver</button>
         <button class="btn primary" onclick="startContext()">Comenzar assessment →</button>
       </div>
     </div>`;
-}
-function pick(key,val) { answers[key]=val; render(); }
-function pickCustom(cqId,val) { customAnswers[cqId]=val; render(); }
-function next() { currentSection++; render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function prev() { currentSection--; render(); window.scrollTo({top:0,behavior:'smooth'}); }
-function showResults() { screen='results'; submitStatus=''; render(); window.scrollTo({top:0,behavior:'smooth'}); submitResults(); }
-function restart() { screen=briefingTexto.trim()?'briefing':'intro'; currentSection=0; answers={}; customAnswers={}; openTexts={}; healthAnswers={}; role=''; teamId=''; teamName=''; participantName=''; submitStatus=''; teamSize=''; scrumTime=''; teamAge=''; dedicatedPO=''; workMode=''; teamType=''; render(); }
-function fallbackCopy(txt) {
-  const ta = document.createElement('textarea');
-  ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
-  document.body.appendChild(ta); ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-  alert('Resultados copiados al portapapeles');
-}
-function copyResults() {
-  const {pct,dims} = calcResults();
-  const level = getLevel(pct);
-  let txt = `Assessment de Madurez Agile — ${role}\nNivel: ${level.label} (${pct}%)\n\n`;
-  Object.values(dims).forEach(d=>{ txt+=`${d.name}: ${d.pct}%\n`; });
-  if(navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(txt).then(()=>alert('Resultados copiados al portapapeles')).catch(()=>fallbackCopy(txt));
-  } else { fallbackCopy(txt); }
-}
+      }
+      function pick(key, val) {
+        answers[key] = val;
+        render();
+      }
+      function pickCustom(cqId, val) {
+        customAnswers[cqId] = val;
+        render();
+      }
+      function next() {
+        currentSection++;
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      function prev() {
+        currentSection--;
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+      function showResults() {
+        screen = 'results';
+        submitStatus = '';
+        render();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        submitResults();
+      }
+      function restart() {
+        screen = briefingTexto.trim() ? 'briefing' : 'intro';
+        currentSection = 0;
+        answers = {};
+        customAnswers = {};
+        openTexts = {};
+        healthAnswers = {};
+        role = '';
+        teamId = '';
+        teamName = '';
+        participantName = '';
+        submitStatus = '';
+        teamSize = '';
+        scrumTime = '';
+        teamAge = '';
+        dedicatedPO = '';
+        workMode = '';
+        teamType = '';
+        render();
+      }
+      function fallbackCopy(txt) {
+        const ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        alert('Resultados copiados al portapapeles');
+      }
+      function copyResults() {
+        const { pct, dims } = calcResults();
+        const level = getLevel(pct);
+        let txt = `Assessment de Madurez Agile — ${role}\nNivel: ${level.label} (${pct}%)\n\n`;
+        Object.values(dims).forEach((d) => {
+          txt += `${d.name}: ${d.pct}%\n`;
+        });
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard
+            .writeText(txt)
+            .then(() => alert('Resultados copiados al portapapeles'))
+            .catch(() => fallbackCopy(txt));
+        } else {
+          fallbackCopy(txt);
+        }
+      }
 
-render();
-loadTeams();
-</script>
-</body>
+      render();
+      loadTeams();
+    </script>
+  </body>
 </html>

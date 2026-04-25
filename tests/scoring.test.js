@@ -4,13 +4,13 @@ import { getLevel, getRec, detectPatterns, getContextNote } from '../assessment-
 
 describe('getLevel', () => {
   test.each([
-    [0,   'Inicial'],
-    [40,  'Inicial'],
-    [41,  'En desarrollo'],
-    [65,  'En desarrollo'],
-    [66,  'Maduro'],
-    [82,  'Maduro'],
-    [83,  'Avanzado'],
+    [0, 'Inicial'],
+    [40, 'Inicial'],
+    [41, 'En desarrollo'],
+    [65, 'En desarrollo'],
+    [66, 'Maduro'],
+    [82, 'Maduro'],
+    [83, 'Avanzado'],
     [100, 'Avanzado'],
   ])('pct=%i → %s', (pct, label) => {
     expect(getLevel(pct).label).toBe(label);
@@ -28,9 +28,9 @@ describe('getLevel', () => {
 
 describe('getRec', () => {
   test('distintos rangos de pct retornan distintas recomendaciones', () => {
-    const r0 = getRec('eventos', 20,  null);
-    const r1 = getRec('eventos', 50,  null);
-    const r2 = getRec('eventos', 80,  null);
+    const r0 = getRec('eventos', 20, null);
+    const r1 = getRec('eventos', 50, null);
+    const r2 = getRec('eventos', 80, null);
     expect(r0).not.toBe(r1);
     expect(r1).not.toBe(r2);
   });
@@ -48,7 +48,7 @@ describe('getRec', () => {
   });
 
   test('pct = 100 retorna recomendación de nivel Avanzado (índice 3)', () => {
-    const r83  = getRec('backlog', 83, null);
+    const r83 = getRec('backlog', 83, null);
     const r100 = getRec('backlog', 100, null);
     expect(r83).toBe(r100); // mismo índice 3
     expect(r83).not.toBe(getRec('backlog', 80, null)); // distinto de índice 2
@@ -56,18 +56,18 @@ describe('getRec', () => {
 
   test('rec con rol difiere de rec genérica', () => {
     const generic = getRec('eventos', 20, null);
-    const po      = getRec('eventos', 20, 'Product Owner');
-    const sm      = getRec('eventos', 20, 'Scrum Master');
+    const po = getRec('eventos', 20, 'Product Owner');
+    const sm = getRec('eventos', 20, 'Scrum Master');
     expect(po).not.toBe(generic);
     expect(sm).not.toBe(generic);
   });
 
   test('todos los roles/dims retornan string no vacío en los 4 niveles', () => {
-    const dims  = ['eventos', 'backlog', 'devteam', 'transparencia', 'tecnico', 'cliente'];
+    const dims = ['eventos', 'backlog', 'devteam', 'transparencia', 'tecnico', 'cliente'];
     const roles = [null, 'Product Owner', 'Dev Team', 'Scrum Master'];
-    dims.forEach(dim => {
-      roles.forEach(role => {
-        [20, 50, 75, 90].forEach(pct => {
+    dims.forEach((dim) => {
+      roles.forEach((role) => {
+        [20, 50, 75, 90].forEach((pct) => {
           const rec = getRec(dim, pct, role);
           expect(typeof rec).toBe('string');
           expect(rec.length).toBeGreaterThan(0);
@@ -80,39 +80,46 @@ describe('getRec', () => {
 // ── detectPatterns ────────────────────────────────────────────────
 
 describe('detectPatterns', () => {
-  const high = { eventos:{pct:90}, backlog:{pct:90}, devteam:{pct:90}, transparencia:{pct:90}, tecnico:{pct:90}, cliente:{pct:90} };
+  const high = {
+    eventos: { pct: 90 },
+    backlog: { pct: 90 },
+    devteam: { pct: 90 },
+    transparencia: { pct: 90 },
+    tecnico: { pct: 90 },
+    cliente: { pct: 90 },
+  };
 
   test('no detecta patrones cuando todo está alto', () => {
     expect(detectPatterns(high)).toHaveLength(0);
   });
 
   test('detecta Adopción inicial total cuando todas las dims < 40', () => {
-    const scores = Object.fromEntries(Object.keys(high).map(k => [k, { pct: 35 }]));
+    const scores = Object.fromEntries(Object.keys(high).map((k) => [k, { pct: 35 }]));
     const found = detectPatterns(scores);
-    expect(found.some(p => p.label === 'Adopción inicial total')).toBe(true);
+    expect(found.some((p) => p.label === 'Adopción inicial total')).toBe(true);
   });
 
   test('detecta Base Scrum débil (eventos + transparencia < 50)', () => {
     const scores = { ...high, eventos: { pct: 40 }, transparencia: { pct: 40 } };
     const found = detectPatterns(scores);
-    expect(found.some(p => p.label === 'Base Scrum débil')).toBe(true);
+    expect(found.some((p) => p.label === 'Base Scrum débil')).toBe(true);
   });
 
   test('detecta Limitación técnica sistémica (devteam + tecnico < 45)', () => {
     const scores = { ...high, devteam: { pct: 40 }, tecnico: { pct: 40 } };
     const found = detectPatterns(scores);
-    expect(found.some(p => p.label === 'Limitación técnica sistémica')).toBe(true);
+    expect(found.some((p) => p.label === 'Limitación técnica sistémica')).toBe(true);
   });
 
   test('detecta Desconexión del valor (backlog + cliente < 45)', () => {
     const scores = { ...high, backlog: { pct: 30 }, cliente: { pct: 30 } };
     const found = detectPatterns(scores);
-    expect(found.some(p => p.label === 'Desconexión del valor')).toBe(true);
+    expect(found.some((p) => p.label === 'Desconexión del valor')).toBe(true);
   });
 
   test('cada patrón detectado tiene label, color y text', () => {
-    const scores = Object.fromEntries(Object.keys(high).map(k => [k, { pct: 30 }]));
-    detectPatterns(scores).forEach(p => {
+    const scores = Object.fromEntries(Object.keys(high).map((k) => [k, { pct: 30 }]));
+    detectPatterns(scores).forEach((p) => {
       expect(p).toHaveProperty('label');
       expect(p).toHaveProperty('color');
       expect(p).toHaveProperty('text');

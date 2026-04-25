@@ -8,12 +8,12 @@ Propuestas para elevar la herramienta de **acompañamiento de coaching** a **ins
 
 ## Resumen ejecutivo
 
-| Fase | Enfoque | Mejoras | Prioridad |
-|------|---------|---------|-----------|
-| 1 — Credibilidad del dato | Los tres gaps que un cliente corporativo cuestionaría primero | #1, #2, #3 | ✅ Completada 2026-04-12 |
-| 2 — Análisis con IA | Síntesis narrativa que reemplaza la preparación manual del coach | #4, #10 | ✅ Completada 2026-04-12 |
-| 3 — Experiencia de facilitación | Integrar la herramienta en la sesión, no solo en la preparación | #6, #7 | ✅ Completada 2026-04-12 |
-| 4 — Flujo operacional, calidad del dato y visión ejecutiva | Outputs tangibles, integridad del dato, cierre formal | #8, #9, #11, #12, #13, #14 | ✅ Completada 2026-04-12 |
+| Fase                                                       | Enfoque                                                          | Mejoras                    | Prioridad                |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- | -------------------------- | ------------------------ |
+| 1 — Credibilidad del dato                                  | Los tres gaps que un cliente corporativo cuestionaría primero    | #1, #2, #3                 | ✅ Completada 2026-04-12 |
+| 2 — Análisis con IA                                        | Síntesis narrativa que reemplaza la preparación manual del coach | #4, #10                    | ✅ Completada 2026-04-12 |
+| 3 — Experiencia de facilitación                            | Integrar la herramienta en la sesión, no solo en la preparación  | #6, #7                     | ✅ Completada 2026-04-12 |
+| 4 — Flujo operacional, calidad del dato y visión ejecutiva | Outputs tangibles, integridad del dato, cierre formal            | #8, #9, #11, #12, #13, #14 | ✅ Completada 2026-04-12 |
 
 ---
 
@@ -22,33 +22,40 @@ Propuestas para elevar la herramienta de **acompañamiento de coaching** a **ins
 Antes de entrar en el detalle de las mejoras, estas reglas gobiernan **cómo y cuándo** se llama a la API de Claude. El objetivo es maximizar el valor de cada llamada y no generar costos innecesarios.
 
 ### Regla 1 — Trigger manual, nunca automático
+
 La IA solo se invoca cuando el coach hace clic en "Analizar con IA". Nunca en page load, nunca al cambiar filtros, nunca al recibir una nueva respuesta. El coach decide cuándo el volumen de datos justifica el análisis.
 
 ### Regla 2 — Caché por equipo + ciclo
+
 El resultado de cada análisis se guarda en Firestore bajo `analisis_ia/{teamId}_{ciclo}`. Si el coach abre el mismo equipo y ciclo más tarde, se muestra el resultado cacheado con su timestamp — sin nueva llamada a la API.
 
 ### Regla 3 — Indicador de desactualización
+
 Cuando llegan nuevas respuestas después del último análisis, el panel muestra:
-*"Hay 3 respuestas nuevas desde el último análisis (hace 2 días). ¿Regenerar?"*
+_"Hay 3 respuestas nuevas desde el último análisis (hace 2 días). ¿Regenerar?"_
 El coach decide si el volumen nuevo justifica repetir el análisis.
 
 ### Regla 4 — Una sola llamada por análisis
+
 Todo el contexto del equipo va en un único prompt. Claude devuelve un JSON estructurado con todas las secciones del análisis. Sin llamadas encadenadas, sin llamadas por dimensión, sin llamadas separadas para cada sección.
 
 ### Regla 5 — Contexto trimado: datos calculados, no documentos crudos
+
 El prompt no envía los documentos Firestore en bruto. Envía los datos ya procesados por la lógica existente: scores por dimensión, gaps detectados, momentum, patrones cruzados, comentarios por sección. Esto mantiene el input en ~2.000–2.500 tokens y reduce el costo por llamada.
 
 ### Regla 6 — La IA no reemplaza la lógica determinista
+
 Scoring, cálculo de gaps (`detectRoleGaps`), momentum (`calcMomentum`) y detección de patrones (`CROSS_PATTERNS`) permanecen en código. Son correctos, rápidos y gratuitos. La IA recibe esos resultados como input y los sintetiza en narrativa. No los recalcula.
 
 ### Regla 7 — Fallback a recomendaciones hardcodeadas
+
 Si la llamada a la API falla (timeout, error, cuenta sin crédito), la herramienta sigue funcionando con las recomendaciones estáticas de `RECS`. La IA es una capa aditiva, no un punto único de fallo.
 
 ---
 
 ## Fase 1 — Credibilidad del dato
 
-Los tres gaps que hacen que un coach no pueda presentar los resultados con confianza metodológica ante un cliente que pregunta *"¿qué tan fiables son estos datos?"*. Son quick wins con alto impacto de percepción y **son prerequisito para que el análisis de IA sea útil** — sin contexto del equipo y sin datos de participación, el prompt a Claude tiene información incompleta.
+Los tres gaps que hacen que un coach no pueda presentar los resultados con confianza metodológica ante un cliente que pregunta _"¿qué tan fiables son estos datos?"_. Son quick wins con alto impacto de percepción y **son prerequisito para que el análisis de IA sea útil** — sin contexto del equipo y sin datos de participación, el prompt a Claude tiene información incompleta.
 
 ---
 
@@ -63,21 +70,25 @@ El assessment produce un score de 55% pero el coach no sabe si es un equipo de 2
 Pantalla de contexto al inicio del formulario (antes de las preguntas), con 4 campos cortos que el participante completa en menos de 30 segundos.
 
 **Campos propuestos:**
+
 - ¿Cuánto tiempo lleva este equipo trabajando con Scrum? (< 3 meses / 3–12 meses / 1–2 años / > 2 años)
 - ¿Cuántas personas hay en el equipo? (3–5 / 6–8 / 9+)
 - ¿El Product Owner tiene dedicación exclusiva a este equipo? (Sí / No / Compartido con otro equipo)
 - ¿El equipo trabaja de forma distribuida o remota? (Presencial / Híbrido / Totalmente remoto)
 
 **En el panel admin:**
-- Resumen de contexto en la tarjeta del equipo (moda de respuestas del ciclo): *"Equipo de 6–8 personas · 1–2 años con Scrum · PO compartido · Híbrido"*
+
+- Resumen de contexto en la tarjeta del equipo (moda de respuestas del ciclo): _"Equipo de 6–8 personas · 1–2 años con Scrum · PO compartido · Híbrido"_
 - Filtrar el heatmap comparativo por perfil de equipo
 
 **Impacto para el coach:**
+
 - Puede interpretar el score con narrativa en lugar de solo dar un número
 - Permite comparaciones internas más justas (no comparar un equipo de 2 meses con uno de 3 años)
 - El perfil se convierte en input clave del análisis de IA (#10)
 
 **Implementación sugerida:**
+
 - Campos en la colección `respuestas`: `teamAge`, `teamSize`, `dedicatedPO`, `workMode`
 - Pantalla intermedia en `assessment-agile.html` entre el briefing y la sección 1
 - Sección "Perfil del equipo" en la tarjeta de análisis (moda de los campos del ciclo actual)
@@ -97,6 +108,7 @@ Si de un equipo de 8 personas solo respondieron 2 Dev Team y 1 PO, el análisis 
 Panel de participación visible antes del radar, con semáforo de validez por rol. El coach decide si esperar más respuestas antes de pedir el análisis.
 
 **Diseño propuesto:**
+
 ```
 Participación — Ciclo Q2 2026
   Dev Team      ████████ 5 resp.  ✅ Válido para análisis de brechas
@@ -107,17 +119,20 @@ Participación — Ciclo Q2 2026
 ```
 
 **Reglas del semáforo:**
+
 - ✅ Verde: ≥ 3 respuestas por rol → análisis de brecha válido
 - ⚠️ Ámbar: 1–2 respuestas → rol visible con advertencia en el gráfico
 - 🔴 Rojo: 0 respuestas → rol no aparece en el desglose
 - Si el total es < 3, el botón "Analizar con IA" aparece deshabilitado con tooltip explicativo
 
 **Impacto para el coach:**
+
 - Sabe cuándo esperar antes de solicitar el análisis
 - Evita que la IA genere narrativa basada en datos insuficientes
 - Puede comunicar al cliente la validez estadística de cada conclusión
 
 **Implementación sugerida:**
+
 - Componente `renderParticipationPanel(tid, cycleFilter)` en `admin-render.js`
 - El umbral `MIN_ROLE_RESPONSES` ya existe en `admin-api.js` — reutilizar
 - El botón de análisis IA (#10) lee el estado del semáforo antes de habilitar la llamada
@@ -138,7 +153,7 @@ Existe un briefing configurable (V2 #5) pero el anonimato no está explícitamen
 Tres cambios coordinados:
 
 1. **En el formulario:** Banner persistente en el footer del assessment:
-   *"Tus respuestas son anónimas. Solo se analizan resultados agregados por rol."*
+   _"Tus respuestas son anónimas. Solo se analizan resultados agregados por rol."_
    El campo "nombre" se renombra a "identificador de rol" (ej: Dev1, Dev2).
 
 2. **En el admin:** Configuración de nivel de anonimato por workspace:
@@ -147,15 +162,17 @@ Tres cambios coordinados:
    - **Modo nominal:** El coach ve el nombre. Solo para autoevaluaciones individuales.
 
 3. **Transparencia sobre IA:** Si el workspace tiene IA activa, el formulario muestra:
-   *"Los comentarios pueden ser analizados de forma agregada por inteligencia artificial para generar recomendaciones de coaching. Nunca se identifican autores individuales."*
+   _"Los comentarios pueden ser analizados de forma agregada por inteligencia artificial para generar recomendaciones de coaching. Nunca se identifican autores individuales."_
    El coach puede desactivar este aviso si decide no usar la funcionalidad de IA.
 
 **Impacto para el coach:**
+
 - Puede mostrar a los participantes exactamente qué es y no es visible, incluyendo el uso de IA
 - Diferenciador de confianza frente a clientes con contratos de confidencialidad
 - El modo de anonimato condiciona qué datos se incluyen en el prompt de IA
 
 **Implementación sugerida:**
+
 - Campo `anonymityMode` en `workspaces/{ownerId}`: `'full' | 'semi' | 'nominal'`
 - Campo `aiEnabled: true/false` en `workspaces/{ownerId}`
 - En `assessment-agile.html`: footer sticky con mensaje adaptado al modo activo
@@ -190,16 +207,19 @@ Panel de visualización de comentarios estructurado, sin lógica de análisis (e
 3. **Exportación de comentarios:** Sección de comentarios incluida en el PDF y en el PPT, agrupada por dimensión.
 
 **Lo que NO hace esta mejora (lo hace #10):**
+
 - Síntesis temática de los comentarios
 - Identificación de patrones o tensiones entre roles
 - Palabras clave o temas frecuentes
 
 **Impacto para el coach:**
+
 - Los comentarios son accesibles y navegables en menos de 1 minuto
 - El badge de densidad es un indicador inmediato de dónde hay más para explorar
 - La síntesis detallada llega vía IA al pulsar "Analizar"
 
 **Implementación sugerida:**
+
 - Función `groupCommentsBySection(teamResps)` en `admin-api.js`
 - Panel `renderCommentsPanel(tid, cycleFilter)` en `admin-render.js`
 - Badge numérico reutiliza los conteos del histograma ya existente
@@ -220,6 +240,7 @@ La preparación de una sesión de debrief con los datos actuales toma 1–2 hora
 Una Cloud Function `analyzeTeamWithClaude(teamId, ciclo)` que:
 
 **Input al prompt (datos ya calculados por la lógica existente):**
+
 ```
 - Perfil del equipo: antigüedad, tamaño, PO dedicado, modalidad
 - Scores por dimensión (%) del ciclo actual
@@ -230,9 +251,11 @@ Una Cloud Function `analyzeTeamWithClaude(teamId, ciclo)` que:
 - Comentarios por sección, etiquetados por rol (sin nombres)
 - Evolución: últimos 3 ciclos por dimensión (si existen)
 ```
+
 Input estimado: ~2.000–2.500 tokens
 
 **Output de Claude (JSON estructurado):**
+
 ```json
 {
   "narrativa": "2–3 párrafos de análisis de coaching integrado...",
@@ -253,6 +276,7 @@ Input estimado: ~2.000–2.500 tokens
   "generadoEn": "2026-04-15T10:23:00Z"
 }
 ```
+
 Output estimado: ~700–900 tokens
 **Costo por análisis: ~$0.01–0.02 USD**
 
@@ -261,6 +285,7 @@ El resultado se guarda en `analisis_ia/{teamId}_{ciclo}` en Firestore. Las sigui
 
 **Visualización en el admin:**
 Panel "Análisis IA" en la tarjeta del equipo con 5 secciones colapsables:
+
 - Narrativa de coaching
 - Foco recomendado para la sesión (dimensiones priorizadas con justificación)
 - Síntesis de comentarios por sección
@@ -272,12 +297,14 @@ Panel "Análisis IA" en la tarjeta del equipo con 5 secciones colapsables:
 Las recomendaciones estáticas de `RECS` y `RECS_ROLE` siguen funcionando. El panel "Análisis IA" muestra un mensaje de error con opción de reintentar. La herramienta no queda bloqueada.
 
 **Impacto para el coach:**
+
 - La preparación de una sesión de debrief pasa de 1–2 horas a 10 minutos de revisión y ajuste
 - La narrativa integra simultáneamente todos los factores que el coach tendría que cruzar manualmente
 - El resumen ejecutivo elimina la redacción manual para stakeholders
 - La agenda borrador es el punto de partida de la facilitación (#6)
 
 **Implementación sugerida:**
+
 - Instalar `@anthropic-ai/sdk` en `functions/`
 - API Key en Firebase Secret Manager: `ANTHROPIC_API_KEY`
 - Nueva CF `analyzeTeamWithClaude` en `functions/index.js` (callable, autenticada igual que `createWorkspaceAdmin`)
@@ -302,6 +329,7 @@ Con el análisis de IA implementado, la Fase 3 integra la herramienta directamen
 Nueva página `facilitar.html` (acceso autenticado) con slides navegables por teclado para guiar la sesión de retroalimentación con el equipo.
 
 **Estructura de slides:**
+
 - **Portada:** nombre del equipo, ciclo, score global + nivel de madurez, mini grid con % por dimensión
 - **[Narrativa IA]:** slide opcional con `analisis_ia.narrativa` si hay análisis disponible
 - **6 slides de dimensión:** título de la sección, score + nivel, 3 preguntas de coaching del nivel exacto del equipo (de `COACHING_QUESTIONS`)
@@ -309,12 +337,14 @@ Nueva página `facilitar.html` (acceso autenticado) con slides navegables por te
 - **Cierre:** pregunta de compromisos del equipo
 
 **Panel de notas del coach (toggle `N` o botón):**
+
 - Preguntas de coaching completas para la dimensión actual
 - Alertas de IA para la dimensión (si hay análisis)
 - Tips de facilitación por tipo de slide
 - Para el cierre: `focusSesion`, `agendaSesion` y `sintesisComentarios` del análisis IA
 
 **Control:**
+
 - `←/→` o `PageUp/PageDown` para navegar entre slides
 - `N` para mostrar/ocultar el panel de notas del coach
 - Botón "Facilitar →" en pestaña Equipos del admin (abre nueva pestaña con `?workspaceId=X&equipoId=Y`)
@@ -344,14 +374,14 @@ El recordatorio en panel (Parte 2) ya cubre el caso de uso principal con menor c
 
 Seis mejoras ordenadas por impacto/esfuerzo.
 
-| Orden | Feature | Impacto | Esfuerzo | Estado |
-|-------|---------|---------|---------|--------|
-| 1 | **#11** Acciones desde facilitar.html | Cierra el loop más importante del flujo | Bajo | ✅ `2e28f6f` |
-| 2 | **#12** Contexto adicional para análisis IA | Mejora calidad narrativa notablemente | Bajo | ✅ `53c0dab` |
-| 3 | **#13** Detección de respuestas rápidas | Protege integridad del dato | Bajo | ✅ `628db46` |
-| 4 | **#9** Export sesión de facilitación | Output tangible de cada sesión | Bajo | ✅ `a601164` |
-| 5 | **#14** Cierre formal del ciclo | Elimina overhead operativo masivo | Medio | ✅ `bb4f87b` |
-| 6 | **#8** Tendencia org por ciclo | Visibilidad ejecutiva longitudinal | Medio | ✅ `ab81706` |
+| Orden | Feature                                     | Impacto                                 | Esfuerzo | Estado       |
+| ----- | ------------------------------------------- | --------------------------------------- | -------- | ------------ |
+| 1     | **#11** Acciones desde facilitar.html       | Cierra el loop más importante del flujo | Bajo     | ✅ `2e28f6f` |
+| 2     | **#12** Contexto adicional para análisis IA | Mejora calidad narrativa notablemente   | Bajo     | ✅ `53c0dab` |
+| 3     | **#13** Detección de respuestas rápidas     | Protege integridad del dato             | Bajo     | ✅ `628db46` |
+| 4     | **#9** Export sesión de facilitación        | Output tangible de cada sesión          | Bajo     | ✅ `a601164` |
+| 5     | **#14** Cierre formal del ciclo             | Elimina overhead operativo masivo       | Medio    | ✅ `bb4f87b` |
+| 6     | **#8** Tendencia org por ciclo              | Visibilidad ejecutiva longitudinal      | Medio    | ✅ `ab81706` |
 
 ---
 
@@ -364,6 +394,7 @@ Es el gap más crítico del flujo actual. El coach guía la sesión, el equipo g
 Formulario de creación rápida de acciones directamente en el slide de cierre de `facilitar.html`. Las acciones se guardan en la colección `planes` de Firestore con los mismos campos que el Plan de Acción del admin.
 
 **Diseño del formulario (en el slide de cierre):**
+
 ```
 [+ Nueva acción]
 Iniciativa: ________________________
@@ -377,6 +408,7 @@ Acciones creadas esta sesión:
 ```
 
 **Implementación:**
+
 - Función `createActionFromFacilitator(data)` en `facilitar.html` — escribe en `planes/{id}` con `equipoId`, `ciclo`, `ownerId` del URL param `workspaceId`
 - Lista inline de acciones creadas en sesión (solo en memoria, desaparece al cerrar pestaña)
 - `ownerId` = `workspaceId` del URL — no requiere lookup adicional
@@ -396,6 +428,7 @@ El prompt a Claude recibe scores, brechas, momentum y comentarios — pero no sa
 Campo de texto opcional "Contexto para el análisis" que el coach completa antes de hacer clic en "Analizar con IA". Se incluye al inicio del prompt, antes de los datos estructurados.
 
 **Diseño:**
+
 ```
 Contexto para el análisis (opcional)
 ┌─────────────────────────────────────────────────┐
@@ -407,11 +440,13 @@ Contexto para el análisis (opcional)
 ```
 
 **Dónde:**
+
 - Textarea en el panel "Análisis con IA" de la tarjeta del equipo, visible solo cuando `aiEnabled = true`
 - Se persiste en `analisis_ia/{teamId}_{ciclo}` como campo `contextoCoach` junto al resultado
 - Se muestra en el panel de resultados junto al timestamp ("Analizado con contexto del coach")
 
 **En el prompt:**
+
 ```
 CONTEXTO DEL COACH:
 {contextoCoach}
@@ -433,11 +468,13 @@ mammoth.js no puede extraer los gráficos binarios DrawingML incrustados en un D
 Subida directa de imágenes PNG/JPG. El coach toma screenshots y las adjunta en el panel IA. Claude las analiza con su API de visión nativa e integra el hallazgo en la narrativa.
 
 **Límites:**
+
 - Máx. 3 imágenes por análisis
 - Máx. 2 MB por imagen
 - Las imágenes no se almacenan — solo se usan en el prompt de la llamada
 
 **Implementación:**
+
 - `handleImageUpload(key, input)` — lee archivos con `FileReader`, convierte a base64, valida tamaño, guarda en `state.aiImages[key]`
 - `removeImage(key, index)` — elimina imagen y re-renderiza
 - UI en el panel IA: sección "Imágenes (gráficos)" debajo del DOCX, botón "Añadir imagen", miniaturas con nombre y botón ✕ individual
@@ -460,12 +497,14 @@ Registrar el tiempo de inicio y el tiempo de envío. Si el total es menor a un u
 **Umbral:** 3 minutos (180 segundos) para 20 preguntas + campos de contexto = 9 segundos por pregunta mínimo. Es conservador — no penaliza a lectores rápidos.
 
 **Implementación:**
+
 - Timestamp `startedAt` al entrar a la primera sección (en memoria, no Firestore)
 - Al enviar: si `elapsed < 180s`, guardar `completionSeconds` y `flaggedFast: true` en `respuestas`
 - En el panel admin: badge ⚡ discreto en la lista de respuestas del ciclo con tooltip "Completada en menos de 3 minutos"
 - No afecta el scoring ni el análisis IA — solo es información para el coach
 
 **Lo que NO hace:**
+
 - No bloquea el envío
 - No muestra el badge al participante
 - No excluye la respuesta automáticamente
@@ -485,6 +524,7 @@ Después de usar `facilitar.html`, el coach no tiene un output tangible del trab
 Botón "↓ Exportar sesión" en la barra de controles de `facilitar.html`, visible solo en modo coach. Genera una ventana imprimible con el contenido de la sesión.
 
 **Contenido del export:**
+
 - Header: nombre del equipo, ciclo, fecha
 - Score global + tabla de scores por dimensión con nivel de cada una
 - Por cada dimensión: título, score y las 3 preguntas de coaching usadas
@@ -493,6 +533,7 @@ Botón "↓ Exportar sesión" en la barra de controles de `facilitar.html`, visi
 - Footer discreto: "Generado con Assessment Agile"
 
 **Implementación:**
+
 - Función `printFacilitationSummary()` en `facilitar.html`
 - `window.open()` con HTML construido inline + `window.print()`
 - CSS `@media print`: tipografía limpia en negro sobre blanco, sin fondos de color, página A4
@@ -518,6 +559,7 @@ Botón "Cerrar ciclo" en la pestaña Equipos (o en el header del ciclo activo en
 4. **Muestra resumen** en un modal: equipos evaluados, total de respuestas, score org promedio, % cambio vs. ciclo anterior
 
 **Modal de confirmación (antes de cerrar):**
+
 ```
 Cerrar ciclo "Q2 2026"
 ──────────────────────────────
@@ -535,6 +577,7 @@ Cambio vs. Q1 2026:      ↗ +4pts
 Después del cierre, ofrecer "Abrir siguiente ciclo" con nombre sugerido (detección de patrón: Q2 → Q3, Sprint 5 → Sprint 6).
 
 **Implementación:**
+
 - Función `closeCycle(cycleId)` en `admin-api.js`
 - Llama a `syncPortalData()` para todos los equipos (ya implementado)
 - Dispara CF `dispatchWebhook` con evento `ciclo.cerrado` (CF ya implementada)
@@ -555,6 +598,7 @@ El benchmark interno compara equipos dentro del mismo ciclo (heatmap + radar). L
 Card "Tendencia org" en la pestaña Análisis, visible cuando hay ≥2 ciclos con datos de ≥2 equipos activos.
 
 **Contenido:**
+
 - Gráfico de líneas (Chart.js) con el score promedio de todos los equipos activos por ciclo
 - Una línea por dimensión con `DIM_COLORS`
 - Badge org ↗/→/↘ calculado igual que `calcMomentum` por equipo
@@ -562,6 +606,7 @@ Card "Tendencia org" en la pestaña Análisis, visible cuando hay ≥2 ciclos co
 - Tooltip en cada punto: "Q2 2026 · 4 equipos · 23 respuestas"
 
 **Vista:**
+
 ```
 Tendencia org — últimos 4 ciclos
   Ceremonias:    ↗ +12pts  (58% → 70%)
@@ -571,6 +616,7 @@ Tendencia org — últimos 4 ciclos
 ```
 
 **Implementación:**
+
 - `calcOrgTrend(cycleNames)` en `admin-api.js` — agrupa `state.responses` por ciclo, promedia todos los equipos
 - Card en `renderAnalysis()` debajo del heatmap comparativo, visible solo con ≥2 ciclos
 - Nueva instancia `<canvas>` con `window._orgTrendData` (mismo patrón que `_evolTrendData`)
@@ -584,17 +630,20 @@ Tendencia org — últimos 4 ciclos
 ## Notas de implementación
 
 **Orden recomendado dentro de cada fase:**
+
 - Fase 1: #1 → #2 → #3 (el contexto alimenta la participación, que alimenta el anonimato; los tres son prerequisito para que #10 funcione bien)
 - Fase 2: #4 primero (baja complejidad, alto impacto visual) → #10 (requiere #1, #2, #3 completos para máximo valor)
 - Fase 3: #7 → #6 (reducir fricción operativa antes de invertir en la experiencia de facilitación; #6 se enriquece si #10 ya está implementado)
 - Fase 4: #9 primero (baja complejidad, cierra el loop de `facilitar.html`) → #8 (usa datos ya cargados, añade una sola card)
 
 **Features descartadas y razón:**
+
 - **Benchmark externo cross-workspace (#8 original):** Requiere volumen de datos de múltiples organizaciones para ser estadísticamente útil. Sin ese volumen, los percentiles serían engañosos. Las herramientas como AgilityHealth tardaron años en construir ese pool. Revisitar cuando haya ≥50 organizaciones activas.
 - **Multi-framework Kanban (#9 original):** Cada framework (Kanban, SAFe, LeSS) requiere un modelo de medición propio con preguntas validadas por expertos del framework. No es una adición de features — es reconstruir la herramienta 2–3 veces. Revisitar como proyecto independiente.
 - **Resumen semanal vía webhook (#7 parte 3):** El recordatorio en panel (cadencia configurable) cubre el caso de uso principal. Firebase Scheduler añade complejidad operativa con bajo valor diferencial.
 
 **Tests:**
+
 - Cada mejora que añada campos a `respuestas` requiere tests en `analysis.test.js`
 - La CF `analyzeTeamWithClaude` requiere tests con mock de la API de Anthropic para verificar la construcción del prompt y el manejo del fallback
 - Mantener los 94 tests actuales pasando en cada PR

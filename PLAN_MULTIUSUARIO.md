@@ -3,6 +3,7 @@
 ## Objetivo
 
 Transformar el panel admin de un acceso único global a un sistema multi-tenant donde:
+
 - El **super admin** crea cuentas manualmente y ve todos los workspaces globalmente.
 - Cada **workspace admin** entra con su propio email + contraseña y ve únicamente sus equipos y resultados.
 - No existe registro público — la puerta de entrada la controla el super admin.
@@ -57,6 +58,7 @@ Pasos que el super admin debe realizar antes de la implementación:
 ### 2. `admin.html` — Nueva pestaña "Usuarios" (solo super admin)
 
 **Formulario para crear usuario:**
+
 - Campos: nombre + email del nuevo workspace admin.
 - Al hacer clic en "Crear usuario":
   1. Crea la cuenta en Firebase Auth usando una instancia secundaria de la app (sin cerrar la sesión del super admin).
@@ -66,22 +68,22 @@ Pasos que el super admin debe realizar antes de la implementación:
 
 **Lista de usuarios existentes:**
 
-| Columna | Descripción |
-|---------|-------------|
-| Nombre | Nombre del workspace admin |
-| Email | Email de acceso |
-| Estado | Activo / Suspendido |
-| Creado | Fecha de creación |
+| Columna  | Descripción                                            |
+| -------- | ------------------------------------------------------ |
+| Nombre   | Nombre del workspace admin                             |
+| Email    | Email de acceso                                        |
+| Estado   | Activo / Suspendido                                    |
+| Creado   | Fecha de creación                                      |
 | Acciones | Suspender / Reactivar / Eliminar / Reenviar invitación |
 
 **Acciones disponibles:**
 
-| Acción | Qué hace | Reversible |
-|--------|----------|------------|
-| **Suspender** | Cambia `activo: false` en Firestore. El usuario ve "Cuenta suspendida" al intentar entrar. | Sí |
-| **Reactivar** | Cambia `activo: true`. El usuario recupera acceso inmediatamente. | — |
-| **Eliminar** | Borra la cuenta de Firebase Auth + el documento en `usuarios`. El acceso queda bloqueado definitivamente. | No |
-| **Reenviar invitación** | Dispara nuevamente el correo de restablecimiento de contraseña via Firebase. | — |
+| Acción                  | Qué hace                                                                                                  | Reversible |
+| ----------------------- | --------------------------------------------------------------------------------------------------------- | ---------- |
+| **Suspender**           | Cambia `activo: false` en Firestore. El usuario ve "Cuenta suspendida" al intentar entrar.                | Sí         |
+| **Reactivar**           | Cambia `activo: true`. El usuario recupera acceso inmediatamente.                                         | —          |
+| **Eliminar**            | Borra la cuenta de Firebase Auth + el documento en `usuarios`. El acceso queda bloqueado definitivamente. | No         |
+| **Reenviar invitación** | Dispara nuevamente el correo de restablecimiento de contraseña via Firebase.                              | —          |
 
 > **Nota:** Eliminar una cuenta **no borra los datos del workspace** (equipos, respuestas, ciclos, planes). Solo bloquea el acceso. Los datos quedan en Firestore y son visibles para el super admin.
 
@@ -109,22 +111,22 @@ Pasos que el super admin debe realizar antes de la implementación:
 
 ### Colección nueva: `usuarios`
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| `nombre` | string | Nombre del workspace admin |
-| `email` | string | Email de acceso |
-| `role` | string | `'super_admin'` o `'admin'` |
-| `activo` | boolean | `true` = acceso permitido, `false` = suspendido |
-| `creadoEn` | timestamp | Fecha de creación de la cuenta |
+| Campo      | Tipo      | Descripción                                     |
+| ---------- | --------- | ----------------------------------------------- |
+| `nombre`   | string    | Nombre del workspace admin                      |
+| `email`    | string    | Email de acceso                                 |
+| `role`     | string    | `'super_admin'` o `'admin'`                     |
+| `activo`   | boolean   | `true` = acceso permitido, `false` = suspendido |
+| `creadoEn` | timestamp | Fecha de creación de la cuenta                  |
 
 ### Colecciones modificadas
 
-| Colección | Campo nuevo | Descripción |
-|-----------|-------------|-------------|
-| `equipos` | `ownerId` | UID del workspace admin que creó el equipo |
-| `ciclos` | `ownerId` | UID del workspace admin que creó el ciclo |
-| `respuestas` | Sin cambios | Ya está vinculada al equipo → al owner |
-| `planes` | Sin cambios | Ya está vinculada al equipo → al owner |
+| Colección    | Campo nuevo | Descripción                                |
+| ------------ | ----------- | ------------------------------------------ |
+| `equipos`    | `ownerId`   | UID del workspace admin que creó el equipo |
+| `ciclos`     | `ownerId`   | UID del workspace admin que creó el ciclo  |
+| `respuestas` | Sin cambios | Ya está vinculada al equipo → al owner     |
+| `planes`     | Sin cambios | Ya está vinculada al equipo → al owner     |
 
 ---
 
@@ -146,12 +148,12 @@ Los datos actuales (equipos, respuestas, ciclos) son de prueba y **se eliminará
 
 ## Estado
 
-| Ítem | Estado |
-|------|--------|
-| Configuración Firebase Console (manual) | ✅ Completado |
-| Reemplazar login con Firebase Auth | ✅ Completado |
+| Ítem                                                            | Estado        |
+| --------------------------------------------------------------- | ------------- |
+| Configuración Firebase Console (manual)                         | ✅ Completado |
+| Reemplazar login con Firebase Auth                              | ✅ Completado |
 | Pestaña "Usuarios" con crear / suspender / reactivar / eliminar | ✅ Completado |
-| Filtrado de datos por ownerId | ✅ Completado |
-| ownerId en equipos y ciclos al crearlos | ✅ Completado |
-| Filtro por workspaceId en assessment-agile.html | ✅ Completado |
-| QR con workspaceId incluido | ✅ Completado |
+| Filtrado de datos por ownerId                                   | ✅ Completado |
+| ownerId en equipos y ciclos al crearlos                         | ✅ Completado |
+| Filtro por workspaceId en assessment-agile.html                 | ✅ Completado |
+| QR con workspaceId incluido                                     | ✅ Completado |

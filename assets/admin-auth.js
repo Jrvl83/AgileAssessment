@@ -1,18 +1,23 @@
 // ── Auth ─────────────────────────────────────────────────────────
 async function login() {
-  const email    = (document.getElementById('emailInput').value || '').trim();
+  const email = (document.getElementById('emailInput').value || '').trim();
   const password = document.getElementById('pwInput').value;
-  const errEl    = document.getElementById('loginError');
-  const btn      = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
   errEl.textContent = '';
-  if (!email || !password) { errEl.textContent = 'Ingresa email y contraseña'; return; }
-  btn.disabled = true; btn.textContent = 'Ingresando…';
+  if (!email || !password) {
+    errEl.textContent = 'Ingresa email y contraseña';
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Ingresando…';
   try {
     await auth.signInWithEmailAndPassword(email, password);
     // onAuthStateChanged maneja el resto
-  } catch(e) {
+  } catch (e) {
     errEl.textContent = 'Email o contraseña incorrectos';
-    btn.disabled = false; btn.textContent = 'Ingresar →';
+    btn.disabled = false;
+    btn.textContent = 'Ingresar →';
   }
 }
 
@@ -26,8 +31,15 @@ render(); // Muestra login inmediatamente mientras Firebase resuelve la sesión
 auth.onAuthStateChanged(async (firebaseUser) => {
   if (!firebaseUser) {
     setState({
-      currentUser: null, currentRole: null, currentUserName: '',
-      teams: [], responses: [], teamStats: {}, cycles: [], plans: [], users: []
+      currentUser: null,
+      currentRole: null,
+      currentUserName: '',
+      teams: [],
+      responses: [],
+      teamStats: {},
+      cycles: [],
+      plans: [],
+      users: [],
     });
     return;
   }
@@ -45,11 +57,11 @@ auth.onAuthStateChanged(async (firebaseUser) => {
       await auth.signOut();
       return;
     }
-    state.currentUser     = firebaseUser;
-    state.currentRole     = doc.data().role;
+    state.currentUser = firebaseUser;
+    state.currentRole = doc.data().role;
     state.currentUserName = doc.data().nombre || firebaseUser.email;
-    state.loginMessage    = '';
-  } catch(e) {
+    state.loginMessage = '';
+  } catch (e) {
     await auth.signOut();
     return;
   }

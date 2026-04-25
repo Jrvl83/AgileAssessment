@@ -1,0 +1,16 @@
+# Normaliza line endings a LF en el repo, independiente del SO del contribuyente.
+# Evita que Prettier (endOfLine: lf) marque archivos como mal formateados
+# cuando core.autocrlf de Windows convierte LF→CRLF al checkout.
+* text=auto eol=lf
+
+# Binarios — nunca tocar line endings
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.docx  binary
+*.pptx  binary
+*.woff  binary
+*.woff2 binary

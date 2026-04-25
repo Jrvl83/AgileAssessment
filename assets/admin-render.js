@@ -3,19 +3,20 @@
 // ── Toast ────────────────────────────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
+  el.textContent = msg;
+  el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2800);
 }
 
 // ── Helpers de UI ────────────────────────────────────────────────
 function prefillPlan(teamId, recKey, ciclo, dimension) {
-  const activeCycle = (state.cycles.find(c => c.active) || {}).name || '';
+  const activeCycle = (state.cycles.find((c) => c.active) || {}).name || '';
   setState({
-    newPlanTeamId:     teamId,
+    newPlanTeamId: teamId,
     newPlanIniciativa: state.recTexts[recKey] || '',
-    newPlanCiclo:      (!ciclo || ciclo === 'Todos') ? activeCycle : ciclo,
-    newPlanDimension:  dimension || '',
-    activeTab:         'plan'
+    newPlanCiclo: !ciclo || ciclo === 'Todos' ? activeCycle : ciclo,
+    newPlanDimension: dimension || '',
+    activeTab: 'plan',
   });
   setTimeout(() => {
     const el = document.getElementById('plan-form');
@@ -58,7 +59,10 @@ function updateAiCtx(key, val) {
 // Carga mammoth.js de forma lazy (solo la primera vez que se sube un .docx)
 function _loadMammoth() {
   return new Promise((resolve, reject) => {
-    if (window.mammoth) { resolve(); return; }
+    if (window.mammoth) {
+      resolve();
+      return;
+    }
     const s = document.createElement('script');
     s.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js';
     s.onload = resolve;
@@ -95,7 +99,7 @@ async function handleDocxUpload(key, input) {
 
       state.aiDocContext = {
         ...state.aiDocContext,
-        [key]: { text, name: file.name, chars: text.length, truncated }
+        [key]: { text, name: file.name, chars: text.length, truncated },
       };
 
       if (statusEl) {
@@ -122,14 +126,14 @@ function removeDocxUpload(key) {
   if (statusEl) statusEl.innerHTML = '';
 }
 
-const IMG_MAX_SIZE  = 2 * 1024 * 1024; // 2 MB por imagen
+const IMG_MAX_SIZE = 2 * 1024 * 1024; // 2 MB por imagen
 const IMG_MAX_COUNT = 3;
 
 async function handleImageUpload(key, input) {
   const files = Array.from(input.files || []);
   if (!files.length) return;
 
-  const safeKey  = key.replace(/[^a-zA-Z0-9]/g, '_');
+  const safeKey = key.replace(/[^a-zA-Z0-9]/g, '_');
   const statusEl = document.getElementById('img-status-' + safeKey);
   const existing = state.aiImages[key] || [];
   const available = IMG_MAX_COUNT - existing.length;
@@ -145,8 +149,8 @@ async function handleImageUpload(key, input) {
 
   for (const file of toProcess) {
     if (file.size > IMG_MAX_SIZE) {
-      if (statusEl) statusEl.innerHTML =
-        `<span style="color:#c0282a;">✕ "${e(file.name)}" supera el límite de 2 MB — omitida.</span>`;
+      if (statusEl)
+        statusEl.innerHTML = `<span style="color:#c0282a;">✕ "${e(file.name)}" supera el límite de 2 MB — omitida.</span>`;
       continue;
     }
     const mediaType = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
@@ -182,52 +186,62 @@ function removeImage(key, index) {
 }
 
 async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
-  const cf  = state.cycleFilter || 'Todos';
+  const cf = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
-  const contextoCoach  = (state.aiContext[key] || '').trim();
-  const docEntry       = state.aiDocContext[key];
+  const contextoCoach = (state.aiContext[key] || '').trim();
+  const docEntry = state.aiDocContext[key];
   const documentoContexto = docEntry ? docEntry.text : null;
-  const imagesRaw      = state.aiImages[key] || [];
+  const imagesRaw = state.aiImages[key] || [];
   // Enviar solo data + mediaType (omitir nombre/size para reducir payload)
-  const images = imagesRaw.length
-    ? imagesRaw.map(img => ({ data: img.data, mediaType: img.mediaType }))
-    : null;
+  const images = imagesRaw.length ? imagesRaw.map((img) => ({ data: img.data, mediaType: img.mediaType })) : null;
   setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: true, data: null, error: null } } });
 
   try {
-    const fn     = fns.httpsCallable('analyzeTeamWithClaude');
-    const result = await fn({ teamId: tid, ciclo: cf === 'Todos' ? null : cf, contextoCoach, documentoContexto, images });
+    const fn = fns.httpsCallable('analyzeTeamWithClaude');
+    const result = await fn({
+      teamId: tid,
+      ciclo: cf === 'Todos' ? null : cf,
+      contextoCoach,
+      documentoContexto,
+      images,
+    });
     // Pre-cargar contexto guardado para que el textarea lo muestre en futuros renders
     if (result.data && result.data.data && result.data.data.contextoCoach) {
       state.aiContext = { ...state.aiContext, [key]: result.data.data.contextoCoach };
     }
     setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, ...result.data } } });
   } catch (e) {
-    setState({ aiAnalysis: { ...state.aiAnalysis, [key]: { loading: false, data: null, error: e.message || 'Error al analizar' } } });
+    setState({
+      aiAnalysis: {
+        ...state.aiAnalysis,
+        [key]: { loading: false, data: null, error: e.message || 'Error al analizar' },
+      },
+    });
   }
 }
 
 // ── Cierre formal del ciclo ───────────────────────────────────────
 function showCloseCycleModal(cycleId, cycleName) {
-  const resps    = state.responses.filter(r => r.fields.Ciclo === cycleName);
-  const teamSet  = new Set(resps.map(r => (r.fields.Equipo||[])[0]).filter(Boolean));
-  const noResp   = state.teams.filter(t => t.active && !teamSet.has(t.id));
+  const resps = state.responses.filter((r) => r.fields.Ciclo === cycleName);
+  const teamSet = new Set(resps.map((r) => (r.fields.Equipo || [])[0]).filter(Boolean));
+  const noResp = state.teams.filter((t) => t.active && !teamSet.has(t.id));
 
   const statRows = [
     `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0efe9;">
        <span style="font-size:22px;font-weight:700;color:#1a4fd6;">${resps.length}</span>
-       <span style="font-size:13px;color:var(--ink-muted);">respuesta${resps.length!==1?'s':''} registradas</span>
+       <span style="font-size:13px;color:var(--ink-muted);">respuesta${resps.length !== 1 ? 's' : ''} registradas</span>
      </div>`,
     `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0efe9;">
        <span style="font-size:22px;font-weight:700;color:#0d7a52;">${teamSet.size}</span>
-       <span style="font-size:13px;color:var(--ink-muted);">equipo${teamSet.size!==1?'s':''} con respuestas</span>
-     </div>`
+       <span style="font-size:13px;color:var(--ink-muted);">equipo${teamSet.size !== 1 ? 's' : ''} con respuestas</span>
+     </div>`,
   ].join('');
 
   const noRespHtml = noResp.length
     ? `<div style="margin-top:12px;padding:10px 12px;background:#fdefd6;border-radius:6px;font-size:12px;color:#a05c0a;">
-        <strong>Sin respuestas este ciclo:</strong> ${noResp.map(t => e(t.name)).join(', ')}
-       </div>` : '';
+        <strong>Sin respuestas este ciclo:</strong> ${noResp.map((t) => e(t.name)).join(', ')}
+       </div>`
+    : '';
 
   const safeEscName = cycleName.replace(/"/g, '&quot;').replace(/'/g, "\\'");
 
@@ -263,8 +277,8 @@ async function confirmCloseCycle(cycleId, cycleName) {
 
 // ── Panel de Análisis IA ──────────────────────────────────────────
 function renderAIPanel(tid) {
-  const cf    = state.cycleFilter || 'Todos';
-  const key   = `${tid}__${cf}`;
+  const cf = state.cycleFilter || 'Todos';
+  const key = `${tid}__${cf}`;
   const entry = state.aiAnalysis[key];
 
   if (!entry) {
@@ -280,93 +294,125 @@ function renderAIPanel(tid) {
 
   if (entry.error) {
     return `<div style="padding:12px 16px;background:#fce8e8;border-radius:var(--radius-sm);font-size:12px;color:#c0282a;">
-      Error: ${entry.error.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+      Error: ${entry.error.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
     </div>`;
   }
 
   if (!entry.data) return '';
 
-  const d   = entry.data;
-  const DIM_LABELS = { eventos:'Ceremonias', backlog:'Product Backlog', devteam:'Dev Team',
-    transparencia:'Transparencia', tecnico:'Exc. Técnica', cliente:'Orient. Cliente' };
-  const DIM_COLORS = { eventos:'#1a4fd6', backlog:'#0d7a52', devteam:'#a05c0a',
-    transparencia:'#7c3aed', tecnico:'#0891b2', cliente:'#db2777' };
+  const d = entry.data;
+  const DIM_LABELS = {
+    eventos: 'Ceremonias',
+    backlog: 'Product Backlog',
+    devteam: 'Dev Team',
+    transparencia: 'Transparencia',
+    tecnico: 'Exc. Técnica',
+    cliente: 'Orient. Cliente',
+  };
+  const DIM_COLORS = {
+    eventos: '#1a4fd6',
+    backlog: '#0d7a52',
+    devteam: '#a05c0a',
+    transparencia: '#7c3aed',
+    tecnico: '#0891b2',
+    cliente: '#db2777',
+  };
 
   const generadoLabel = d.generadoEn
-    ? `Análisis generado ${new Date(d.generadoEn).toLocaleDateString('es', { day:'2-digit', month:'short', year:'numeric' })}`
+    ? `Análisis generado ${new Date(d.generadoEn).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}`
     : '';
   const fromCacheBadge = entry.fromCache
     ? `<span style="font-size:10px;background:#e0e7ff;color:#1a4fd6;padding:1px 7px;border-radius:99px;margin-left:6px;">Caché</span>`
     : '<span style="font-size:10px;background:#d4f0e5;color:#0d7a52;padding:1px 7px;border-radius:99px;margin-left:6px;">Nuevo</span>';
-  const newRespsBadge = entry.newResponsesCount > 0
-    ? `<span style="font-size:10px;background:#fdefd6;color:#a05c0a;padding:1px 7px;border-radius:99px;margin-left:6px;">
+  const newRespsBadge =
+    entry.newResponsesCount > 0
+      ? `<span style="font-size:10px;background:#fdefd6;color:#a05c0a;padding:1px 7px;border-radius:99px;margin-left:6px;">
         ${entry.newResponsesCount} resp. nueva${entry.newResponsesCount !== 1 ? 's' : ''} — actualiza el análisis
       </span>`
-    : '';
+      : '';
 
   // Narrativa
-  const narrativaHtml = d.narrativa ? `
+  const narrativaHtml = d.narrativa
+    ? `
     <div style="font-size:13px;color:var(--ink);line-height:1.65;margin-bottom:4px;">
-      ${d.narrativa.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}
-    </div>` : '';
+      ${d.narrativa.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}
+    </div>`
+    : '';
 
   // Foco de sesión
-  const focoHtml = Array.isArray(d.focusSesion) && d.focusSesion.length ? `
+  const focoHtml =
+    Array.isArray(d.focusSesion) && d.focusSesion.length
+      ? `
     <div style="margin-top:14px;">
       <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Dimensiones prioritarias</div>
-      ${d.focusSesion.slice(0,3).map((f, i) => {
-        const color = DIM_COLORS[f.dimension] || '#374151';
-        const label = DIM_LABELS[f.dimension] || f.dimension;
-        return `<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
+      ${d.focusSesion
+        .slice(0, 3)
+        .map((f, i) => {
+          const color = DIM_COLORS[f.dimension] || '#374151';
+          const label = DIM_LABELS[f.dimension] || f.dimension;
+          return `<div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;">
           <span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:${color};color:#fff;
-            font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</span>
+            font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i + 1}</span>
           <div>
             <span style="font-size:12px;font-weight:600;color:${color};">${label}</span>
-            <span style="font-size:12px;color:var(--ink);"> — ${(f.razon||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+            <span style="font-size:12px;color:var(--ink);"> — ${(f.razon || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
           </div>
         </div>`;
-      }).join('')}
-    </div>` : '';
+        })
+        .join('')}
+    </div>`
+      : '';
 
   // Alertas
-  const alertasHtml = Array.isArray(d.alertas) && d.alertas.length ? `
+  const alertasHtml =
+    Array.isArray(d.alertas) && d.alertas.length
+      ? `
     <div style="margin-top:14px;background:#fce8e8;border-left:3px solid #c0282a;border-radius:0 6px 6px 0;padding:10px 14px;">
       <div style="font-size:10px;font-weight:700;color:#c0282a;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Alertas</div>
-      ${d.alertas.map(a => `<div style="font-size:12px;color:#7f1d1d;margin-bottom:4px;">⚠ ${a.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`).join('')}
-    </div>` : '';
+      ${d.alertas.map((a) => `<div style="font-size:12px;color:#7f1d1d;margin-bottom:4px;">⚠ ${a.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`).join('')}
+    </div>`
+      : '';
 
   // Síntesis de comentarios
   const sintesisEntries = d.sintesisComentarios ? Object.entries(d.sintesisComentarios) : [];
-  const sintesisHtml = sintesisEntries.length ? `
+  const sintesisHtml = sintesisEntries.length
+    ? `
     <div style="margin-top:14px;">
       <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Síntesis de comentarios</div>
-      ${sintesisEntries.map(([secId, text]) => {
-        const color = DIM_COLORS[secId] || '#374151';
-        const label = DIM_LABELS[secId]  || secId;
-        return `<div style="margin-bottom:8px;">
+      ${sintesisEntries
+        .map(([secId, text]) => {
+          const color = DIM_COLORS[secId] || '#374151';
+          const label = DIM_LABELS[secId] || secId;
+          return `<div style="margin-bottom:8px;">
           <span style="font-size:10px;font-weight:700;color:${color};">${label}:</span>
-          <span style="font-size:12px;color:var(--ink);"> ${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+          <span style="font-size:12px;color:var(--ink);"> ${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>
         </div>`;
-      }).join('')}
-    </div>` : '';
+        })
+        .join('')}
+    </div>`
+    : '';
 
   // Agenda
-  const agendaHtml = d.agendaSesion ? `
+  const agendaHtml = d.agendaSesion
+    ? `
     <div style="margin-top:14px;padding:12px 14px;background:#f8faff;border:1px solid #dce6ff;border-radius:var(--radius-sm);">
       <div style="font-size:10px;font-weight:700;color:#1a4fd6;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Agenda de debrief (borrador 90 min)</div>
-      <div style="font-size:12px;color:var(--ink);line-height:1.6;white-space:pre-wrap;">${d.agendaSesion.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
-    </div>` : '';
+      <div style="font-size:12px;color:var(--ink);line-height:1.6;white-space:pre-wrap;">${d.agendaSesion.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+    </div>`
+    : '';
 
   // Resumen ejecutivo
-  const resumenHtml = d.resumenEjecutivo ? `
+  const resumenHtml = d.resumenEjecutivo
+    ? `
     <div style="margin-top:14px;padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);">
       <div style="font-size:10px;font-weight:700;color:#0d7a52;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Resumen ejecutivo</div>
-      <div style="font-size:12px;color:var(--ink);line-height:1.6;">${d.resumenEjecutivo.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</div>
+      <div style="font-size:12px;color:var(--ink);line-height:1.6;">${d.resumenEjecutivo.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
       <button onclick="navigator.clipboard.writeText(${JSON.stringify(d.resumenEjecutivo || '')});toast('Copiado al portapapeles')"
         style="margin-top:8px;font-size:11px;padding:3px 10px;border:1px solid #0d7a52;color:#0d7a52;background:transparent;border-radius:99px;cursor:pointer;">
         Copiar
       </button>
-    </div>` : '';
+    </div>`
+    : '';
 
   return `
     <div style="font-size:11px;color:var(--ink-faint);margin-bottom:10px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">
@@ -387,14 +433,16 @@ function renderAIPanel(tid) {
 // ── Panel de comentarios por sección ─────────────────────────────
 function renderCommentsPanel(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
-  const teamResps = state.responses.filter(r =>
-    (r.fields.Equipo || []).includes(tid) &&
-    (cf === 'Todos' || r.fields.Ciclo === cf)
+  const teamResps = state.responses.filter(
+    (r) => (r.fields.Equipo || []).includes(tid) && (cf === 'Todos' || r.fields.Ciclo === cf)
   );
   const grouped = groupCommentsBySection(teamResps);
-  if (!grouped.length) return '<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin comentarios para este filtro.</div>';
+  if (!grouped.length)
+    return '<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin comentarios para este filtro.</div>';
 
-  return grouped.map(({ secTitle, secColor, comments }) => `
+  return grouped
+    .map(
+      ({ secTitle, secColor, comments }) => `
     <div style="margin-bottom:16px;">
       <div style="font-size:10px;font-weight:700;color:${secColor};text-transform:uppercase;
         letter-spacing:0.06em;margin-bottom:8px;padding-bottom:5px;
@@ -403,13 +451,19 @@ function renderCommentsPanel(tid, cycleFilter) {
         <span style="background:${secColor}18;color:${secColor};font-size:9px;font-weight:700;
           padding:1px 6px;border-radius:99px;">${comments.length}</span>
       </div>
-      ${comments.map(c => `
+      ${comments
+        .map(
+          (c) => `
         <div style="background:${secColor}0d;border-left:3px solid ${secColor}55;border-radius:0 6px 6px 0;
           padding:8px 12px;margin-bottom:6px;">
-          ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${secColor};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>` : ''}
-          <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</span>
-        </div>`).join('')}
-    </div>`).join('');
+          ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${secColor};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : ''}
+          <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}"</span>
+        </div>`
+        )
+        .join('')}
+    </div>`
+    )
+    .join('');
 }
 
 function toggleTeamGaps(tid) {
@@ -420,9 +474,9 @@ function toggleTeamGaps(tid) {
 // ── Detalle por pregunta con histogramas ─────────────────────────
 function renderQuestionDetail(tid, selectedRole) {
   const teamResps = state.responses
-    .filter(r => (r.fields.Equipo || []).includes(tid))
-    .filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter)
-    .filter(r => selectedRole === 'Todos' || r.fields.Rol === selectedRole);
+    .filter((r) => (r.fields.Equipo || []).includes(tid))
+    .filter((r) => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter)
+    .filter((r) => selectedRole === 'Todos' || r.fields.Rol === selectedRole);
 
   if (!teamResps.length) {
     return `<div style="padding:12px 0;font-size:13px;color:var(--ink-faint);text-align:center;">Sin respuestas para este filtro.</div>`;
@@ -430,32 +484,34 @@ function renderQuestionDetail(tid, selectedRole) {
 
   // Calcular promedio % por dimensión para detectar inconsistencias score-comentario
   const _dimAvgPcts = {};
-  DIMS.forEach(d => {
+  DIMS.forEach((d) => {
     const sum = teamResps.reduce((a, r) => a + (r.fields[d.field] || 0), 0);
     _dimAvgPcts[d.key] = teamResps.length ? Math.round((sum / teamResps.length / d.max) * 100) : 0;
   });
   const _commentRisks = detectCommentRisk(teamResps, _dimAvgPcts);
   // Detectar si la mayoría del equipo es no-software
-  const _nonTechCount = teamResps.filter(r => r.fields.TeamType === 'knowledge').length;
+  const _nonTechCount = teamResps.filter((r) => r.fields.TeamType === 'knowledge').length;
   const _isNonTechTeam = teamResps.length > 0 && _nonTechCount > teamResps.length / 2;
 
-  return SECTIONS.map(sec => {
-    const dim = DIMS.find(d => d.key === sec.id);
+  return SECTIONS.map((sec) => {
+    const dim = DIMS.find((d) => d.key === sec.id);
     const color = dim ? dim.color : '#374151';
 
-    const questions = sec.questions.map((q, qi) => {
-      const key = `${sec.id}_${qi}`;
-      const counts = [0, 0, 0, 0];
-      teamResps.forEach(r => {
-        const val = (r.fields.Answers || {})[key];
-        if (val !== undefined && val >= 0 && val <= 3) counts[val]++;
-      });
-      const maxCount = Math.max(...counts, 1);
+    const questions = sec.questions
+      .map((q, qi) => {
+        const key = `${sec.id}_${qi}`;
+        const counts = [0, 0, 0, 0];
+        teamResps.forEach((r) => {
+          const val = (r.fields.Answers || {})[key];
+          if (val !== undefined && val >= 0 && val <= 3) counts[val]++;
+        });
+        const maxCount = Math.max(...counts, 1);
 
-      const bars = counts.map((c, i) => {
-        const widthPct = Math.round(c / maxCount * 100);
-        const isTop = c > 0 && c === Math.max(...counts);
-        return `
+        const bars = counts
+          .map((c, i) => {
+            const widthPct = Math.round((c / maxCount) * 100);
+            const isTop = c > 0 && c === Math.max(...counts);
+            return `
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
             <span style="font-size:10px;color:var(--ink-faint);width:12px;flex-shrink:0;text-align:right;">${i + 1}</span>
             <div style="flex:1;background:#f3f4f6;border-radius:3px;height:9px;overflow:hidden;">
@@ -463,33 +519,36 @@ function renderQuestionDetail(tid, selectedRole) {
             </div>
             <span style="font-size:10px;color:var(--ink-faint);width:20px;flex-shrink:0;">${c}</span>
           </div>`;
-      }).join('');
+          })
+          .join('');
 
-      const polarizedBadge = isPolarized(counts)
-        ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;
+        const polarizedBadge = isPolarized(counts)
+          ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;
             text-transform:uppercase;letter-spacing:0.05em;padding:2px 6px;border-radius:10px;
             margin-left:6px;vertical-align:middle;">Opiniones divididas</span>`
-        : '';
+          : '';
 
-      return `
+        return `
         <div style="margin-bottom:14px;">
           <div style="font-size:11px;font-weight:500;color:var(--ink);margin-bottom:6px;line-height:1.45;">
             P${qi + 1}. ${q.text}${polarizedBadge}
           </div>
           ${bars}
         </div>`;
-    }).join('');
+      })
+      .join('');
 
     const secCommentItems = teamResps
-      .map(r => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
-      .filter(c => c.text.length > 0);
+      .map((r) => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
+      .filter((c) => c.text.length > 0);
 
-    const commentBadge = secCommentItems.length > 0
-      ? `<span style="display:inline-block;background:${color}18;color:${color};font-size:9px;font-weight:700;
+    const commentBadge =
+      secCommentItems.length > 0
+        ? `<span style="display:inline-block;background:${color}18;color:${color};font-size:9px;font-weight:700;
           padding:1px 6px;border-radius:99px;margin-left:6px;vertical-align:middle;">
           ${secCommentItems.length} comentario${secCommentItems.length !== 1 ? 's' : ''}
         </span>`
-      : '';
+        : '';
 
     const riskBadge = _commentRisks[sec.id]
       ? `<span style="display:inline-block;background:#fef3c7;color:#92400e;font-size:9px;font-weight:700;
@@ -497,24 +556,32 @@ function renderQuestionDetail(tid, selectedRole) {
           title="Score alto pero comentarios con señales de alerta — revisar comentarios">⚠ Señal oculta</span>`
       : '';
 
-    const nonTechBadge = (sec.id === 'tecnico' && _isNonTechTeam)
-      ? `<span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:9px;font-weight:700;
+    const nonTechBadge =
+      sec.id === 'tecnico' && _isNonTechTeam
+        ? `<span style="display:inline-block;background:#eef2ff;color:#1a4fd6;font-size:9px;font-weight:700;
           padding:2px 6px;border-radius:10px;margin-left:6px;vertical-align:middle;"
           title="Equipo no-software: preguntas de calidad de proceso">No-software</span>`
-      : '';
+        : '';
 
-    const commentsHtml = secCommentItems.length > 0 ? `
+    const commentsHtml =
+      secCommentItems.length > 0
+        ? `
       <div style="margin-top:14px;padding-top:12px;border-top:1px solid ${color}20;">
         <div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
           Comentarios (${secCommentItems.length})
         </div>
-        ${secCommentItems.map(c => `
+        ${secCommentItems
+          .map(
+            (c) => `
           <div style="background:${color}0d;border-left:3px solid ${color}55;border-radius:0 6px 6px 0;
             padding:8px 12px;margin-bottom:6px;">
-            ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${color};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>` : ''}
-            <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}"</span>
-          </div>`).join('')}
-      </div>` : '';
+            ${c.rol ? `<span style="font-size:10px;font-weight:700;color:${color};opacity:0.85;display:block;margin-bottom:3px;">${c.rol.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>` : ''}
+            <span style="font-size:12px;color:var(--ink);line-height:1.5;font-style:italic;">"${c.text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}"</span>
+          </div>`
+          )
+          .join('')}
+      </div>`
+        : '';
 
     return `
       <div style="margin-bottom:18px;">
@@ -534,10 +601,10 @@ function initRadarCharts() {
   if (state.activeTab !== 'analysis') return;
   if (typeof Chart === 'undefined') return;
 
-  const labels = DIMS.map(d => d.label);
-  const colors = DIMS.map(d => d.color);
+  const labels = DIMS.map((d) => d.label);
+  const colors = DIMS.map((d) => d.color);
 
-  Object.keys(window._radarData || {}).forEach(tid => {
+  Object.keys(window._radarData || {}).forEach((tid) => {
     const canvas = document.getElementById('radar-' + tid);
     if (!canvas) return;
 
@@ -547,25 +614,27 @@ function initRadarCharts() {
 
     const { values, benchmark } = window._radarData[tid];
 
-    const datasets = [{
-      label: 'Equipo',
-      data: values,
-      backgroundColor: 'rgba(26, 86, 219, 0.10)',
-      borderColor:     'rgba(26, 86, 219, 0.75)',
-      borderWidth: 2,
-      pointBackgroundColor: colors,
-      pointBorderColor:     '#fff',
-      pointBorderWidth: 1.5,
-      pointRadius: 4,
-      pointHoverRadius: 5,
-    }];
+    const datasets = [
+      {
+        label: 'Equipo',
+        data: values,
+        backgroundColor: 'rgba(26, 86, 219, 0.10)',
+        borderColor: 'rgba(26, 86, 219, 0.75)',
+        borderWidth: 2,
+        pointBackgroundColor: colors,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+      },
+    ];
 
     if (benchmark) {
       datasets.push({
         label: 'Promedio org',
         data: benchmark,
         backgroundColor: 'transparent',
-        borderColor:     'rgba(107, 114, 128, 0.50)',
+        borderColor: 'rgba(107, 114, 128, 0.50)',
         borderWidth: 1.5,
         borderDash: [4, 3],
         pointRadius: 0,
@@ -585,24 +654,24 @@ function initRadarCharts() {
             min: 0,
             max: 100,
             ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
-            grid:        { color: 'rgba(0,0,0,0.07)' },
-            angleLines:  { color: 'rgba(0,0,0,0.07)' },
+            grid: { color: 'rgba(0,0,0,0.07)' },
+            angleLines: { color: 'rgba(0,0,0,0.07)' },
             pointLabels: {
               font: { size: 11, family: "'DM Sans', sans-serif" },
               color: '#374151',
             },
-          }
+          },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: ctx => ` ${ctx.raw}%`
-            }
-          }
+              label: (ctx) => ` ${ctx.raw}%`,
+            },
+          },
         },
         animation: { duration: 350 },
-      }
+      },
     });
   });
 
@@ -615,18 +684,18 @@ function initRadarCharts() {
       type: 'radar',
       data: {
         labels,
-        datasets: window._compareData.teams.map(t => ({
+        datasets: window._compareData.teams.map((t) => ({
           label: t.name,
-          data:  t.values,
+          data: t.values,
           backgroundColor: t.color + '18',
-          borderColor:     t.color,
+          borderColor: t.color,
           borderWidth: 2,
           pointBackgroundColor: t.color,
-          pointBorderColor:     '#fff',
+          pointBorderColor: '#fff',
           pointBorderWidth: 1.5,
           pointRadius: 3,
           pointHoverRadius: 4,
-        }))
+        })),
       },
       options: {
         responsive: true,
@@ -636,24 +705,24 @@ function initRadarCharts() {
             min: 0,
             max: 100,
             ticks: { stepSize: 25, display: false, backdropColor: 'transparent' },
-            grid:        { color: 'rgba(0,0,0,0.07)' },
-            angleLines:  { color: 'rgba(0,0,0,0.07)' },
+            grid: { color: 'rgba(0,0,0,0.07)' },
+            angleLines: { color: 'rgba(0,0,0,0.07)' },
             pointLabels: {
               font: { size: 10, family: "'DM Sans', sans-serif" },
               color: '#374151',
             },
-          }
+          },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
-            }
-          }
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw}%`,
+            },
+          },
         },
         animation: { duration: 350 },
-      }
+      },
     });
   }
 }
@@ -674,20 +743,20 @@ function initEvolutionTrendChart() {
     type: 'line',
     data: {
       labels: window._evolTrendData.labels,
-      datasets: window._evolTrendData.datasets.map(ds => ({
-        label:              ds.label,
-        data:               ds.values,
-        borderColor:        ds.color,
-        backgroundColor:    ds.color + '18',
+      datasets: window._evolTrendData.datasets.map((ds) => ({
+        label: ds.label,
+        data: ds.values,
+        borderColor: ds.color,
+        backgroundColor: ds.color + '18',
         borderWidth: 2,
         pointBackgroundColor: ds.color,
-        pointBorderColor:   '#fff',
-        pointBorderWidth:   1.5,
-        pointRadius:        4,
-        pointHoverRadius:   5,
-        tension:            0.3,
-        fill:               false,
-      }))
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.5,
+        pointRadius: 4,
+        pointHoverRadius: 5,
+        tension: 0.3,
+        fill: false,
+      })),
     },
     options: {
       responsive: true,
@@ -698,19 +767,19 @@ function initEvolutionTrendChart() {
           max: 100,
           ticks: {
             stepSize: 25,
-            callback: v => v + '%',
-            font:  { size: 11, family: "'DM Sans', sans-serif" },
+            callback: (v) => v + '%',
+            font: { size: 11, family: "'DM Sans', sans-serif" },
             color: '#6b7280',
           },
           grid: { color: 'rgba(0,0,0,0.06)' },
         },
         x: {
           ticks: {
-            font:  { size: 11, family: "'DM Sans', sans-serif" },
+            font: { size: 11, family: "'DM Sans', sans-serif" },
             color: '#6b7280',
           },
           grid: { display: false },
-        }
+        },
       },
       plugins: {
         legend: {
@@ -721,16 +790,16 @@ function initEvolutionTrendChart() {
             usePointStyle: true,
             pointStyleWidth: 8,
             padding: 14,
-          }
+          },
         },
         tooltip: {
           callbacks: {
-            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
-          }
-        }
+            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw}%`,
+          },
+        },
       },
       animation: { duration: 350 },
-    }
+    },
   });
 }
 
@@ -751,20 +820,22 @@ function initOrgTrendChart() {
     type: 'line',
     data: {
       labels,
-      datasets: [{
-        label: 'Score promedio org.',
-        data: values,
-        borderColor: '#1a4fd6',
-        backgroundColor: '#1a4fd618',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#1a4fd6',
-        pointBorderColor: '#fff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 6,
-        tension: 0.3,
-        fill: true,
-      }]
+      datasets: [
+        {
+          label: 'Score promedio org.',
+          data: values,
+          borderColor: '#1a4fd6',
+          backgroundColor: '#1a4fd618',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#1a4fd6',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: true,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -775,7 +846,7 @@ function initOrgTrendChart() {
           max: 100,
           ticks: {
             stepSize: 25,
-            callback: v => v + '%',
+            callback: (v) => v + '%',
             font: { size: 11, family: "'DM Sans', sans-serif" },
             color: '#6b7280',
           },
@@ -787,21 +858,21 @@ function initOrgTrendChart() {
             color: '#6b7280',
           },
           grid: { display: false },
-        }
+        },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
+            label: (ctx) => {
               const pt = window._orgTrendData.points[ctx.dataIndex];
               return ` ${ctx.raw}%  ·  ${pt.count} resp. · ${pt.teamCount} equipo${pt.teamCount !== 1 ? 's' : ''}`;
-            }
-          }
-        }
+            },
+          },
+        },
       },
       animation: { duration: 350 },
-    }
+    },
   });
 }
 
@@ -809,12 +880,16 @@ function initOrgTrendChart() {
 function render() {
   const app = document.getElementById('app');
   const active = document.activeElement;
-  const focusId  = active ? active.id : null;
+  const focusId = active ? active.id : null;
   const selStart = active ? active.selectionStart : null;
-  const selEnd   = active ? active.selectionEnd   : null;
-  const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+  const selEnd = active ? active.selectionEnd : null;
+  const isTyping =
+    active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
 
-  if (!state.currentUser) { app.innerHTML = renderLogin(); return; }
+  if (!state.currentUser) {
+    app.innerHTML = renderLogin();
+    return;
+  }
   window._radarData = {};
   window._compareData = null;
   window._evolTrendData = null;
@@ -837,9 +912,13 @@ function render() {
     if (el) {
       el.focus();
       if (selStart !== null) {
-        try { el.setSelectionRange(selStart, selEnd); } catch(e) {
+        try {
+          el.setSelectionRange(selStart, selEnd);
+        } catch (e) {
           // email/number/date no soportan setSelectionRange — forzar cursor al final
-          const v = el.value; el.value = ''; el.value = v;
+          const v = el.value;
+          el.value = '';
+          el.value = v;
         }
       }
     }
@@ -874,12 +953,12 @@ function renderShell() {
   return `
     <div class="tab-bar">
       <div class="tabs">
-        <button class="tab ${state.activeTab==='analysis'?'active':''}"  onclick="setState({activeTab:'analysis'})">Análisis</button>
-        <button class="tab ${state.activeTab==='evolution'?'active':''}" onclick="setState({activeTab:'evolution'})">Evolución</button>
-        <button class="tab ${state.activeTab==='plan'?'active':''}"      onclick="setState({activeTab:'plan'})">Plan de Acción</button>
-        <button class="tab ${state.activeTab==='teams'?'active':''}"     onclick="setState({activeTab:'teams'})">Equipos</button>
-        <button class="tab ${state.activeTab==='config'?'active':''}"   onclick="setState({activeTab:'config'})">Configuración</button>
-        ${state.currentRole === 'super_admin' ? `<button class="tab ${state.activeTab==='usuarios'?'active':''}" onclick="setState({activeTab:'usuarios'})">Usuarios</button>` : ''}
+        <button class="tab ${state.activeTab === 'analysis' ? 'active' : ''}"  onclick="setState({activeTab:'analysis'})">Análisis</button>
+        <button class="tab ${state.activeTab === 'evolution' ? 'active' : ''}" onclick="setState({activeTab:'evolution'})">Evolución</button>
+        <button class="tab ${state.activeTab === 'plan' ? 'active' : ''}"      onclick="setState({activeTab:'plan'})">Plan de Acción</button>
+        <button class="tab ${state.activeTab === 'teams' ? 'active' : ''}"     onclick="setState({activeTab:'teams'})">Equipos</button>
+        <button class="tab ${state.activeTab === 'config' ? 'active' : ''}"   onclick="setState({activeTab:'config'})">Configuración</button>
+        ${state.currentRole === 'super_admin' ? `<button class="tab ${state.activeTab === 'usuarios' ? 'active' : ''}" onclick="setState({activeTab:'usuarios'})">Usuarios</button>` : ''}
       </div>
       <div class="tab-actions">
         ${userLabel}
@@ -888,52 +967,61 @@ function renderShell() {
       </div>
     </div>
     ${renderCadenceBanner()}
-    ${state.activeTab === 'analysis'  ? renderAnalysis()
-    : state.activeTab === 'evolution' ? renderEvolution()
-    : state.activeTab === 'plan'      ? renderPlan()
-    : state.activeTab === 'config'    ? renderConfig()
-    : state.activeTab === 'usuarios'  ? renderUsuarios()
-    : renderTeams()}`;
+    ${
+      state.activeTab === 'analysis'
+        ? renderAnalysis()
+        : state.activeTab === 'evolution'
+          ? renderEvolution()
+          : state.activeTab === 'plan'
+            ? renderPlan()
+            : state.activeTab === 'config'
+              ? renderConfig()
+              : state.activeTab === 'usuarios'
+                ? renderUsuarios()
+                : renderTeams()
+    }`;
 }
 
 // ── Participation panel ───────────────────────────────────────────
 function renderParticipationPanel(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
   const ROLES_ORDER = ['Dev Team', 'Product Owner', 'Scrum Master', 'Otro'];
-  const teamResps = state.responses.filter(r =>
-    (r.fields.Equipo || []).includes(tid) &&
-    (cf === 'Todos' || r.fields.Ciclo === cf)
+  const teamResps = state.responses.filter(
+    (r) => (r.fields.Equipo || []).includes(tid) && (cf === 'Todos' || r.fields.Ciclo === cf)
   );
   const total = teamResps.length;
   if (total === 0) return '';
 
   const counts = {};
-  ROLES_ORDER.forEach(r => { counts[r] = 0; });
-  teamResps.forEach(r => {
+  ROLES_ORDER.forEach((r) => {
+    counts[r] = 0;
+  });
+  teamResps.forEach((r) => {
     const rol = r.fields.Rol;
     if (rol) counts[rol] = (counts[rol] || 0) + 1;
   });
 
-  const presentRoles = ROLES_ORDER.filter(r => counts[r] > 0);
+  const presentRoles = ROLES_ORDER.filter((r) => counts[r] > 0);
   if (!presentRoles.length) return '';
-  const maxCount = Math.max(...presentRoles.map(r => counts[r]));
+  const maxCount = Math.max(...presentRoles.map((r) => counts[r]));
   const cycleLabel = cf === 'Todos' ? 'todos los ciclos' : cf;
 
   // Roles que típicamente tienen 1 sola persona — no aplicar semáforo de validez
   const SINGLE_PERSON_ROLES = new Set(['Product Owner', 'Scrum Master', 'Otro']);
 
-  const rows = presentRoles.map(r => {
-    const n = counts[r];
-    const barPct = Math.round(n / maxCount * 100);
-    const isSingle = SINGLE_PERSON_ROLES.has(r);
-    const isValid  = n >= MIN_ROLE_RESPONSES;
-    const badge = isSingle
-      ? `<span style="font-size:10px;color:var(--ink-faint);flex-shrink:0;">—</span>`
-      : isValid
-        ? `<span style="font-size:10px;color:#0d7a52;font-weight:600;flex-shrink:0;">✓ Válido</span>`
-        : `<span style="font-size:10px;color:#a05c0a;font-weight:600;flex-shrink:0;">⚠ Mín. ${MIN_ROLE_RESPONSES}</span>`;
-    const barColor = isSingle ? '#9198aa' : isValid ? '#0d7a52' : '#f59e0b';
-    return `
+  const rows = presentRoles
+    .map((r) => {
+      const n = counts[r];
+      const barPct = Math.round((n / maxCount) * 100);
+      const isSingle = SINGLE_PERSON_ROLES.has(r);
+      const isValid = n >= MIN_ROLE_RESPONSES;
+      const badge = isSingle
+        ? `<span style="font-size:10px;color:var(--ink-faint);flex-shrink:0;">—</span>`
+        : isValid
+          ? `<span style="font-size:10px;color:#0d7a52;font-weight:600;flex-shrink:0;">✓ Válido</span>`
+          : `<span style="font-size:10px;color:#a05c0a;font-weight:600;flex-shrink:0;">⚠ Mín. ${MIN_ROLE_RESPONSES}</span>`;
+      const barColor = isSingle ? '#9198aa' : isValid ? '#0d7a52' : '#f59e0b';
+      return `
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
         <div style="font-size:11px;color:var(--ink);min-width:108px;flex-shrink:0;">${r}</div>
         <div style="flex:1;height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden;">
@@ -942,14 +1030,17 @@ function renderParticipationPanel(tid, cycleFilter) {
         <div style="font-size:11px;color:var(--ink-faint);min-width:42px;text-align:right;flex-shrink:0;">${n} resp.</div>
         ${badge}
       </div>`;
-  }).join('');
+    })
+    .join('');
 
-  const fastCount = teamResps.filter(r => r.fields.FlaggedFast).length;
-  const fastBadge = fastCount > 0
-    ? `<span title="${fastCount} respuesta${fastCount!==1?'s':''} completada${fastCount!==1?'s':''} en menos de 3 minutos — revisar calidad del dato"
+  const fastCount = teamResps.filter((r) => r.fields.FlaggedFast).length;
+  const fastBadge =
+    fastCount > 0
+      ? `<span title="${fastCount} respuesta${fastCount !== 1 ? 's' : ''} completada${fastCount !== 1 ? 's' : ''} en menos de 3 minutos — revisar calidad del dato"
         style="font-size:10px;font-weight:600;color:#a05c0a;background:#fdefd6;border-radius:99px;padding:2px 8px;flex-shrink:0;cursor:default;">
-        ⚡ ${fastCount} rápida${fastCount!==1?'s':''}
-      </span>` : '';
+        ⚡ ${fastCount} rápida${fastCount !== 1 ? 's' : ''}
+      </span>`
+      : '';
 
   return `
     <div class="no-print" style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;">
@@ -985,21 +1076,24 @@ function renderAnalysis() {
 
   state.recTexts = {};
   const globalAvgs = computeGlobalDimAverages(state.cycleFilter, state.excludeOtro);
-  const withData = Object.values(state.teamStats).filter(s => s.count > 0);
-  const availOrgRoles = [...new Set(state.responses.map(r => r.fields.Rol).filter(Boolean))].sort();
-  const filtByCycle = state.cycleFilter === 'Todos'
-    ? state.responses
-    : state.responses.filter(r => r.fields.Ciclo === state.cycleFilter);
-  const otroCount = filtByCycle.filter(r => r.fields.Rol === 'Otro').length;
+  const withData = Object.values(state.teamStats).filter((s) => s.count > 0);
+  const availOrgRoles = [...new Set(state.responses.map((r) => r.fields.Rol).filter(Boolean))].sort();
+  const filtByCycle =
+    state.cycleFilter === 'Todos'
+      ? state.responses
+      : state.responses.filter((r) => r.fields.Ciclo === state.cycleFilter);
+  const otroCount = filtByCycle.filter((r) => r.fields.Rol === 'Otro').length;
 
   const exOtro = state.excludeOtro && state.orgRoleFilter === 'Todos';
-  const compData = withData.map(s => {
-    const fs = getTeamFilteredStats(s.id, state.orgRoleFilter, state.cycleFilter, exOtro);
-    return fs ? { id: s.id, name: s.name, ...fs } : null;
-  }).filter(Boolean);
+  const compData = withData
+    .map((s) => {
+      const fs = getTeamFilteredStats(s.id, state.orgRoleFilter, state.cycleFilter, exOtro);
+      return fs ? { id: s.id, name: s.name, ...fs } : null;
+    })
+    .filter(Boolean);
   const compSorted = [...compData].sort((a, b) => b.avgTotal - a.avgTotal);
 
-  const orgAvg   = compData.length ? Math.round(compData.reduce((a, s) => a + s.avgTotal, 0) / compData.length) : 0;
+  const orgAvg = compData.length ? Math.round(compData.reduce((a, s) => a + s.avgTotal, 0) / compData.length) : 0;
   const orgLevel = compData.length ? getLevel(orgAvg) : null;
   const statLabel = state.orgRoleFilter === 'Todos' ? 'Promedio org' : 'Promedio · ' + state.orgRoleFilter;
 
@@ -1017,9 +1111,12 @@ function renderAnalysis() {
     </div>`;
 
   if (!withData.length) {
-    return stats + `<div class="empty-state" style="border:1.5px solid var(--border);border-radius:var(--radius);background:white;">
+    return (
+      stats +
+      `<div class="empty-state" style="border:1.5px solid var(--border);border-radius:var(--radius);background:white;">
       Aún no hay respuestas. Comparte el assessment con los equipos para ver el análisis aquí.
-    </div>`;
+    </div>`
+    );
   }
 
   const exportRow = `
@@ -1030,61 +1127,92 @@ function renderAnalysis() {
     </div>`;
 
   const availCycles = state.cycles.length
-    ? state.cycles.map(c => c.name)
-    : [...new Set(state.responses.map(r => r.fields.Ciclo).filter(Boolean))].sort();
-  const activeCycleObj = state.cycles.find(c => c.active);
+    ? state.cycles.map((c) => c.name)
+    : [...new Set(state.responses.map((r) => r.fields.Ciclo).filter(Boolean))].sort();
+  const activeCycleObj = state.cycles.find((c) => c.active);
   const closeCycleBtn = activeCycleObj
     ? `<button class="btn sm danger no-print" style="margin-left:auto;flex-shrink:0;"
-        onclick="showCloseCycleModal('${activeCycleObj.id}','${activeCycleObj.name.replace(/'/g,"\\'")}')"
+        onclick="showCloseCycleModal('${activeCycleObj.id}','${activeCycleObj.name.replace(/'/g, "\\'")}')"
         title="Cierre formal del ciclo activo — sincroniza portales y registra el cierre">
         ⊘ Cerrar ciclo
-      </button>` : '';
+      </button>`
+    : '';
 
-  const cyclePills = availCycles.length ? `
+  const cyclePills = availCycles.length
+    ? `
     <div class="no-print" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
       <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;">Ciclo</span>
-      ${['Todos', ...availCycles].map(c => `
+      ${['Todos', ...availCycles]
+        .map(
+          (c) => `
         <button class="role-pill ${c === state.cycleFilter ? 'active' : ''}" onclick="setState({cycleFilter:'${c}'})">${c}</button>`
-      ).join('')}
+        )
+        .join('')}
       ${closeCycleBtn}
-    </div>` : '';
+    </div>`
+    : '';
 
-  const roleOrgStats = [...new Set(filtByCycle.map(r => r.fields.Rol).filter(Boolean))].sort().map(role => {
-    const rr = filtByCycle.filter(r => r.fields.Rol === role);
-    const avg = Math.round(rr.reduce((sum, r) => sum + (r.fields['Score Total %'] || 0), 0) / rr.length);
-    return { role, count: rr.length, avg, level: getLevel(avg) };
-  }).sort((a, b) => b.avg - a.avg);
+  const roleOrgStats = [...new Set(filtByCycle.map((r) => r.fields.Rol).filter(Boolean))]
+    .sort()
+    .map((role) => {
+      const rr = filtByCycle.filter((r) => r.fields.Rol === role);
+      const avg = Math.round(rr.reduce((sum, r) => sum + (r.fields['Score Total %'] || 0), 0) / rr.length);
+      return { role, count: rr.length, avg, level: getLevel(avg) };
+    })
+    .sort((a, b) => b.avg - a.avg);
 
-  const visibleOrgRoles = roleOrgStats.filter(rs => rs.count >= MIN_ROLE_RESPONSES);
-  const hiddenOrgRoles  = roleOrgStats.filter(rs => rs.count <  MIN_ROLE_RESPONSES);
-  const roleCard = roleOrgStats.length > 1 ? `
+  const visibleOrgRoles = roleOrgStats.filter((rs) => rs.count >= MIN_ROLE_RESPONSES);
+  const hiddenOrgRoles = roleOrgStats.filter((rs) => rs.count < MIN_ROLE_RESPONSES);
+  const roleCard =
+    roleOrgStats.length > 1
+      ? `
     <div class="section-card">
       <div class="section-title">Madurez por rol · toda la organización${state.cycleFilter !== 'Todos' ? ' · ' + state.cycleFilter : ''}</div>
-      ${visibleOrgRoles.length ? visibleOrgRoles.map(rs => `
+      ${
+        visibleOrgRoles.length
+          ? visibleOrgRoles
+              .map(
+                (rs) => `
         <div class="org-row">
           <div class="org-name">${rs.role}</div>
           <div class="org-bar-wrap"><div class="org-bar" style="width:${rs.avg}%;background:${rs.level.color}"></div></div>
           <div class="org-pct">${rs.avg}%</div>
           <span class="org-badge" style="background:${rs.level.bg};color:${rs.level.color}">${rs.level.label}</span>
           <span style="font-size:11px;color:var(--ink-faint);flex-shrink:0;min-width:52px;text-align:right;">${rs.count} resp.</span>
-        </div>`).join('') : `<div style="font-size:13px;color:var(--ink-faint);padding:8px 0;">Ningún rol alcanza el mínimo de ${MIN_ROLE_RESPONSES} respuestas.</div>`}
-      ${hiddenOrgRoles.length ? `
+        </div>`
+              )
+              .join('')
+          : `<div style="font-size:13px;color:var(--ink-faint);padding:8px 0;">Ningún rol alcanza el mínimo de ${MIN_ROLE_RESPONSES} respuestas.</div>`
+      }
+      ${
+        hiddenOrgRoles.length
+          ? `
         <div style="font-size:11px;color:var(--ink-faint);margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
           ⚠ Desglose oculto para proteger el anonimato — menos de ${MIN_ROLE_RESPONSES} respuestas:
-          ${hiddenOrgRoles.map(r => `<strong>${r.role}</strong> (${r.count})`).join(', ')}.
-        </div>` : ''}
-    </div>` : '';
+          ${hiddenOrgRoles.map((r) => `<strong>${r.role}</strong> (${r.count})`).join(', ')}.
+        </div>`
+          : ''
+      }
+    </div>`
+      : '';
 
-  const orgRoleCounts = { 'Todos': filtByCycle.length };
-  availOrgRoles.forEach(r => { orgRoleCounts[r] = filtByCycle.filter(x => x.fields.Rol === r).length; });
+  const orgRoleCounts = { Todos: filtByCycle.length };
+  availOrgRoles.forEach((r) => {
+    orgRoleCounts[r] = filtByCycle.filter((x) => x.fields.Rol === r).length;
+  });
 
-  const orgRolePills = ['Todos', ...availOrgRoles].map(r => `
+  const orgRolePills = ['Todos', ...availOrgRoles]
+    .map(
+      (r) => `
     <button class="role-pill ${r === state.orgRoleFilter ? 'active' : ''}" onclick="setState({orgRoleFilter:'${r}'})">
       ${r} <span style="font-size:10px;opacity:0.65;">(${orgRoleCounts[r]})</span>
     </button>`
-  ).join('');
+    )
+    .join('');
 
-  const otroToggle = otroCount > 0 ? `
+  const otroToggle =
+    otroCount > 0
+      ? `
     <div class="no-print" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
       <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;">Otro</span>
       <button class="role-pill ${state.excludeOtro ? 'active' : ''}"
@@ -1093,7 +1221,8 @@ function renderAnalysis() {
         ${state.excludeOtro ? '✓ ' : ''}Excluir "Otro" <span style="font-size:10px;opacity:0.65;">(${otroCount})</span>
       </button>
       ${state.excludeOtro ? `<span style="font-size:12px;color:var(--ink-faint);">Promedios calculados sin respuestas "Otro"</span>` : ''}
-    </div>` : '';
+    </div>`
+      : '';
 
   const comparison = `
     <div class="section-card">
@@ -1101,15 +1230,21 @@ function renderAnalysis() {
         <div class="section-title" style="margin-bottom:0;">Comparativo organizacional${state.cycleFilter !== 'Todos' ? ' · ' + state.cycleFilter : ''}</div>
         <div class="role-filter no-print" style="margin-bottom:0;padding-bottom:0;border-bottom:none;">${orgRolePills}</div>
       </div>
-      ${compSorted.length
-        ? compSorted.map(s => `
+      ${
+        compSorted.length
+          ? compSorted
+              .map(
+                (s) => `
             <div class="org-row">
               <div class="org-name" title="${s.name}">${s.name}</div>
               <div class="org-bar-wrap"><div class="org-bar" style="width:${s.avgTotal}%;background:${s.level.color}"></div></div>
               <div class="org-pct">${s.avgTotal}%</div>
               <span class="org-badge" style="background:${s.level.bg};color:${s.level.color}">${s.level.label}</span>
-            </div>`).join('')
-        : `<div style="padding:16px 0;text-align:center;color:var(--ink-faint);font-size:13px;">No hay respuestas para los filtros seleccionados.</div>`}
+            </div>`
+              )
+              .join('')
+          : `<div style="padding:16px 0;text-align:center;color:var(--ink-faint);font-size:13px;">No hay respuestas para los filtros seleccionados.</div>`
+      }
     </div>`;
 
   const allSorted = [...withData].sort((a, b) => b.avgTotal - a.avgTotal);
@@ -1117,75 +1252,107 @@ function renderAnalysis() {
   const cards = `
     <div class="section-title">Detalle por equipo</div>
     <div class="team-grid">
-      ${allSorted.map(s => {
-        const tid = s.id;
-        const selectedRole = state.teamRoleFilter[tid] || 'Todos';
-        const teamResps = state.responses.filter(r => (r.fields.Equipo || []).includes(tid));
-        const teamAvailRoles = [...new Set(teamResps.map(r => r.fields.Rol).filter(Boolean))].sort();
-        const filteredByCycle = teamResps.filter(r => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter);
-        const filteredRoleCounts = {};
-        filteredByCycle.forEach(r => {
-          if (r.fields.Rol) filteredRoleCounts[r.fields.Rol] = (filteredRoleCounts[r.fields.Rol] || 0) + 1;
-        });
-        // roleCounts usa el ciclo activo para que las pills muestren el conteo filtrado
-        const roleCounts = {
-          'Todos': state.excludeOtro
-            ? filteredByCycle.filter(r => r.fields.Rol !== 'Otro').length
-            : filteredByCycle.length
-        };
-        teamAvailRoles.forEach(r => { roleCounts[r] = filteredRoleCounts[r] || 0; });
-        const anonWarning = selectedRole !== 'Todos' && (filteredRoleCounts[selectedRole] || 0) < MIN_ROLE_RESPONSES;
+      ${allSorted
+        .map((s) => {
+          const tid = s.id;
+          const selectedRole = state.teamRoleFilter[tid] || 'Todos';
+          const teamResps = state.responses.filter((r) => (r.fields.Equipo || []).includes(tid));
+          const teamAvailRoles = [...new Set(teamResps.map((r) => r.fields.Rol).filter(Boolean))].sort();
+          const filteredByCycle = teamResps.filter(
+            (r) => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter
+          );
+          const filteredRoleCounts = {};
+          filteredByCycle.forEach((r) => {
+            if (r.fields.Rol) filteredRoleCounts[r.fields.Rol] = (filteredRoleCounts[r.fields.Rol] || 0) + 1;
+          });
+          // roleCounts usa el ciclo activo para que las pills muestren el conteo filtrado
+          const roleCounts = {
+            Todos: state.excludeOtro
+              ? filteredByCycle.filter((r) => r.fields.Rol !== 'Otro').length
+              : filteredByCycle.length,
+          };
+          teamAvailRoles.forEach((r) => {
+            roleCounts[r] = filteredRoleCounts[r] || 0;
+          });
+          const anonWarning = selectedRole !== 'Todos' && (filteredRoleCounts[selectedRole] || 0) < MIN_ROLE_RESPONSES;
 
-        const rolePills = ['Todos', ...teamAvailRoles].map(r => {
-          const lowAnon = r !== 'Todos' && (filteredRoleCounts[r] || 0) < MIN_ROLE_RESPONSES;
-          return `<button class="role-pill ${r === selectedRole ? 'active' : ''}"
+          const rolePills = ['Todos', ...teamAvailRoles]
+            .map((r) => {
+              const lowAnon = r !== 'Todos' && (filteredRoleCounts[r] || 0) < MIN_ROLE_RESPONSES;
+              return `<button class="role-pill ${r === selectedRole ? 'active' : ''}"
             onclick="setTeamRole('${tid}','${r}')"
             title="${lowAnon ? 'Menos de ' + MIN_ROLE_RESPONSES + ' respuestas — anonimato limitado' : ''}">
             ${r} (${roleCounts[r]})${lowAnon ? ' ⚠' : ''}
           </button>`;
-        }).join('');
+            })
+            .join('');
 
-        const exOtroTeam = state.excludeOtro && selectedRole === 'Todos';
-        const ds = getTeamFilteredStats(tid, selectedRole, state.cycleFilter, exOtroTeam) || s;
-        const majorityRole = selectedRole === 'Todos' ? getMajorityRole(filteredByCycle) : null;
-        const roleForRec = selectedRole !== 'Todos' ? selectedRole : majorityRole;
-        const recRoleNote = selectedRole === 'Todos' && majorityRole
-          ? ` <span class="rec-role-note">(rol mayoritario: ${majorityRole})</span>` : '';
+          const exOtroTeam = state.excludeOtro && selectedRole === 'Todos';
+          const ds = getTeamFilteredStats(tid, selectedRole, state.cycleFilter, exOtroTeam) || s;
+          const majorityRole = selectedRole === 'Todos' ? getMajorityRole(filteredByCycle) : null;
+          const roleForRec = selectedRole !== 'Todos' ? selectedRole : majorityRole;
+          const recRoleNote =
+            selectedRole === 'Todos' && majorityRole
+              ? ` <span class="rec-role-note">(rol mayoritario: ${majorityRole})</span>`
+              : '';
 
-        const below80 = DIMS
-          .filter(d => ds.avgDims[d.key].pct < 80)
-          .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
-        const lowDims = below80.length > 0
-          ? below80
-          : DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct).slice(0, 4);
+          const below80 = DIMS.filter((d) => ds.avgDims[d.key].pct < 80).sort(
+            (a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct
+          );
+          const lowDims =
+            below80.length > 0
+              ? below80
+              : DIMS.slice()
+                  .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct)
+                  .slice(0, 4);
 
-        const patterns = detectPatterns(ds.avgDims);
-        const patternBlock = patterns.map(p => `
+          const patterns = detectPatterns(ds.avgDims);
+          const patternBlock = patterns
+            .map(
+              (p) => `
           <div class="pattern-block" style="background:${p.color}18;border-color:${p.color};">
             <div class="pattern-label" style="color:${p.color};">Patrón detectado · ${p.label}</div>
             <div class="pattern-text" style="color:${p.color}cc;">${p.text}</div>
-          </div>`).join('');
+          </div>`
+            )
+            .join('');
 
-        const sortedByPct = DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
-        const criticalDim = sortedByPct[0] && ds.avgDims[sortedByPct[0].key].pct < 33 ? sortedByPct[0] : null;
+          const sortedByPct = DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
+          const criticalDim = sortedByPct[0] && ds.avgDims[sortedByPct[0].key].pct < 33 ? sortedByPct[0] : null;
 
-        // Badge de salud del equipo (solo si hay respuestas con healthScore)
-        const healthResps = filteredByCycle.filter(r => r.fields.HealthScore !== null && r.fields.HealthScore !== undefined);
-        const healthBadge = healthResps.length > 0 ? (() => {
-          const avgH = Math.round(healthResps.reduce((a, r) => a + r.fields.HealthScore, 0) / healthResps.length);
-          const hl = avgH >= 70 ? { label:'Alta',  color:'#0d7a52', bg:'#d4f0e5' }
-                   : avgH >= 40 ? { label:'Media', color:'#a05c0a', bg:'#fdefd6' }
-                   :               { label:'Baja',  color:'#c0282a', bg:'#fce8e8' };
-          return `<span style="background:${hl.bg};color:${hl.color};font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;" title="Seguridad psicológica · ${healthResps.length} resp.">Salud ${hl.label} · ${avgH}%</span>`;
-        })() : '';
+          // Badge de salud del equipo (solo si hay respuestas con healthScore)
+          const healthResps = filteredByCycle.filter(
+            (r) => r.fields.HealthScore !== null && r.fields.HealthScore !== undefined
+          );
+          const healthBadge =
+            healthResps.length > 0
+              ? (() => {
+                  const avgH = Math.round(
+                    healthResps.reduce((a, r) => a + r.fields.HealthScore, 0) / healthResps.length
+                  );
+                  const hl =
+                    avgH >= 70
+                      ? { label: 'Alta', color: '#0d7a52', bg: '#d4f0e5' }
+                      : avgH >= 40
+                        ? { label: 'Media', color: '#a05c0a', bg: '#fdefd6' }
+                        : { label: 'Baja', color: '#c0282a', bg: '#fce8e8' };
+                  return `<span style="background:${hl.bg};color:${hl.color};font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;" title="Seguridad psicológica · ${healthResps.length} resp.">Salud ${hl.label} · ${avgH}%</span>`;
+                })()
+              : '';
 
-        const recs = lowDims.length
-          ? lowDims.map(d => {
-              const ctxNote  = getContextNote(d.key, ds.avgDims[d.key].pct, (ds.ctx && ds.ctx.teamSize) || ds.tamano, (ds.ctx && ds.ctx.teamAge) || ds.tiempoScrum);
-              const isCrit   = criticalDim && d.key === criticalDim.key;
-              const recKey   = tid + '_' + d.key;
-              state.recTexts[recKey] = `${d.label}: ` + getRec(d.key, ds.avgDims[d.key].pct, roleForRec);
-              return `
+          const recs = lowDims.length
+            ? lowDims
+                .map((d) => {
+                  const ctxNote = getContextNote(
+                    d.key,
+                    ds.avgDims[d.key].pct,
+                    (ds.ctx && ds.ctx.teamSize) || ds.tamano,
+                    (ds.ctx && ds.ctx.teamAge) || ds.tiempoScrum
+                  );
+                  const isCrit = criticalDim && d.key === criticalDim.key;
+                  const recKey = tid + '_' + d.key;
+                  state.recTexts[recKey] = `${d.label}: ` + getRec(d.key, ds.avgDims[d.key].pct, roleForRec);
+                  return `
               <div class="rec-item" style="align-items:flex-start;">
                 <div class="rec-dot" style="background:${d.color};margin-top:5px;"></div>
                 <div class="rec-text" style="flex:1;">
@@ -1194,61 +1361,69 @@ function renderAnalysis() {
                 </div>
                 <button class="btn-plan no-print" onclick="prefillPlan('${tid}','${recKey}','${state.cycleFilter}','${d.key}')">+ Plan</button>
               </div>`;
-            }).join('')
-          : `<div class="rec-item">
+                })
+                .join('')
+            : `<div class="rec-item">
                <div class="rec-dot" style="background:#0d7a52"></div>
                <div class="rec-text">Buen nivel en todas las dimensiones. Explorar métricas de flujo avanzadas (cycle time, throughput).</div>
              </div>`;
 
-        // Guardar datos del radar para inicializar Chart.js después del render
-        window._radarData = window._radarData || {};
-        const teamObj = state.teams.find(t => t.id === tid);
-        const teamCat = teamObj ? teamObj.category || '' : '';
-        const catCompData = teamCat
-          ? compData.filter(s => ((state.teams.find(t => t.id === s.id) || {}).category || '') === teamCat)
-          : [];
-        const hasCatBenchmark = teamCat && catCompData.length >= 2;
-        const benchmarkPool = hasCatBenchmark ? catCompData : compData;
-        const catOrgAvg = hasCatBenchmark
-          ? Math.round(catCompData.reduce((a, s) => a + s.avgTotal, 0) / catCompData.length)
-          : orgAvg;
-        const radarBenchmark = benchmarkPool.length >= 2
-          ? DIMS.map(d => Math.round(benchmarkPool.reduce((sum, s) => sum + s.avgDims[d.key].pct, 0) / benchmarkPool.length))
-          : null;
-        window._radarData[tid] = { values: DIMS.map(d => ds.avgDims[d.key].pct), benchmark: radarBenchmark };
+          // Guardar datos del radar para inicializar Chart.js después del render
+          window._radarData = window._radarData || {};
+          const teamObj = state.teams.find((t) => t.id === tid);
+          const teamCat = teamObj ? teamObj.category || '' : '';
+          const catCompData = teamCat
+            ? compData.filter((s) => ((state.teams.find((t) => t.id === s.id) || {}).category || '') === teamCat)
+            : [];
+          const hasCatBenchmark = teamCat && catCompData.length >= 2;
+          const benchmarkPool = hasCatBenchmark ? catCompData : compData;
+          const catOrgAvg = hasCatBenchmark
+            ? Math.round(catCompData.reduce((a, s) => a + s.avgTotal, 0) / catCompData.length)
+            : orgAvg;
+          const radarBenchmark =
+            benchmarkPool.length >= 2
+              ? DIMS.map((d) =>
+                  Math.round(benchmarkPool.reduce((sum, s) => sum + s.avgDims[d.key].pct, 0) / benchmarkPool.length)
+                )
+              : null;
+          window._radarData[tid] = { values: DIMS.map((d) => ds.avgDims[d.key].pct), benchmark: radarBenchmark };
 
-        const recsExpanded      = !!state.teamRecsExpanded[tid];
-        const aiExpanded        = !!state.teamAIExpanded[tid];
-        const detailExpanded    = !!state.teamDetailExpanded[tid];
-        const commentsExpanded  = !!state.teamCommentsExpanded[tid];
-        const recCount = lowDims.length;
-        const commentCount = teamResps.reduce((n, r) =>
-          n + SECTIONS.filter(sec => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length, 0);
+          const recsExpanded = !!state.teamRecsExpanded[tid];
+          const aiExpanded = !!state.teamAIExpanded[tid];
+          const detailExpanded = !!state.teamDetailExpanded[tid];
+          const commentsExpanded = !!state.teamCommentsExpanded[tid];
+          const recCount = lowDims.length;
+          const commentCount = teamResps.reduce(
+            (n, r) => n + SECTIONS.filter((sec) => ((r.fields.Comments || {})[sec.id] || '').trim().length > 0).length,
+            0
+          );
 
-        // Badge de comparación ciclo activo vs ciclo anterior
-        const activeCycleName = (state.cycles.find(c => c.active) || {}).name;
-        const activeCycleIdx  = activeCycleName ? state.cycles.findIndex(c => c.name === activeCycleName) : -1;
-        const prevCycleName   = activeCycleIdx > 0 ? state.cycles[activeCycleIdx - 1].name : null;
-        const activeCount     = activeCycleName ? teamResps.filter(r => r.fields.Ciclo === activeCycleName).length : null;
-        const prevCount       = prevCycleName   ? teamResps.filter(r => r.fields.Ciclo === prevCycleName).length   : null;
-        const countBadge = activeCount !== null && state.cycleFilter === 'Todos'
-          ? (prevCount !== null && activeCount < prevCount
-            ? `<span style="font-size:10px;background:#fce8e8;color:#c0282a;padding:1px 7px;border-radius:99px;margin-left:6px;" title="${activeCycleName}: ${activeCount} resp. · ${prevCycleName}: ${prevCount} resp.">↓ ciclo activo: ${activeCount} resp.</span>`
-            : activeCount > 0
-              ? `<span style="font-size:10px;background:#eef2ff;color:#1a4fd6;padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: ${activeCount} resp.</span>`
-              : `<span style="font-size:10px;background:#f3f4f6;color:var(--ink-faint);padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: sin respuestas</span>`)
-          : '';
+          // Badge de comparación ciclo activo vs ciclo anterior
+          const activeCycleName = (state.cycles.find((c) => c.active) || {}).name;
+          const activeCycleIdx = activeCycleName ? state.cycles.findIndex((c) => c.name === activeCycleName) : -1;
+          const prevCycleName = activeCycleIdx > 0 ? state.cycles[activeCycleIdx - 1].name : null;
+          const activeCount = activeCycleName
+            ? teamResps.filter((r) => r.fields.Ciclo === activeCycleName).length
+            : null;
+          const prevCount = prevCycleName ? teamResps.filter((r) => r.fields.Ciclo === prevCycleName).length : null;
+          const countBadge =
+            activeCount !== null && state.cycleFilter === 'Todos'
+              ? prevCount !== null && activeCount < prevCount
+                ? `<span style="font-size:10px;background:#fce8e8;color:#c0282a;padding:1px 7px;border-radius:99px;margin-left:6px;" title="${activeCycleName}: ${activeCount} resp. · ${prevCycleName}: ${prevCount} resp.">↓ ciclo activo: ${activeCount} resp.</span>`
+                : activeCount > 0
+                  ? `<span style="font-size:10px;background:#eef2ff;color:#1a4fd6;padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: ${activeCount} resp.</span>`
+                  : `<span style="font-size:10px;background:#f3f4f6;color:var(--ink-faint);padding:1px 7px;border-radius:99px;margin-left:6px;">${activeCycleName}: sin respuestas</span>`
+              : '';
 
-        const team = state.teams.find(t => t.id === tid);
-        const nKey = state.cycleFilter === 'Todos' ? '_general' : state.cycleFilter.replace(/[^a-zA-Z0-9]/g, '_');
-        const draftKey = tid + '_' + nKey;
-        const currentNote = _noteDrafts[draftKey] !== undefined
-          ? _noteDrafts[draftKey]
-          : ((team && team.notas) || {})[nKey] || '';
-        const noteCicloLabel = state.cycleFilter === 'Todos' ? 'general' : state.cycleFilter;
-        const escapedNote = currentNote.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          const team = state.teams.find((t) => t.id === tid);
+          const nKey = state.cycleFilter === 'Todos' ? '_general' : state.cycleFilter.replace(/[^a-zA-Z0-9]/g, '_');
+          const draftKey = tid + '_' + nKey;
+          const currentNote =
+            _noteDrafts[draftKey] !== undefined ? _noteDrafts[draftKey] : ((team && team.notas) || {})[nKey] || '';
+          const noteCicloLabel = state.cycleFilter === 'Todos' ? 'general' : state.cycleFilter;
+          const escapedNote = currentNote.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-        return `
+          return `
           <div class="tac">
             <div class="tac-header">
               <div>
@@ -1258,10 +1433,13 @@ function renderAnalysis() {
                   const c = ds.ctx;
                   if (!c) return '';
                   const parts = [
-                    c.teamSize   ? c.teamSize + ' personas'   : null,
-                    c.teamAge    ? c.teamAge + ' con Scrum'   : null,
-                    c.dedicatedPO ? 'PO ' + (c.dedicatedPO === 'Sí' ? 'dedicado' : c.dedicatedPO === 'No' ? 'no dedicado' : 'compartido') : null,
-                    c.workMode   || null
+                    c.teamSize ? c.teamSize + ' personas' : null,
+                    c.teamAge ? c.teamAge + ' con Scrum' : null,
+                    c.dedicatedPO
+                      ? 'PO ' +
+                        (c.dedicatedPO === 'Sí' ? 'dedicado' : c.dedicatedPO === 'No' ? 'no dedicado' : 'compartido')
+                      : null,
+                    c.workMode || null,
                   ].filter(Boolean);
                   if (!parts.length) return '';
                   return `<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">${parts.join(' · ')}</div>`;
@@ -1274,7 +1452,7 @@ function renderAnalysis() {
                 ${(() => {
                   if (radarBenchmark && benchmarkPool.length >= 2) {
                     const delta = ds.avgTotal - catOrgAvg;
-                    const sign  = delta > 0 ? '+' : '';
+                    const sign = delta > 0 ? '+' : '';
                     const color = delta > 0 ? '#0d7a52' : delta < 0 ? '#c0282a' : '#6b7280';
                     const benchLabel = hasCatBenchmark ? teamCat.toLowerCase() : 'org';
                     return `<div style="font-size:10px;color:${color};margin-top:2px;text-align:right;font-weight:600;"
@@ -1285,26 +1463,34 @@ function renderAnalysis() {
                 ${(() => {
                   const m = calcMomentum(tid, selectedRole);
                   if (!m) return '';
-                  const cfg = m.direction === 'up'   ? { icon:'↗', color:'#0d7a52', label: '+' + m.avg + ' pts/ciclo' }
-                            : m.direction === 'down' ? { icon:'↘', color:'#c0282a', label: m.avg + ' pts/ciclo' }
-                            :                          { icon:'→', color:'#6b7280', label: 'Estable' };
+                  const cfg =
+                    m.direction === 'up'
+                      ? { icon: '↗', color: '#0d7a52', label: '+' + m.avg + ' pts/ciclo' }
+                      : m.direction === 'down'
+                        ? { icon: '↘', color: '#c0282a', label: m.avg + ' pts/ciclo' }
+                        : { icon: '→', color: '#6b7280', label: 'Estable' };
                   return `<div style="font-size:10px;color:${cfg.color};margin-top:3px;text-align:right;font-weight:600;"
                     title="Momentum: delta promedio en los últimos ${m.cycles} ciclos">${cfg.icon} ${cfg.label}</div>`;
                 })()}
               </div>
             </div>
             <div class="role-filter no-print">${rolePills}</div>
-            ${anonWarning ? `<div class="no-print" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">
+            ${
+              anonWarning
+                ? `<div class="no-print" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px;font-size:12px;color:#92400e;">
               ⚠ Solo ${filteredRoleCounts[selectedRole] || 0} respuesta${(filteredRoleCounts[selectedRole] || 0) !== 1 ? 's' : ''} de <strong>${selectedRole}</strong> en este ciclo. Con menos de ${MIN_ROLE_RESPONSES} respuestas, el desglose por rol puede comprometer el anonimato.
-            </div>` : ''}
+            </div>`
+                : ''
+            }
             ${(() => {
               const gaps = detectRoleGaps(tid, state.cycleFilter);
               if (!gaps.length) return '';
               const gapsExpanded = !!state.teamGapsExpanded[tid];
-              const gapBody = gaps.map(g => {
-                const severity = g.diff >= 40 ? '#c0282a' : '#a05c0a';
-                const severityBg = g.diff >= 40 ? '#fce8e8' : '#fdefd6';
-                return `
+              const gapBody = gaps
+                .map((g) => {
+                  const severity = g.diff >= 40 ? '#c0282a' : '#a05c0a';
+                  const severityBg = g.diff >= 40 ? '#fce8e8' : '#fdefd6';
+                  return `
                   <div style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid ${g.dimColor}15;">
                     <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${g.dimColor};flex-shrink:0;margin-top:3px;"></span>
                     <div style="flex:1;font-size:12px;color:var(--ink);">
@@ -1315,7 +1501,8 @@ function renderAnalysis() {
                     <span style="background:${severityBg};color:${severity};font-size:10px;font-weight:700;
                       padding:2px 7px;border-radius:99px;white-space:nowrap;flex-shrink:0;">${g.diff} pts</span>
                   </div>`;
-              }).join('');
+                })
+                .join('');
               return `
                 <div class="collapse-section no-print">
                   <button class="collapse-toggle" onclick="toggleTeamGaps('${tid}')"
@@ -1330,22 +1517,23 @@ function renderAnalysis() {
                 </div>`;
             })()}
             <div class="no-print" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:4px;">
-              <button class="btn sm secondary" onclick="showDebriefGuide('${tid}','${state.cycleFilter||'Todos'}')">Guía de facilitación</button>
+              <button class="btn sm secondary" onclick="showDebriefGuide('${tid}','${state.cycleFilter || 'Todos'}')">Guía de facilitación</button>
               <button class="btn sm secondary" onclick="exportPPT('${tid}')">↓ PPT</button>
-              <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter||'Todos'}')">↗ Compartir reporte</button>
+              <button class="btn sm" onclick="generateReport('${tid}','${state.cycleFilter || 'Todos'}')">↗ Compartir reporte</button>
             </div>
             ${renderParticipationPanel(tid, state.cycleFilter)}
             <canvas id="radar-${tid}" class="radar-canvas no-print"></canvas>
             ${(() => {
               const gaps = detectRoleGaps(tid, state.cycleFilter);
-              const gapMap = new Map(gaps.map(g => [g.dimKey, g]));
-              return DIMS.map(d => {
+              const gapMap = new Map(gaps.map((g) => [g.dimKey, g]));
+              return DIMS.map((d) => {
                 const dp = ds.avgDims[d.key];
                 const disp = ds.dispersion && ds.dispersion[d.key];
-                const vsG  = globalAvgs ? dp.pct - globalAvgs[d.key] : null;
-                const vsBadge = vsG !== null
-                  ? `<span class="dim-vs-avg ${vsG >= 0 ? 'dim-vs-avg-pos' : 'dim-vs-avg-neg'}">${vsG >= 0 ? '+' : ''}${vsG}% vs. media</span>`
-                  : '';
+                const vsG = globalAvgs ? dp.pct - globalAvgs[d.key] : null;
+                const vsBadge =
+                  vsG !== null
+                    ? `<span class="dim-vs-avg ${vsG >= 0 ? 'dim-vs-avg-pos' : 'dim-vs-avg-neg'}">${vsG >= 0 ? '+' : ''}${vsG}% vs. media</span>`
+                    : '';
                 const gap = gapMap.get(d.key);
                 const gapBadge = gap
                   ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px;
@@ -1362,45 +1550,58 @@ function renderAnalysis() {
                   <div class="dim-bar-wrap">
                     <div class="dim-bar" style="width:${dp.pct}%;background:${d.color}"></div>
                   </div>
-                  ${disp ? `<div style="display:flex;justify-content:space-between;margin-top:2px;">
+                  ${
+                    disp
+                      ? `<div style="display:flex;justify-content:space-between;margin-top:2px;">
                     <span style="font-size:10px;color:var(--ink-faint);">Rango: ${disp.min}%–${disp.max}%</span>
                     <span style="font-size:10px;color:${disp.align.color};">±${disp.sd}%</span>
-                  </div>` : ''}
+                  </div>`
+                      : ''
+                  }
                 </div>`;
               }).join('');
             })()}
-            ${state.aiEnabled ? (() => {
-              const cf          = state.cycleFilter || 'Todos';
-              const aiKey       = `${tid}__${cf}`;
-              const aiEntry     = state.aiAnalysis[aiKey];
-              const aiCount     = teamResps.filter(r => cf === 'Todos' || r.fields.Ciclo === cf).length;
-              const canAnalyze  = aiCount >= 3;
-              const isLoading   = !!(aiEntry && aiEntry.loading);
-              const hasData     = !!(aiEntry && aiEntry.data);
-              const hasError    = !!(aiEntry && aiEntry.error);
-              const btnDisabled = !canAnalyze || isLoading;
-              const btnLabel    = isLoading ? 'Analizando…'
-                : hasError   ? 'Reintentar'
-                : hasData && aiEntry.newResponsesCount > 0 ? `Actualizar (${aiEntry.newResponsesCount} nueva${aiEntry.newResponsesCount !== 1 ? 's' : ''})`
-                : hasData    ? 'Regenerar'
-                : 'Analizar con IA';
-              const ctxVal = (state.aiContext[aiKey] !== undefined
-                ? state.aiContext[aiKey]
-                : (aiEntry && aiEntry.data && aiEntry.data.contextoCoach) || '');
-              const aiBadge = isLoading
-                ? `<span class="collapse-count" style="background:#1a4fd6;color:#fff;">…</span>`
-                : hasData
-                  ? `<span class="collapse-count" style="background:#d4f0e5;color:#0d7a52;">✓</span>`
-                  : hasError
-                    ? `<span class="collapse-count" style="background:#fce8e8;color:#c0282a;">!</span>`
-                    : '';
-              return `
+            ${
+              state.aiEnabled
+                ? (() => {
+                    const cf = state.cycleFilter || 'Todos';
+                    const aiKey = `${tid}__${cf}`;
+                    const aiEntry = state.aiAnalysis[aiKey];
+                    const aiCount = teamResps.filter((r) => cf === 'Todos' || r.fields.Ciclo === cf).length;
+                    const canAnalyze = aiCount >= 3;
+                    const isLoading = !!(aiEntry && aiEntry.loading);
+                    const hasData = !!(aiEntry && aiEntry.data);
+                    const hasError = !!(aiEntry && aiEntry.error);
+                    const btnDisabled = !canAnalyze || isLoading;
+                    const btnLabel = isLoading
+                      ? 'Analizando…'
+                      : hasError
+                        ? 'Reintentar'
+                        : hasData && aiEntry.newResponsesCount > 0
+                          ? `Actualizar (${aiEntry.newResponsesCount} nueva${aiEntry.newResponsesCount !== 1 ? 's' : ''})`
+                          : hasData
+                            ? 'Regenerar'
+                            : 'Analizar con IA';
+                    const ctxVal =
+                      state.aiContext[aiKey] !== undefined
+                        ? state.aiContext[aiKey]
+                        : (aiEntry && aiEntry.data && aiEntry.data.contextoCoach) || '';
+                    const aiBadge = isLoading
+                      ? `<span class="collapse-count" style="background:#1a4fd6;color:#fff;">…</span>`
+                      : hasData
+                        ? `<span class="collapse-count" style="background:#d4f0e5;color:#0d7a52;">✓</span>`
+                        : hasError
+                          ? `<span class="collapse-count" style="background:#fce8e8;color:#c0282a;">!</span>`
+                          : '';
+                    return `
               <div class="collapse-section no-print">
                 <button class="collapse-toggle" onclick="toggleTeamAI('${tid}')" style="color:#1a4fd6;">
                   <span class="collapse-toggle-label" style="color:#1a4fd6;">Análisis con IA ${aiBadge}</span>
                   <span class="collapse-chevron">${aiExpanded ? '▲' : '▼'}</span>
                 </button>
-              ${aiExpanded ? `<div class="collapse-body">
+              ${
+                aiExpanded
+                  ? `<div class="collapse-body">
               <div style="border:1.5px solid #dce6ff;border-radius:var(--radius-sm);overflow:hidden;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f0f5ff;">
                   <span style="font-size:12px;font-weight:700;color:#1a4fd6;">Analizar con IA</span>
@@ -1408,10 +1609,10 @@ function renderAnalysis() {
                     onclick="${!btnDisabled ? `callAnalyzeTeamWithClaude('${tid}')` : ''}"
                     ${btnDisabled ? 'disabled' : ''}
                     ${!canAnalyze ? 'title="Se necesitan al menos 3 respuestas"' : ''}
-                    style="font-size:11px;padding:4px 14px;border-radius:99px;cursor:${btnDisabled?'not-allowed':'pointer'};
-                      border:1.5px solid ${btnDisabled?'#e5e7eb':'#1a4fd6'};
-                      color:${btnDisabled?'#9ca3af':'#fff'};
-                      background:${btnDisabled?'transparent':'#1a4fd6'};">
+                    style="font-size:11px;padding:4px 14px;border-radius:99px;cursor:${btnDisabled ? 'not-allowed' : 'pointer'};
+                      border:1.5px solid ${btnDisabled ? '#e5e7eb' : '#1a4fd6'};
+                      color:${btnDisabled ? '#9ca3af' : '#fff'};
+                      background:${btnDisabled ? 'transparent' : '#1a4fd6'};">
                     ${btnLabel}
                   </button>
                 </div>
@@ -1432,49 +1633,62 @@ function renderAnalysis() {
                     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                       <label style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1.5px solid #dce6ff;background:white;font-size:12px;color:var(--ink-muted);cursor:pointer;font-family:inherit;">
                         📎 Adjuntar .docx
-                        <input id="docx-input-${aiKey.replace(/[^a-zA-Z0-9]/g,'_')}"
+                        <input id="docx-input-${aiKey.replace(/[^a-zA-Z0-9]/g, '_')}"
                           type="file" accept=".docx"
                           style="display:none"
                           onchange="handleDocxUpload('${aiKey}', this)"/>
                       </label>
-                      ${state.aiDocContext[aiKey]
-                        ? `<button onclick="removeDocxUpload('${aiKey}')"
+                      ${
+                        state.aiDocContext[aiKey]
+                          ? `<button onclick="removeDocxUpload('${aiKey}')"
                             style="font-size:11px;padding:4px 10px;border-radius:6px;border:1.5px solid #fce8e8;background:#fce8e8;color:#c0282a;cursor:pointer;font-family:inherit;">
                             ✕ Quitar
-                          </button>` : ''}
+                          </button>`
+                          : ''
+                      }
                     </div>
                     <p style="font-size:11px;color:var(--ink-faint);margin:5px 0 0;line-height:1.5;">
                       Máx. ~5 páginas / 2.500 palabras. El archivo no se almacena — su contenido se incluye solo en el prompt de análisis.
                     </p>
-                    <div id="docx-status-${aiKey.replace(/[^a-zA-Z0-9]/g,'_')}" style="font-size:12px;margin-top:4px;min-height:16px;">
-                      ${state.aiDocContext[aiKey]
-                        ? `<span style="color:#0d7a52;">✓ ${e(state.aiDocContext[aiKey].name)} · ${state.aiDocContext[aiKey].chars.toLocaleString()} caracteres${state.aiDocContext[aiKey].truncated ? ' <span style="color:#a05c0a;">(truncado al límite)</span>' : ''}</span>`
-                        : ''}
+                    <div id="docx-status-${aiKey.replace(/[^a-zA-Z0-9]/g, '_')}" style="font-size:12px;margin-top:4px;min-height:16px;">
+                      ${
+                        state.aiDocContext[aiKey]
+                          ? `<span style="color:#0d7a52;">✓ ${e(state.aiDocContext[aiKey].name)} · ${state.aiDocContext[aiKey].chars.toLocaleString()} caracteres${state.aiDocContext[aiKey].truncated ? ' <span style="color:#a05c0a;">(truncado al límite)</span>' : ''}</span>`
+                          : ''
+                      }
                     </div>
                   </div>
                   ${(() => {
                     const imgs = state.aiImages[aiKey] || [];
-                    const safeAiKey = aiKey.replace(/[^a-zA-Z0-9]/g,'_');
-                    const thumbs = imgs.map((img, i) => `
+                    const safeAiKey = aiKey.replace(/[^a-zA-Z0-9]/g, '_');
+                    const thumbs = imgs
+                      .map(
+                        (img, i) => `
                       <div style="display:inline-flex;align-items:center;gap:4px;padding:3px 6px 3px 8px;background:#f0f4ff;border:1px solid #dce6ff;border-radius:6px;font-size:11px;color:var(--ink-muted);">
                         🖼 ${e(img.name)}
                         <button onclick="removeImage('${aiKey}',${i})"
                           style="background:none;border:none;cursor:pointer;color:#c0282a;font-size:13px;line-height:1;padding:0 2px;font-family:inherit;">✕</button>
-                      </div>`).join('');
+                      </div>`
+                      )
+                      .join('');
                     return `
                   <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #dce6ff;">
                     <label style="font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:4px;">
                       Imágenes (gráficos) <span style="font-weight:400;text-transform:none;letter-spacing:0">(opcional · máx. ${IMG_MAX_COUNT} · PNG/JPG)</span>
                     </label>
                     ${imgs.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${thumbs}</div>` : ''}
-                    ${imgs.length < IMG_MAX_COUNT ? `
+                    ${
+                      imgs.length < IMG_MAX_COUNT
+                        ? `
                     <label style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;border:1.5px solid #dce6ff;background:white;font-size:12px;color:var(--ink-muted);cursor:pointer;font-family:inherit;">
                       🖼 Añadir imagen
                       <input id="img-input-${safeAiKey}"
                         type="file" accept=".png,.jpg,.jpeg" multiple
                         style="display:none"
                         onchange="handleImageUpload('${aiKey}', this)"/>
-                    </label>` : ''}
+                    </label>`
+                        : ''
+                    }
                     <p style="font-size:11px;color:var(--ink-faint);margin:5px 0 0;line-height:1.5;">
                       Sube capturas de gráficos o tablas del equipo. Claude las analizará con visión. Máx. 2 MB c/u. No se almacenan.
                     </p>
@@ -1482,14 +1696,22 @@ function renderAnalysis() {
                   </div>`;
                   })()}
                 </div>
-                ${(hasData || isLoading || hasError) ? `
+                ${
+                  hasData || isLoading || hasError
+                    ? `
                 <div style="padding:12px 14px;border-top:1px solid #dce6ff;">
                   ${renderAIPanel(tid)}
-                </div>` : ''}
+                </div>`
+                    : ''
+                }
               </div>
-              </div>` : ''}
+              </div>`
+                  : ''
+              }
               </div>`;
-            })() : ''}
+                  })()
+                : ''
+            }
             <div class="collapse-section">
               <button class="collapse-toggle" onclick="toggleTeamRecs('${tid}')">
                 <span class="collapse-toggle-label">
@@ -1510,7 +1732,9 @@ function renderAnalysis() {
               </button>
               ${detailExpanded ? `<div class="collapse-body">${renderQuestionDetail(tid, selectedRole)}</div>` : ''}
             </div>
-            ${commentCount > 0 ? `
+            ${
+              commentCount > 0
+                ? `
             <div class="collapse-section">
               <button class="collapse-toggle" onclick="toggleTeamComments('${tid}')">
                 <span class="collapse-toggle-label">
@@ -1520,7 +1744,9 @@ function renderAnalysis() {
                 <span class="collapse-chevron">${commentsExpanded ? '▲' : '▼'}</span>
               </button>
               ${commentsExpanded ? `<div class="collapse-body">${renderCommentsPanel(tid, state.cycleFilter)}</div>` : ''}
-            </div>` : ''}
+            </div>`
+                : ''
+            }
             <div class="no-print" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
               <div style="font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">
                 Notas del coach · ${noteCicloLabel}
@@ -1531,33 +1757,40 @@ function renderAnalysis() {
                 style="width:100%;box-sizing:border-box;min-height:72px;font-size:12px;font-family:inherit;color:var(--ink);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;resize:vertical;background:#f9fafb;line-height:1.5;">${escapedNote}</textarea>
             </div>
           </div>`;
-      }).join('')}
+        })
+        .join('')}
     </div>`;
 
-  const TEAM_PALETTE = ['#1a4fd6','#0d7a52','#a05c0a','#7c3aed','#c0282a','#0891b2','#d97706','#65a30d'];
-  const cellBg   = p => p >= 80 ? '#d4f0e5' : p >= 60 ? '#fdefd6' : '#fce8e8';
-  const cellClr  = p => p >= 80 ? '#0d7a52' : p >= 60 ? '#a05c0a' : '#c0282a';
+  const TEAM_PALETTE = ['#1a4fd6', '#0d7a52', '#a05c0a', '#7c3aed', '#c0282a', '#0891b2', '#d97706', '#65a30d'];
+  const cellBg = (p) => (p >= 80 ? '#d4f0e5' : p >= 60 ? '#fdefd6' : '#fce8e8');
+  const cellClr = (p) => (p >= 80 ? '#0d7a52' : p >= 60 ? '#a05c0a' : '#c0282a');
 
-  const compareByDim = compData.length >= 2 ? (() => {
-    window._compareData = {
-      teams: compSorted.map((s, i) => ({
-        name:   s.name,
-        values: DIMS.map(d => s.avgDims[d.key].pct),
-        color:  TEAM_PALETTE[i % TEAM_PALETTE.length]
-      }))
-    };
-    return `
+  const compareByDim =
+    compData.length >= 2
+      ? (() => {
+          window._compareData = {
+            teams: compSorted.map((s, i) => ({
+              name: s.name,
+              values: DIMS.map((d) => s.avgDims[d.key].pct),
+              color: TEAM_PALETTE[i % TEAM_PALETTE.length],
+            })),
+          };
+          return `
     <div class="section-card">
       <div class="section-title">Comparativa por dimensión${state.cycleFilter !== 'Todos' ? ' · ' + state.cycleFilter : ''}</div>
       <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;">
         <div class="no-print" style="flex:0 0 auto;width:240px;">
           <canvas id="radar-compare" style="display:block;width:100%;max-height:240px;"></canvas>
           <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px;">
-            ${compSorted.map((s, i) => `
+            ${compSorted
+              .map(
+                (s, i) => `
               <span style="font-size:11px;display:flex;align-items:center;gap:5px;">
                 <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${TEAM_PALETTE[i % TEAM_PALETTE.length]};flex-shrink:0;"></span>
                 ${s.name}
-              </span>`).join('')}
+              </span>`
+              )
+              .join('')}
           </div>
         </div>
         <div style="flex:1;min-width:280px;overflow-x:auto;">
@@ -1570,42 +1803,50 @@ function renderAnalysis() {
               </tr>
             </thead>
             <tbody>
-              ${compSorted.map((s, i) => `
+              ${compSorted
+                .map(
+                  (s, i) => `
                 <tr>
                   <td style="padding:5px 8px 5px 0;font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;">
                     <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${TEAM_PALETTE[i % TEAM_PALETTE.length]};margin-right:5px;vertical-align:middle;"></span>${s.name}
                   </td>
-                  ${DIMS.map(d => {
+                  ${DIMS.map((d) => {
                     const p = s.avgDims[d.key].pct;
                     return `<td style="text-align:center;padding:3px 2px;"><span style="display:inline-block;background:${cellBg(p)};color:${cellClr(p)};font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;min-width:38px;">${p}%</span></td>`;
                   }).join('')}
                   <td style="text-align:center;padding:3px 2px;"><span style="display:inline-block;background:${cellBg(s.avgTotal)};color:${cellClr(s.avgTotal)};font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;min-width:38px;">${s.avgTotal}%</span></td>
-                </tr>`).join('')}
+                </tr>`
+                )
+                .join('')}
             </tbody>
           </table>
         </div>
       </div>
     </div>`;
-  })() : '';
+        })()
+      : '';
 
   // Tendencia org por ciclo (≥2 ciclos con datos, ≥2 equipos en total)
   const orgTrendPoints = calcOrgTrend();
-  const orgTrendTeams  = new Set(state.responses.map(r => (r.fields.Equipo||[])[0]).filter(Boolean)).size;
-  const orgTrendChart  = orgTrendPoints.length >= 2 && orgTrendTeams >= 2 ? (() => {
-    window._orgTrendData = {
-      labels: orgTrendPoints.map(p => p.ciclo),
-      values: orgTrendPoints.map(p => p.avg),
-      points: orgTrendPoints
-    };
-    const first = orgTrendPoints[0].avg;
-    const last  = orgTrendPoints[orgTrendPoints.length - 1].avg;
-    const delta = last - first;
-    const trendBadge = delta > 0
-      ? `<span style="font-size:11px;background:#d4f0e5;color:#0d7a52;padding:2px 8px;border-radius:99px;font-weight:700;">↗ +${delta}pp</span>`
-      : delta < 0
-        ? `<span style="font-size:11px;background:#fce8e8;color:#c0282a;padding:2px 8px;border-radius:99px;font-weight:700;">↘ ${delta}pp</span>`
-        : `<span style="font-size:11px;background:#f3f4f6;color:var(--ink-faint);padding:2px 8px;border-radius:99px;">→ Sin cambio</span>`;
-    return `
+  const orgTrendTeams = new Set(state.responses.map((r) => (r.fields.Equipo || [])[0]).filter(Boolean)).size;
+  const orgTrendChart =
+    orgTrendPoints.length >= 2 && orgTrendTeams >= 2
+      ? (() => {
+          window._orgTrendData = {
+            labels: orgTrendPoints.map((p) => p.ciclo),
+            values: orgTrendPoints.map((p) => p.avg),
+            points: orgTrendPoints,
+          };
+          const first = orgTrendPoints[0].avg;
+          const last = orgTrendPoints[orgTrendPoints.length - 1].avg;
+          const delta = last - first;
+          const trendBadge =
+            delta > 0
+              ? `<span style="font-size:11px;background:#d4f0e5;color:#0d7a52;padding:2px 8px;border-radius:99px;font-weight:700;">↗ +${delta}pp</span>`
+              : delta < 0
+                ? `<span style="font-size:11px;background:#fce8e8;color:#c0282a;padding:2px 8px;border-radius:99px;font-weight:700;">↘ ${delta}pp</span>`
+                : `<span style="font-size:11px;background:#f3f4f6;color:var(--ink-faint);padding:2px 8px;border-radius:99px;">→ Sin cambio</span>`;
+          return `
       <div class="section-card no-print">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
           <div class="section-title" style="margin-bottom:0;">Tendencia organizacional por ciclo</div>
@@ -1614,7 +1855,8 @@ function renderAnalysis() {
         <div style="height:180px;"><canvas id="org-trend-canvas"></canvas></div>
         <p style="font-size:11px;color:var(--ink-faint);margin-top:8px;text-align:right;">${orgTrendTeams} equipos · ${orgTrendPoints.length} ciclos</p>
       </div>`;
-  })() : '';
+        })()
+      : '';
 
   return stats + exportRow + cyclePills + otroToggle + roleCard + comparison + compareByDim + orgTrendChart + cards;
 }
@@ -1623,18 +1865,21 @@ function renderAnalysis() {
 function renderEvolution() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
-  const withData = Object.values(state.teamStats).filter(s => s.count > 0);
+  const withData = Object.values(state.teamStats).filter((s) => s.count > 0);
   if (!withData.length) return `<div class="empty-state">Aún no hay respuestas para mostrar evolución.</div>`;
 
-  const rolePills = ['Todos', 'Product Owner', 'Dev Team', 'Scrum Master'].map(r => `
+  const rolePills = ['Todos', 'Product Owner', 'Dev Team', 'Scrum Master']
+    .map(
+      (r) => `
     <button class="role-pill ${r === state.evolRole ? 'active' : ''}" onclick="setState({evolRole:'${r}'})">${r}</button>`
-  ).join('');
+    )
+    .join('');
 
   const selectors = `
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px;">
       <select class="field-input" style="max-width:220px;" onchange="setState({evolTeamId:this.value})">
         <option value="">— Seleccionar equipo —</option>
-        ${withData.map(s => `<option value="${s.id}" ${s.id === state.evolTeamId ? 'selected' : ''}>${s.name}</option>`).join('')}
+        ${withData.map((s) => `<option value="${s.id}" ${s.id === state.evolTeamId ? 'selected' : ''}>${s.name}</option>`).join('')}
       </select>
       ${rolePills}
     </div>`;
@@ -1649,7 +1894,7 @@ function renderEvolution() {
   }
 
   const data = getEvolutionData(state.evolTeamId, state.evolRole);
-  const teamName = withData.find(s => s.id === state.evolTeamId)?.name || '';
+  const teamName = withData.find((s) => s.id === state.evolTeamId)?.name || '';
 
   if (!data.length) {
     return `
@@ -1670,12 +1915,12 @@ function renderEvolution() {
   let trendCard = '';
   if (data.length >= 3) {
     window._evolTrendData = {
-      labels:   data.map(d => d.cycleName),
-      datasets: DIMS.map(d => ({
-        label:  d.label,
-        color:  d.color,
-        values: data.map(cycle => cycle.avgDims[d.key].pct),
-      }))
+      labels: data.map((d) => d.cycleName),
+      datasets: DIMS.map((d) => ({
+        label: d.label,
+        color: d.color,
+        values: data.map((cycle) => cycle.avgDims[d.key].pct),
+      })),
     };
     trendCard = `
       <div class="section-card" style="margin-top:0;margin-bottom:0;">
@@ -1691,15 +1936,17 @@ function renderEvolution() {
 
   const timeline = `
     <div class="evo-timeline">
-      ${data.map((d, i) => {
-        const prev = i > 0 ? data[i - 1] : null;
-        return `
+      ${data
+        .map((d, i) => {
+          const prev = i > 0 ? data[i - 1] : null;
+          return `
           <div class="evo-cycle-card" style="background:${d.level.bg};">
             <div class="evo-cycle-name" style="color:${d.level.color};">${d.cycleName}</div>
             <div class="evo-cycle-score" style="color:${d.level.color};">${d.avgTotal}%${prev ? delta(d.avgTotal, prev.avgTotal) : ''}</div>
             <div class="evo-cycle-meta" style="color:${d.level.color};">${d.level.label} · ${d.count} resp.</div>
           </div>`;
-      }).join('')}
+        })
+        .join('')}
     </div>`;
 
   const dimTable = `
@@ -1708,39 +1955,44 @@ function renderEvolution() {
         <thead>
           <tr>
             <th class="evo-th">Dimensión</th>
-            ${data.map(d => `<th class="evo-th-c">${d.cycleName}</th>`).join('')}
+            ${data.map((d) => `<th class="evo-th-c">${d.cycleName}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
-          ${DIMS.map(dim => `
+          ${DIMS.map(
+            (dim) => `
             <tr>
               <td class="evo-td-dim">
                 <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${dim.color};margin-right:6px;vertical-align:middle;"></span>${dim.label}
               </td>
-              ${data.map((d, i) => {
-                const pct = d.avgDims[dim.key].pct;
-                const prev = i > 0 ? data[i - 1].avgDims[dim.key].pct : null;
-                return `<td class="evo-td">
+              ${data
+                .map((d, i) => {
+                  const pct = d.avgDims[dim.key].pct;
+                  const prev = i > 0 ? data[i - 1].avgDims[dim.key].pct : null;
+                  return `<td class="evo-td">
                   <div class="evo-bar-wrap"><div class="evo-bar" style="width:${pct}%;background:${dim.color};"></div></div>
                   <div style="font-weight:600;color:var(--ink);">${pct}%${prev !== null ? delta(pct, prev) : ''}</div>
                 </td>`;
-              }).join('')}
-            </tr>`).join('')}
+                })
+                .join('')}
+            </tr>`
+          ).join('')}
         </tbody>
       </table>
     </div>`;
 
   const latest = data[data.length - 1];
   const prevCycle = data.length > 1 ? data[data.length - 2] : null;
-  const evolTeamResps = state.responses.filter(r => (r.fields.Equipo || []).includes(state.evolTeamId));
+  const evolTeamResps = state.responses.filter((r) => (r.fields.Equipo || []).includes(state.evolTeamId));
   const roleForRec = state.evolRole === 'Todos' ? getMajorityRole(evolTeamResps) : state.evolRole;
 
-  const dimScores = DIMS.map(d => ({
-    ...d, pct: latest.avgDims[d.key].pct,
-    prevPct: prevCycle ? prevCycle.avgDims[d.key].pct : null
+  const dimScores = DIMS.map((d) => ({
+    ...d,
+    pct: latest.avgDims[d.key].pct,
+    prevPct: prevCycle ? prevCycle.avgDims[d.key].pct : null,
   }));
   const evolBelow80 = [...dimScores]
-    .filter(d => d.pct < 80 || (d.prevPct !== null && d.pct < d.prevPct))
+    .filter((d) => d.pct < 80 || (d.prevPct !== null && d.pct < d.prevPct))
     .sort((a, b) => {
       const aR = a.prevPct !== null && a.pct < a.prevPct;
       const bR = b.prevPct !== null && b.pct < b.prevPct;
@@ -1748,30 +2000,36 @@ function renderEvolution() {
       if (!aR && bR) return 1;
       return a.pct - b.pct;
     });
-  const toFix = evolBelow80.length > 0
-    ? evolBelow80
-    : [...dimScores].sort((a, b) => a.pct - b.pct).slice(0, 4);
+  const toFix = evolBelow80.length > 0 ? evolBelow80 : [...dimScores].sort((a, b) => a.pct - b.pct).slice(0, 4);
 
   const recs = toFix.length
-    ? toFix.map(d => {
-        const regressed = d.prevPct !== null && d.pct < d.prevPct;
-        const improved  = d.prevPct !== null && d.pct > d.prevPct && d.pct < 60;
-        const diff      = d.prevPct !== null ? Math.abs(d.pct - d.prevPct) : 0;
-        const itemClass = regressed ? 'rec-item rec-item--urgent' : improved ? 'rec-item rec-item--improving' : 'rec-item';
-        let trendBadge = '';
-        if (regressed) trendBadge = `<div class="rec-trend" style="color:var(--red);">▼ Retroceso −${diff}% vs. ciclo anterior</div>`;
-        else if (improved) trendBadge = `<div class="rec-trend" style="color:#0d7a52;">▲ Mejora +${diff}% vs. ciclo anterior — mantener el foco</div>`;
-        const recKey = 'evol_' + d.key;
-        state.recTexts[recKey] = `${d.label}: ` + getRec(d.key, d.pct, roleForRec);
-        return `<div class="${itemClass}" style="align-items:flex-start;">
-          <div class="rec-dot" style="background:${d.color};flex-shrink:0;margin-top:${regressed||improved?'14px':'5px'}"></div>
+    ? toFix
+        .map((d) => {
+          const regressed = d.prevPct !== null && d.pct < d.prevPct;
+          const improved = d.prevPct !== null && d.pct > d.prevPct && d.pct < 60;
+          const diff = d.prevPct !== null ? Math.abs(d.pct - d.prevPct) : 0;
+          const itemClass = regressed
+            ? 'rec-item rec-item--urgent'
+            : improved
+              ? 'rec-item rec-item--improving'
+              : 'rec-item';
+          let trendBadge = '';
+          if (regressed)
+            trendBadge = `<div class="rec-trend" style="color:var(--red);">▼ Retroceso −${diff}% vs. ciclo anterior</div>`;
+          else if (improved)
+            trendBadge = `<div class="rec-trend" style="color:#0d7a52;">▲ Mejora +${diff}% vs. ciclo anterior — mantener el foco</div>`;
+          const recKey = 'evol_' + d.key;
+          state.recTexts[recKey] = `${d.label}: ` + getRec(d.key, d.pct, roleForRec);
+          return `<div class="${itemClass}" style="align-items:flex-start;">
+          <div class="rec-dot" style="background:${d.color};flex-shrink:0;margin-top:${regressed || improved ? '14px' : '5px'}"></div>
           <div class="rec-text" style="flex:1;">
             ${trendBadge}
             <strong>${d.label}:</strong> ${getRec(d.key, d.pct, roleForRec)}
           </div>
           <button class="btn-plan no-print" onclick="prefillPlan('${state.evolTeamId}','${recKey}','')">+ Plan</button>
         </div>`;
-      }).join('')
+        })
+        .join('')
     : `<div class="rec-item">
          <div class="rec-dot" style="background:#0d7a52"></div>
          <div class="rec-text">Excelente progreso en todas las dimensiones. Mantener el ritmo de mejora continua.</div>
@@ -1779,33 +2037,41 @@ function renderEvolution() {
 
   let qDetailCard = '';
   if (data.length > 1 && latest.avgQuestions && prevCycle && prevCycle.avgQuestions) {
-    const qRows = SECTIONS.flatMap(sec =>
+    const qRows = SECTIONS.flatMap((sec) =>
       sec.questions.map((q, qi) => {
         const key = sec.id + '_' + qi;
-        const latestPct = Math.round((latest.avgQuestions[key] || 0) / 3 * 100);
-        const prevPct   = Math.round((prevCycle.avgQuestions[key] || 0) / 3 * 100);
+        const latestPct = Math.round(((latest.avgQuestions[key] || 0) / 3) * 100);
+        const prevPct = Math.round(((prevCycle.avgQuestions[key] || 0) / 3) * 100);
         return { key, text: q.text, secId: sec.id, latestPct, prevPct, delta: latestPct - prevPct };
       })
     );
-    const dimSections = DIMS.map(d => {
-      const qs = qRows.filter(q => q.secId === d.key);
+    const dimSections = DIMS.map((d) => {
+      const qs = qRows.filter((q) => q.secId === d.key);
       if (!qs.length) return '';
       return `
         <div style="margin-bottom:20px;">
           <div style="font-size:11px;font-weight:600;color:${d.color};text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">
             <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${d.color};margin-right:6px;vertical-align:middle;"></span>${d.label}
           </div>
-          ${qs.map((q, i) => `
+          ${qs
+            .map(
+              (q, i) => `
             <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
-              <div style="font-size:11px;font-weight:600;color:var(--ink-faint);width:22px;flex-shrink:0;">P${i+1}</div>
-              <div style="flex:1;font-size:12px;color:var(--ink-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${q.text}">${q.text.length > 72 ? q.text.slice(0,72)+'…' : q.text}</div>
+              <div style="font-size:11px;font-weight:600;color:var(--ink-faint);width:22px;flex-shrink:0;">P${i + 1}</div>
+              <div style="flex:1;font-size:12px;color:var(--ink-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${q.text}">${q.text.length > 72 ? q.text.slice(0, 72) + '…' : q.text}</div>
               <div style="font-size:12px;font-weight:600;color:var(--ink);flex-shrink:0;min-width:36px;text-align:right;">${q.latestPct}%</div>
               <div style="flex-shrink:0;min-width:54px;text-align:right;">
-                ${q.delta > 0 ? `<span class="delta-up">▲ +${q.delta}%</span>`
-                : q.delta < 0 ? `<span class="delta-dn">▼ ${q.delta}%</span>`
-                : `<span class="delta-eq">→ 0%</span>`}
+                ${
+                  q.delta > 0
+                    ? `<span class="delta-up">▲ +${q.delta}%</span>`
+                    : q.delta < 0
+                      ? `<span class="delta-dn">▼ ${q.delta}%</span>`
+                      : `<span class="delta-eq">→ 0%</span>`
+                }
               </div>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>`;
     }).join('');
     qDetailCard = `
@@ -1818,27 +2084,32 @@ function renderEvolution() {
 
   // Acciones del Plan de Acción vinculadas a dimensiones para este equipo
   const STATUS_MAP = {
-    'pendiente':  { label:'Pendiente',  color:'#a05c0a', bg:'#fdefd6' },
-    'en-curso':   { label:'En curso',   color:'#1a4fd6', bg:'#dce6ff' },
-    'completado': { label:'Completado', color:'#0d7a52', bg:'#d4f0e5' },
+    pendiente: { label: 'Pendiente', color: '#a05c0a', bg: '#fdefd6' },
+    'en-curso': { label: 'En curso', color: '#1a4fd6', bg: '#dce6ff' },
+    completado: { label: 'Completado', color: '#0d7a52', bg: '#d4f0e5' },
   };
-  const teamPlans = state.plans.filter(p => p.equipoId === state.evolTeamId && p.dimension);
-  const linkedPlansSection = teamPlans.length && data.length > 1 ? `
+  const teamPlans = state.plans.filter((p) => p.equipoId === state.evolTeamId && p.dimension);
+  const linkedPlansSection =
+    teamPlans.length && data.length > 1
+      ? `
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
       <div style="font-size:12px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:14px;">
         Acciones vinculadas a dimensiones
       </div>
-      ${DIMS.map(dim => {
-        const dimPlans = teamPlans.filter(p => p.dimension === dim.key);
+      ${DIMS.map((dim) => {
+        const dimPlans = teamPlans.filter((p) => p.dimension === dim.key);
         if (!dimPlans.length) return '';
         const latestPct = latest.avgDims[dim.key].pct;
-        const prevPct   = prevCycle ? prevCycle.avgDims[dim.key].pct : null;
+        const prevPct = prevCycle ? prevCycle.avgDims[dim.key].pct : null;
         const diff = prevPct !== null ? latestPct - prevPct : null;
-        const deltaChip = diff !== null
-          ? (diff > 0 ? `<span class="delta-up">▲ +${diff}%</span>`
-            : diff < 0 ? `<span class="delta-dn">▼ ${diff}%</span>`
-            : `<span class="delta-eq">→ 0%</span>`)
-          : '';
+        const deltaChip =
+          diff !== null
+            ? diff > 0
+              ? `<span class="delta-up">▲ +${diff}%</span>`
+              : diff < 0
+                ? `<span class="delta-dn">▼ ${diff}%</span>`
+                : `<span class="delta-eq">→ 0%</span>`
+            : '';
         return `
           <div style="margin-bottom:16px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -1846,9 +2117,10 @@ function renderEvolution() {
               <span style="font-size:12px;font-weight:600;color:${dim.color};">${dim.label}</span>
               ${deltaChip}
             </div>
-            ${dimPlans.map(p => {
-              const st = STATUS_MAP[p.estado] || { label: p.estado, color:'#374151', bg:'#f3f4f6' };
-              return `
+            ${dimPlans
+              .map((p) => {
+                const st = STATUS_MAP[p.estado] || { label: p.estado, color: '#374151', bg: '#f3f4f6' };
+                return `
                 <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;
                   background:var(--surface);border:1px solid var(--border);
                   border-radius:var(--radius-sm);margin-bottom:6px;">
@@ -1857,10 +2129,14 @@ function renderEvolution() {
                   <span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
                     background:${st.bg};color:${st.color};flex-shrink:0;">${st.label}</span>
                 </div>`;
-            }).join('')}
+              })
+              .join('')}
           </div>`;
-      }).filter(Boolean).join('')}
-    </div>` : '';
+      })
+        .filter(Boolean)
+        .join('')}
+    </div>`
+      : '';
 
   return `
     <div class="section-card">
@@ -1871,7 +2147,7 @@ function renderEvolution() {
       ${data.length > 1 ? dimTable : ''}
       ${linkedPlansSection}
       <div class="recs-section" style="margin-top:16px;">
-        <div class="recs-label">Recomendaciones · ${data[data.length-1].cycleName}${state.evolRole !== 'Todos' ? ' · ' + state.evolRole : ''}</div>
+        <div class="recs-label">Recomendaciones · ${data[data.length - 1].cycleName}${state.evolRole !== 'Todos' ? ' · ' + state.evolRole : ''}</div>
         ${recs}
       </div>
     </div>
@@ -1893,12 +2169,14 @@ function renderTeams() {
         </div>
         <button class="btn primary" onclick="addCycle()" style="flex-shrink:0;margin-bottom:1px;">Crear</button>
       </div>
-      ${state.cycles.length === 0
-        ? `<div style="font-size:13px;color:var(--ink-faint);padding:8px 0;">No hay ciclos creados aún.</div>`
-        : `<div class="team-list">
-            ${state.cycles.map(c => {
-              const esc = c.name.replace(/'/g, "\\'");
-              return `<div class="cycle-row">
+      ${
+        state.cycles.length === 0
+          ? `<div style="font-size:13px;color:var(--ink-faint);padding:8px 0;">No hay ciclos creados aún.</div>`
+          : `<div class="team-list">
+            ${state.cycles
+              .map((c) => {
+                const esc = c.name.replace(/'/g, "\\'");
+                return `<div class="cycle-row">
                 <div class="cycle-row-name">${c.name}</div>
                 <span class="${c.active ? 'badge-active' : 'badge-inactive'}">${c.active ? 'Activo' : 'Cerrado'}</span>
                 <div style="display:flex;gap:6px;">
@@ -1908,8 +2186,10 @@ function renderTeams() {
                   <button class="btn sm danger" onclick="deleteCycle('${c.id}','${esc}')">✕</button>
                 </div>
               </div>`;
-            }).join('')}
-          </div>`}
+              })
+              .join('')}
+          </div>`
+      }
       <p style="font-size:12px;color:var(--ink-faint);margin-top:12px;line-height:1.5;">Solo un ciclo puede estar activo a la vez. Las nuevas respuestas del assessment se asignan automáticamente al ciclo activo.</p>
     </div>`;
 
@@ -1932,28 +2212,29 @@ function renderTeams() {
     : state.teams.length === 0
       ? `<div class="empty-state">No hay equipos aún. Agrega el primero.</div>`
       : `<div class="team-list">
-          ${state.teams.map(t => {
-            const count = state.teamStats[t.id] ? state.teamStats[t.id].count : 0;
-            const esc   = t.name.replace(/'/g, "\\'");
-            const ownerUser = state.currentRole === 'super_admin' && t.ownerId
-              ? state.users.find(u => u.id === t.ownerId) : null;
-            const ownerLabel = ownerUser
-              ? `<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px;">${ownerUser.nombre || ownerUser.email}</span>`
-              : '';
-            const hasPortal = !!(state.portals && state.portals[t.id]);
-            const portalBtn = hasPortal
-              ? `<button class="btn sm" onclick="showExistingPortal('${t.id}','${esc}')">Portal ↗</button>`
-              : `<button class="btn sm" onclick="createPortal('${t.id}')">+ Portal</button>`;
-            return `<div class="team-row">
+          ${state.teams
+            .map((t) => {
+              const count = state.teamStats[t.id] ? state.teamStats[t.id].count : 0;
+              const esc = t.name.replace(/'/g, "\\'");
+              const ownerUser =
+                state.currentRole === 'super_admin' && t.ownerId ? state.users.find((u) => u.id === t.ownerId) : null;
+              const ownerLabel = ownerUser
+                ? `<span style="font-size:10px;background:var(--accent-light);color:var(--accent);padding:1px 7px;border-radius:99px;margin-left:6px;">${ownerUser.nombre || ownerUser.email}</span>`
+                : '';
+              const hasPortal = !!(state.portals && state.portals[t.id]);
+              const portalBtn = hasPortal
+                ? `<button class="btn sm" onclick="showExistingPortal('${t.id}','${esc}')">Portal ↗</button>`
+                : `<button class="btn sm" onclick="createPortal('${t.id}')">+ Portal</button>`;
+              return `<div class="team-row">
               <div class="team-row-name">${t.name}${ownerLabel}</div>
               <span class="team-count-badge">${count} respuesta${count !== 1 ? 's' : ''}</span>
               <span class="${t.active ? 'badge-on' : 'badge-off'}">${t.active ? 'Activo' : 'Inactivo'}</span>
               <select style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;color:${t.category ? 'var(--ink)' : 'var(--ink-faint)'};background:#fff;cursor:pointer;flex-shrink:0;"
                 onchange="saveTeamCategory('${t.id}',this.value)" title="Categoría del equipo para benchmark segmentado">
                 <option value="">Categoría…</option>
-                ${['Software','Conocimiento','Operaciones','Otro'].map(cat =>
-                  `<option value="${cat}" ${t.category===cat?'selected':''}>${cat}</option>`
-                ).join('')}
+                ${['Software', 'Conocimiento', 'Operaciones', 'Otro']
+                  .map((cat) => `<option value="${cat}" ${t.category === cat ? 'selected' : ''}>${cat}</option>`)
+                  .join('')}
               </select>
               <div style="display:flex;gap:6px;">
                 <button class="btn sm" onclick="showQR('${t.id}','${esc}')">QR</button>
@@ -1965,12 +2246,13 @@ function renderTeams() {
                 <button class="btn sm danger" onclick="deleteTeam('${t.id}','${esc}')">✕</button>
               </div>
             </div>`;
-          }).join('')}
+            })
+            .join('')}
         </div>`;
 
-  const marcaEsc      = (state.marca      || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const logoUrlEsc    = (state.logoUrl    || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const colorAcento   = state.colorAcento || '#1a4fd6';
+  const marcaEsc = (state.marca || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const logoUrlEsc = (state.logoUrl || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const colorAcento = state.colorAcento || '#1a4fd6';
   const brandSection = `
     <div class="section-card">
       <div class="section-title">Marca del workspace</div>
@@ -2003,8 +2285,12 @@ function renderTeams() {
       </div>
     </div>`;
 
-  const BRIEFING_DEFAULT = 'Este assessment es anónimo. Los resultados se analizan de forma agregada — nadie podrá identificar tu respuesta individual. El objetivo es identificar juntos dónde podemos mejorar como equipo, no evaluar a personas.';
-  const briefingEscaped = (state.briefingTexto || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const BRIEFING_DEFAULT =
+    'Este assessment es anónimo. Los resultados se analizan de forma agregada — nadie podrá identificar tu respuesta individual. El objetivo es identificar juntos dónde podemos mejorar como equipo, no evaluar a personas.';
+  const briefingEscaped = (state.briefingTexto || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
   const briefingSection = `
     <div class="section-card">
       <div class="section-title">Briefing pre-assessment</div>
@@ -2019,21 +2305,27 @@ function renderTeams() {
     </div>`;
 
   const portalEntries = state.portals ? Object.entries(state.portals) : [];
-  const portalsSection = portalEntries.length ? `
+  const portalsSection = portalEntries.length
+    ? `
     <div class="section-card">
       <div class="section-title">Portales de equipo activos</div>
       <p style="font-size:12px;color:var(--ink-faint);margin-bottom:14px;line-height:1.5;">Links permanentes para que el equipo vea sus resultados, evolución y plan de acción. Sin login ni controles de admin.</p>
       <div class="team-list">
-        ${portalEntries.map(([tid, p]) => {
-          const team = state.teams.find(t => t.id === tid);
-          if (!team) return '';
-          const portalUrl = location.origin + '/equipo.html?t=' + p.token;
-          const escUrl    = portalUrl.replace(/'/g, "\\'");
-          const escName   = team.name.replace(/'/g, "\\'");
-          const updAt = p.updatedAt instanceof Date ? p.updatedAt
-            : (p.updatedAt && p.updatedAt.toDate ? p.updatedAt.toDate() : null);
-          const updStr = updAt ? updAt.toLocaleDateString('es') : '—';
-          return `<div class="team-row">
+        ${portalEntries
+          .map(([tid, p]) => {
+            const team = state.teams.find((t) => t.id === tid);
+            if (!team) return '';
+            const portalUrl = location.origin + '/equipo.html?t=' + p.token;
+            const escUrl = portalUrl.replace(/'/g, "\\'");
+            const escName = team.name.replace(/'/g, "\\'");
+            const updAt =
+              p.updatedAt instanceof Date
+                ? p.updatedAt
+                : p.updatedAt && p.updatedAt.toDate
+                  ? p.updatedAt.toDate()
+                  : null;
+            const updStr = updAt ? updAt.toLocaleDateString('es') : '—';
+            return `<div class="team-row">
             <div class="team-row-name" style="font-size:13px;">${team.name}</div>
             <span style="font-size:11px;color:var(--ink-faint);">Actualizado: ${updStr}</span>
             <div style="display:flex;gap:6px;">
@@ -2042,23 +2334,27 @@ function renderTeams() {
               <button class="btn sm danger" onclick="revokePortal('${tid}','${escName}')">Revocar</button>
             </div>
           </div>`;
-        }).join('')}
+          })
+          .join('')}
       </div>
-    </div>` : '';
+    </div>`
+    : '';
 
   const now = new Date();
-  const reportsSection = state.reports.length ? `
+  const reportsSection = state.reports.length
+    ? `
     <div class="section-card">
       <div class="section-title">Reportes compartidos</div>
       <div class="team-list">
-        ${state.reports.map(r => {
-          const label     = r.equipoNombre + (r.ciclo && r.ciclo !== 'Todos' ? ' · ' + r.ciclo : '');
-          const escLabel  = label.replace(/'/g, "\\'");
-          const reportUrl = location.origin + '/reporte.html?t=' + r.id;
-          const genStr    = r.generatedAt ? r.generatedAt.toLocaleDateString('es') : '—';
-          const expStr    = r.expiresAt   ? r.expiresAt.toLocaleDateString('es')   : '—';
-          const expired   = r.expiresAt && r.expiresAt < now;
-          return `<div class="team-row">
+        ${state.reports
+          .map((r) => {
+            const label = r.equipoNombre + (r.ciclo && r.ciclo !== 'Todos' ? ' · ' + r.ciclo : '');
+            const escLabel = label.replace(/'/g, "\\'");
+            const reportUrl = location.origin + '/reporte.html?t=' + r.id;
+            const genStr = r.generatedAt ? r.generatedAt.toLocaleDateString('es') : '—';
+            const expStr = r.expiresAt ? r.expiresAt.toLocaleDateString('es') : '—';
+            const expired = r.expiresAt && r.expiresAt < now;
+            return `<div class="team-row">
             <div class="team-row-name" style="font-size:13px;">${label}</div>
             <span style="font-size:11px;color:var(--ink-faint);">Generado: ${genStr}</span>
             <span style="font-size:11px;color:${expired ? '#c0282a' : 'var(--ink-faint)'};">${expired ? '✕ Expirado' : 'Expira: ' + expStr}</span>
@@ -2067,36 +2363,55 @@ function renderTeams() {
               <button class="btn sm danger" onclick="revokeReport('${r.id}','${escLabel}')">Revocar</button>
             </div>
           </div>`;
-        }).join('')}
+          })
+          .join('')}
       </div>
-    </div>` : '';
+    </div>`
+    : '';
 
-  return cyclesSection + reportsSection + portalsSection + brandSection + briefingSection + addForm + `
+  return (
+    cyclesSection +
+    reportsSection +
+    portalsSection +
+    brandSection +
+    briefingSection +
+    addForm +
+    `
     <div class="section-card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div class="section-title" style="margin-bottom:0;">Equipos registrados</div>
         <a href="https://console.firebase.google.com/project/agile-assessment-5a117/firestore" target="_blank" class="btn sm">Ver en Firebase ↗</a>
       </div>
       ${list}
-    </div>`;
+    </div>`
+  );
 }
 
 // ── Guía de facilitación ──────────────────────────────────────────
 function showDebriefGuide(tid, cycleFilter) {
   const guide = generateDebriefGuide(tid, cycleFilter);
-  if (!guide) { toast('Sin datos suficientes para generar la guía'); return; }
+  if (!guide) {
+    toast('Sin datos suficientes para generar la guía');
+    return;
+  }
 
   const { teamName, cycleFilter: cf, date, stats, opportunities, celebrations, gaps } = guide;
   const { avgTotal, count, level } = stats;
   const cycleLabel = cf !== 'Todos' ? cf : 'Todos los ciclos';
 
-  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-  const oppsHtml = opportunities.map(op => {
-    const delta = op.prevPct !== null
-      ? (op.pct > op.prevPct ? ` ▲ +${op.pct - op.prevPct}%` : op.pct < op.prevPct ? ` ▼ ${op.pct - op.prevPct}%` : '')
-      : '';
-    return `
+  const oppsHtml = opportunities
+    .map((op) => {
+      const delta =
+        op.prevPct !== null
+          ? op.pct > op.prevPct
+            ? ` ▲ +${op.pct - op.prevPct}%`
+            : op.pct < op.prevPct
+              ? ` ▼ ${op.pct - op.prevPct}%`
+              : ''
+          : '';
+      return `
       <div class="opp" style="border-color:${op.color}30;background:${op.color}06;">
         <div class="opp-header">
           <span class="opp-dot" style="background:${op.color}"></span>
@@ -2104,33 +2419,46 @@ function showDebriefGuide(tid, cycleFilter) {
           <span class="opp-score" style="color:${op.color}">${op.pct}%${delta}</span>
         </div>
         <div class="opp-qs">
-          ${op.questions.map((q, i) => `
+          ${op.questions
+            .map(
+              (q, i) => `
             <div class="opp-q">
-              <span class="opp-q-num">${i+1}.</span>
+              <span class="opp-q-num">${i + 1}.</span>
               <span>${esc(q)}</span>
-            </div>`).join('')}
+            </div>`
+            )
+            .join('')}
         </div>
       </div>`;
-  }).join('');
+    })
+    .join('');
 
   const gapsHtml = gaps.length
-    ? gaps.map(g => `
+    ? gaps
+        .map(
+          (g) => `
         <div class="gap-row">
           <span class="gap-dot" style="background:${g.dimColor}"></span>
           <div>
             <div class="gap-dim" style="color:${g.dimColor}">${esc(g.dimLabel)}</div>
             <div class="gap-meta">${esc(g.roleHigh)}: ${g.pctHigh}% · ${esc(g.roleLow)}: ${g.pctLow}% — diferencia de ${g.diff} puntos</div>
           </div>
-        </div>`).join('')
+        </div>`
+        )
+        .join('')
     : `<p class="no-data">No se detectaron brechas significativas entre roles (umbral: 25 pts).</p>`;
 
   const celebHtml = celebrations.length
-    ? celebrations.map(c => `
+    ? celebrations
+        .map(
+          (c) => `
         <div class="cel-row">
           <span class="cel-dot" style="background:${c.color}"></span>
           <span class="cel-name">${esc(c.label)}</span>
           <span class="cel-delta">▲ +${c.pct - c.prevPct}% vs. ciclo anterior</span>
-        </div>`).join('')
+        </div>`
+        )
+        .join('')
     : `<p class="no-data">Se necesitan al menos 2 ciclos con datos para mostrar puntos de celebración.</p>`;
 
   const html = `<!DOCTYPE html>
@@ -2230,7 +2558,9 @@ function showReportLink(url, teamName, ciclo) {
         <button class="btn" onclick="closeQR()">Cerrar</button>
       </div>
     </div>`;
-  modal.onclick = e => { if (e.target === modal) closeQR(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) closeQR();
+  };
 }
 
 // ── Portal del equipo ─────────────────────────────────────────────
@@ -2254,7 +2584,9 @@ function showPortalLink(url, teamName) {
         <button class="btn" onclick="closeQR()">Cerrar</button>
       </div>
     </div>`;
-  modal.onclick = e => { if (e.target === modal) closeQR(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) closeQR();
+  };
 }
 
 function showExistingPortal(teamId, teamName) {
@@ -2265,8 +2597,8 @@ function showExistingPortal(teamId, teamName) {
 
 // ── Modo facilitación ─────────────────────────────────────────────
 function openFacilitar(tid) {
-  const ciclo = state.cycleFilter && state.cycleFilter !== 'Todos'
-    ? '&ciclo=' + encodeURIComponent(state.cycleFilter) : '';
+  const ciclo =
+    state.cycleFilter && state.cycleFilter !== 'Todos' ? '&ciclo=' + encodeURIComponent(state.cycleFilter) : '';
   window.open('/facilitar?workspaceId=' + state.currentUser.uid + '&equipoId=' + tid + ciclo, '_blank');
 }
 
@@ -2289,11 +2621,16 @@ function showQR(teamId, teamName) {
         <button class="btn" onclick="closeQR()">Cerrar</button>
       </div>
     </div>`;
-  modal.onclick = e => { if (e.target === modal) closeQR(); };
+  modal.onclick = (e) => {
+    if (e.target === modal) closeQR();
+  };
   if (typeof QRCode !== 'undefined') {
     new QRCode(document.getElementById('qr-canvas'), {
-      text: url, width: 180, height: 180,
-      colorDark: '#0f1117', colorLight: '#ffffff'
+      text: url,
+      width: 180,
+      height: 180,
+      colorDark: '#0f1117',
+      colorLight: '#ffffff',
     });
   } else {
     document.getElementById('qr-canvas').innerHTML =
@@ -2312,8 +2649,11 @@ function copyQRUrl(url) {
     navigator.clipboard.writeText(url).then(() => toast('Link copiado'));
   } else {
     const ta = document.createElement('textarea');
-    ta.value = url; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
     toast('Link copiado');
   }
 }
@@ -2323,38 +2663,47 @@ function renderPlan() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
   const STATE = {
-    'pendiente': { label:'Pendiente', color:'#a05c0a', bg:'#fdefd6' },
-    'en-curso':  { label:'En curso',  color:'#1a4fd6', bg:'#dce6ff' },
-    'completado':{ label:'Completado',color:'#0d7a52', bg:'#d4f0e5' }
+    pendiente: { label: 'Pendiente', color: '#a05c0a', bg: '#fdefd6' },
+    'en-curso': { label: 'En curso', color: '#1a4fd6', bg: '#dce6ff' },
+    completado: { label: 'Completado', color: '#0d7a52', bg: '#d4f0e5' },
   };
 
-  const activeTeams = state.teams.filter(t => t.active);
-  const availCycles = state.cycles.map(c => c.name);
+  const activeTeams = state.teams.filter((t) => t.active);
+  const availCycles = state.cycles.map((c) => c.name);
 
   const filtered = state.plans
-    .filter(p => state.planTeamFilter === 'Todos' || p.equipoNombre === state.planTeamFilter)
-    .filter(p => state.planCycleFilter === 'Todos' || p.ciclo === state.planCycleFilter);
+    .filter((p) => state.planTeamFilter === 'Todos' || p.equipoNombre === state.planTeamFilter)
+    .filter((p) => state.planCycleFilter === 'Todos' || p.ciclo === state.planCycleFilter);
 
-  const counts = { pendiente:0, 'en-curso':0, completado:0 };
-  filtered.forEach(p => { if (counts[p.estado] !== undefined) counts[p.estado]++; });
+  const counts = { pendiente: 0, 'en-curso': 0, completado: 0 };
+  filtered.forEach((p) => {
+    if (counts[p.estado] !== undefined) counts[p.estado]++;
+  });
 
-  const teamNames = [...new Set(state.plans.map(p => p.equipoNombre).filter(Boolean))].sort();
-  const teamPills = teamNames.length > 1 ? `
+  const teamNames = [...new Set(state.plans.map((p) => p.equipoNombre).filter(Boolean))].sort();
+  const teamPills =
+    teamNames.length > 1
+      ? `
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
       <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;">Equipo</span>
-      ${['Todos', ...teamNames].map(n => `<button class="role-pill ${n===state.planTeamFilter?'active':''}" onclick="setState({planTeamFilter:'${n.replace(/'/g,"\\'")}'})">${n}</button>`).join('')}
-    </div>` : '';
+      ${['Todos', ...teamNames].map((n) => `<button class="role-pill ${n === state.planTeamFilter ? 'active' : ''}" onclick="setState({planTeamFilter:'${n.replace(/'/g, "\\'")}'})">${n}</button>`).join('')}
+    </div>`
+      : '';
 
-  const cyclePills = availCycles.length ? `
+  const cyclePills = availCycles.length
+    ? `
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <span style="font-size:11px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:0.06em;flex-shrink:0;">Ciclo</span>
-      ${['Todos', ...availCycles].map(c => `<button class="role-pill ${c===state.planCycleFilter?'active':''}" onclick="setState({planCycleFilter:'${c.replace(/'/g,"\\'")}'})">${c}</button>`).join('')}
-    </div>` : '';
+      ${['Todos', ...availCycles].map((c) => `<button class="role-pill ${c === state.planCycleFilter ? 'active' : ''}" onclick="setState({planCycleFilter:'${c.replace(/'/g, "\\'")}'})">${c}</button>`).join('')}
+    </div>`
+    : '';
 
-  const exportBtn = filtered.length ? `
+  const exportBtn = filtered.length
+    ? `
     <div class="no-print" style="margin-bottom:16px;">
       <button class="btn sm" onclick="exportPlanPDF()">↓ Exportar Plan PDF</button>
-    </div>` : '';
+    </div>`
+    : '';
 
   const addForm = `
     <div class="section-card" id="plan-form">
@@ -2364,28 +2713,28 @@ function renderPlan() {
           <label>Equipo</label>
           <select class="field-input" onchange="setState({newPlanTeamId:this.value})">
             <option value="">— Seleccionar equipo —</option>
-            ${activeTeams.map(t => `<option value="${t.id}" ${state.newPlanTeamId===t.id?'selected':''}>${t.name}</option>`).join('')}
+            ${activeTeams.map((t) => `<option value="${t.id}" ${state.newPlanTeamId === t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
           </select>
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Ciclo</label>
           <select class="field-input" onchange="setState({newPlanCiclo:this.value})">
             <option value="">— Ciclo activo —</option>
-            ${state.cycles.map(c => `<option value="${c.name}" ${state.newPlanCiclo===c.name?'selected':''}>${c.name}${c.active?' (activo)':''}</option>`).join('')}
+            ${state.cycles.map((c) => `<option value="${c.name}" ${state.newPlanCiclo === c.name ? 'selected' : ''}>${c.name}${c.active ? ' (activo)' : ''}</option>`).join('')}
           </select>
         </div>
       </div>
       <div class="field-group">
         <label>Iniciativa / Acción</label>
         <input class="field-input" type="text" id="inputNewPlanIniciativa" placeholder="Ej. Definir Definition of Done con el equipo"
-          value="${state.newPlanIniciativa.replace(/"/g,'&quot;')}" oninput="setState({newPlanIniciativa:this.value})"
+          value="${state.newPlanIniciativa.replace(/"/g, '&quot;')}" oninput="setState({newPlanIniciativa:this.value})"
           onkeydown="if(event.key==='Enter')addPlan()"/>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;">
         <div class="field-group" style="margin-bottom:0;">
           <label>Responsable</label>
           <input class="field-input" type="text" id="inputNewPlanResponsable" placeholder="Ej. Scrum Master"
-            value="${state.newPlanResponsable.replace(/"/g,'&quot;')}" oninput="setState({newPlanResponsable:this.value})"/>
+            value="${state.newPlanResponsable.replace(/"/g, '&quot;')}" oninput="setState({newPlanResponsable:this.value})"/>
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Fecha objetivo</label>
@@ -2395,29 +2744,35 @@ function renderPlan() {
           <label>Dimensión <span style="color:var(--ink-faint);font-weight:400">(opcional)</span></label>
           <select class="field-input" onchange="setState({newPlanDimension:this.value})">
             <option value="">— General —</option>
-            ${DIMS.map(d => `<option value="${d.key}" ${state.newPlanDimension===d.key?'selected':''}>${d.label}</option>`).join('')}
+            ${DIMS.map((d) => `<option value="${d.key}" ${state.newPlanDimension === d.key ? 'selected' : ''}>${d.label}</option>`).join('')}
           </select>
         </div>
       </div>
-      <button class="btn primary" onclick="addPlan()" ${(!state.newPlanTeamId||!state.newPlanIniciativa.trim())?'disabled':''}>+ Agregar acción</button>
+      <button class="btn primary" onclick="addPlan()" ${!state.newPlanTeamId || !state.newPlanIniciativa.trim() ? 'disabled' : ''}>+ Agregar acción</button>
     </div>`;
 
   const statsRow = `
     <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
-      ${Object.entries(STATE).map(([k,v]) => `
+      ${Object.entries(STATE)
+        .map(
+          ([k, v]) => `
         <div class="stat-card">
           <div class="stat-num" style="color:${v.color}">${counts[k]}</div>
           <div class="stat-label">${v.label}</div>
-        </div>`).join('')}
+        </div>`
+        )
+        .join('')}
     </div>`;
 
-  const list = filtered.length === 0
-    ? `<div class="empty-state" style="padding:24px 0;">No hay acciones para los filtros seleccionados.</div>`
-    : `<div style="display:flex;flex-direction:column;gap:10px;">
-        ${filtered.map(p => {
-          const sc = STATE[p.estado] || STATE['pendiente'];
-          const otherStates = Object.entries(STATE).filter(([k]) => k !== p.estado);
-          return `
+  const list =
+    filtered.length === 0
+      ? `<div class="empty-state" style="padding:24px 0;">No hay acciones para los filtros seleccionados.</div>`
+      : `<div style="display:flex;flex-direction:column;gap:10px;">
+        ${filtered
+          .map((p) => {
+            const sc = STATE[p.estado] || STATE['pendiente'];
+            const otherStates = Object.entries(STATE).filter(([k]) => k !== p.estado);
+            return `
             <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                 <div style="flex:1;min-width:0;">
@@ -2427,29 +2782,39 @@ function renderPlan() {
                     ${p.responsable ? `<span style="font-size:11px;color:var(--ink-faint);">· ${p.responsable}</span>` : ''}
                     ${p.ciclo ? `<span style="font-size:11px;color:var(--ink-faint);background:var(--surface-2);border:1px solid var(--border);padding:1px 7px;border-radius:99px;">${p.ciclo}</span>` : ''}
                     ${p.fechaObjetivo ? `<span style="font-size:11px;color:var(--ink-faint);">Fecha: ${p.fechaObjetivo}</span>` : ''}
-                    ${(()=>{ const dim = p.dimension ? DIMS.find(d=>d.key===p.dimension) : null; return dim ? `<span class="plan-dim-badge" style="border-color:${dim.color};color:${dim.color};">${dim.label}</span>` : ''; })()}
+                    ${(() => {
+                      const dim = p.dimension ? DIMS.find((d) => d.key === p.dimension) : null;
+                      return dim
+                        ? `<span class="plan-dim-badge" style="border-color:${dim.color};color:${dim.color};">${dim.label}</span>`
+                        : '';
+                    })()}
                   </div>
                 </div>
                 <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
                   <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:${sc.bg};color:${sc.color};">${sc.label}</span>
                   ${p.updatedByTeam ? `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;background:#f0fdf4;color:#0d7a52;border:1px solid #bbf7d0;">Actualizado por equipo</span>` : ''}
                   <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
-                    ${otherStates.map(([k,v]) => `<button class="btn sm" onclick="updatePlanStatus('${p.id}','${k}')" style="padding:3px 8px;font-size:11px;">${v.label}</button>`).join('')}
+                    ${otherStates.map(([k, v]) => `<button class="btn sm" onclick="updatePlanStatus('${p.id}','${k}')" style="padding:3px 8px;font-size:11px;">${v.label}</button>`).join('')}
                     <button class="btn sm danger" onclick="deletePlan('${p.id}')" style="padding:3px 8px;font-size:11px;">✕</button>
                   </div>
                 </div>
               </div>
             </div>`;
-        }).join('')}
+          })
+          .join('')}
       </div>`;
 
-  return addForm + exportBtn + `
+  return (
+    addForm +
+    exportBtn +
+    `
     <div class="section-card">
       <div class="section-title">Acciones en seguimiento</div>
       <div class="no-print">${teamPills}${cyclePills}</div>
       ${statsRow}
       ${list}
-    </div>`;
+    </div>`
+  );
 }
 
 // ── Configuración tab ─────────────────────────────────────────────
@@ -2457,20 +2822,21 @@ function renderConfig() {
   if (state.loading) return `<div class="empty-state">Cargando…</div>`;
 
   const overrides = state.configOverrides || {};
-  const custom    = state.configCustom    || {};
+  const custom = state.configCustom || {};
 
-  const sectionCards = SECTIONS.map(sec => {
-    const activeCount = sec.questions.filter((_, qi) => !((overrides[`${sec.id}_${qi}`] || {}).disabled)).length;
+  const sectionCards = SECTIONS.map((sec) => {
+    const activeCount = sec.questions.filter((_, qi) => !(overrides[`${sec.id}_${qi}`] || {}).disabled).length;
 
-    const qRows = sec.questions.map((q, qi) => {
-      const qKey      = `${sec.id}_${qi}`;
-      const ov        = overrides[qKey] || {};
-      const isDisabled = !!ov.disabled;
-      const hasCustom  = ov.texto && ov.texto !== q.text;
-      const displayTxt = ov.texto || q.text;
+    const qRows = sec.questions
+      .map((q, qi) => {
+        const qKey = `${sec.id}_${qi}`;
+        const ov = overrides[qKey] || {};
+        const isDisabled = !!ov.disabled;
+        const hasCustom = ov.texto && ov.texto !== q.text;
+        const displayTxt = ov.texto || q.text;
 
-      return `
-        <div style="padding:14px 0;border-bottom:1px solid var(--border);${isDisabled?'opacity:0.5;':''}">
+        return `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);${isDisabled ? 'opacity:0.5;' : ''}">
           <div style="display:flex;align-items:flex-start;gap:10px;">
             <button onclick="toggleQuestionDisabled('${qKey}')"
               title="${isDisabled ? 'Activar' : 'Desactivar'}"
@@ -2481,26 +2847,33 @@ function renderConfig() {
               ${isDisabled ? 'Desactivada' : 'Activa'}
             </button>
             <div style="flex:1;min-width:0;">
-              <div style="font-size:10px;font-weight:600;color:var(--ink-faint);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">P${qi+1}</div>
+              <div style="font-size:10px;font-weight:600;color:var(--ink-faint);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px;">P${qi + 1}</div>
               <textarea class="field-input" rows="2"
                 style="font-size:13px;resize:vertical;min-height:52px;"
                 ${isDisabled ? 'disabled' : ''}
                 oninput="saveQuestionText('${qKey}',this.value)"
               >${e(displayTxt)}</textarea>
-              ${hasCustom ? `<button onclick="restoreQuestionText('${qKey}')"
+              ${
+                hasCustom
+                  ? `<button onclick="restoreQuestionText('${qKey}')"
                 style="font-size:11px;color:var(--ink-faint);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;margin-top:2px;">
                 Restaurar texto original
-              </button>` : ''}
+              </button>`
+                  : ''
+              }
             </div>
           </div>
         </div>`;
-    }).join('');
+      })
+      .join('');
 
     const cqs = custom[sec.id] || [];
-    const cqRows = cqs.map((cq, cqi) => `
+    const cqRows = cqs
+      .map(
+        (cq, cqi) => `
       <div style="background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:10px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <span style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;">Pregunta personalizada ${cqi+1}</span>
+          <span style="font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:0.06em;">Pregunta personalizada ${cqi + 1}</span>
           <button onclick="removeCustomQuestion('${sec.id}',${cqi})"
             style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-faint);padding:0;line-height:1;">✕</button>
         </div>
@@ -2509,12 +2882,18 @@ function renderConfig() {
           oninput="saveCustomQuestionField('${sec.id}',${cqi},'texto',this.value)"
         >${e(cq.texto)}</textarea>
         <div style="font-size:11px;color:var(--ink-faint);margin-bottom:6px;font-weight:500;">4 opciones de respuesta (de menor a mayor):</div>
-        ${cq.opts.map((opt, oi) => `
-          <input class="field-input" type="text" placeholder="Opción ${oi+1}"
+        ${cq.opts
+          .map(
+            (opt, oi) => `
+          <input class="field-input" type="text" placeholder="Opción ${oi + 1}"
             value="${e(opt)}"
             oninput="saveCustomQuestionField('${sec.id}',${cqi},'opt${oi}',this.value)"
-            style="font-size:12px;padding:6px 10px;margin-bottom:6px;"/>`).join('')}
-      </div>`).join('');
+            style="font-size:12px;padding:6px 10px;margin-bottom:6px;"/>`
+          )
+          .join('')}
+      </div>`
+      )
+      .join('');
 
     const canAdd = cqs.length < 3;
 
@@ -2527,16 +2906,30 @@ function renderConfig() {
         <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;line-height:1.5;">Activa/desactiva preguntas o edita su texto. Guardado automático.</p>
         ${qRows}
         ${cqRows}
-        ${canAdd
-          ? `<button class="btn sm" onclick="addCustomQuestion('${sec.id}')" style="margin-top:14px;">+ Agregar pregunta personalizada</button>`
-          : `<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">Máximo 3 preguntas personalizadas por sección.</p>`}
+        ${
+          canAdd
+            ? `<button class="btn sm" onclick="addCustomQuestion('${sec.id}')" style="margin-top:14px;">+ Agregar pregunta personalizada</button>`
+            : `<p style="font-size:12px;color:var(--ink-faint);margin-top:10px;">Máximo 3 preguntas personalizadas por sección.</p>`
+        }
       </div>`;
   }).join('');
 
   const ANON_MODES = [
-    { key: 'full',    label: 'Anónimo total',  desc: 'Solo se guarda el rol. El campo nombre no aparece en el formulario.' },
-    { key: 'semi',    label: 'Semi-anónimo',   desc: 'El participante puede escribir un identificador (Dev1, Dev2). El coach lo ve.' },
-    { key: 'nominal', label: 'Nominal',        desc: 'El participante escribe su nombre. Recomendado solo para autoevaluaciones individuales.' },
+    {
+      key: 'full',
+      label: 'Anónimo total',
+      desc: 'Solo se guarda el rol. El campo nombre no aparece en el formulario.',
+    },
+    {
+      key: 'semi',
+      label: 'Semi-anónimo',
+      desc: 'El participante puede escribir un identificador (Dev1, Dev2). El coach lo ve.',
+    },
+    {
+      key: 'nominal',
+      label: 'Nominal',
+      desc: 'El participante escribe su nombre. Recomendado solo para autoevaluaciones individuales.',
+    },
   ];
 
   return `
@@ -2547,7 +2940,8 @@ function renderConfig() {
         El modo aplica a todas las respuestas nuevas de este workspace.
       </p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-        ${ANON_MODES.map(m => `
+        ${ANON_MODES.map(
+          (m) => `
           <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border:1.5px solid ${state.anonymityMode === m.key ? 'var(--accent)' : 'var(--border)'};border-radius:var(--radius-sm);background:${state.anonymityMode === m.key ? 'var(--accent-light)' : 'white'};cursor:pointer;">
             <input type="radio" name="anonymityMode" value="${m.key}" ${state.anonymityMode === m.key ? 'checked' : ''}
               onchange="saveAnonymityMode('${m.key}')"
@@ -2556,7 +2950,8 @@ function renderConfig() {
               <div style="font-size:13px;font-weight:600;color:${state.anonymityMode === m.key ? 'var(--accent-dark)' : 'var(--ink)'};">${m.label}${m.key === 'full' ? ' <span style="font-size:10px;font-weight:500;background:var(--surface-3);color:var(--ink-faint);padding:1px 6px;border-radius:99px;">Por defecto</span>' : ''}</div>
               <div style="font-size:12px;color:var(--ink-muted);margin-top:2px;">${m.desc}</div>
             </div>
-          </label>`).join('')}
+          </label>`
+        ).join('')}
       </div>
       <div style="padding-top:14px;border-top:1px solid var(--border);">
         <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
@@ -2596,13 +2991,13 @@ function renderConfig() {
         <label style="font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;">Recordar cada</label>
         <select class="field-input" onchange="saveCadenceWeeks(this.value)"
           style="width:auto;font-size:13px;padding:6px 10px;">
-          <option value="0"  ${state.assessmentCadenceWeeks === 0  ? 'selected' : ''}>Desactivado</option>
-          <option value="1"  ${state.assessmentCadenceWeeks === 1  ? 'selected' : ''}>1 semana</option>
-          <option value="2"  ${state.assessmentCadenceWeeks === 2  ? 'selected' : ''}>2 semanas</option>
-          <option value="3"  ${state.assessmentCadenceWeeks === 3  ? 'selected' : ''}>3 semanas</option>
-          <option value="4"  ${state.assessmentCadenceWeeks === 4  ? 'selected' : ''}>4 semanas</option>
-          <option value="6"  ${state.assessmentCadenceWeeks === 6  ? 'selected' : ''}>6 semanas</option>
-          <option value="8"  ${state.assessmentCadenceWeeks === 8  ? 'selected' : ''}>8 semanas</option>
+          <option value="0"  ${state.assessmentCadenceWeeks === 0 ? 'selected' : ''}>Desactivado</option>
+          <option value="1"  ${state.assessmentCadenceWeeks === 1 ? 'selected' : ''}>1 semana</option>
+          <option value="2"  ${state.assessmentCadenceWeeks === 2 ? 'selected' : ''}>2 semanas</option>
+          <option value="3"  ${state.assessmentCadenceWeeks === 3 ? 'selected' : ''}>3 semanas</option>
+          <option value="4"  ${state.assessmentCadenceWeeks === 4 ? 'selected' : ''}>4 semanas</option>
+          <option value="6"  ${state.assessmentCadenceWeeks === 6 ? 'selected' : ''}>6 semanas</option>
+          <option value="8"  ${state.assessmentCadenceWeeks === 8 ? 'selected' : ''}>8 semanas</option>
         </select>
       </div>
     </div>
@@ -2646,26 +3041,28 @@ function renderUsuarios() {
         <div class="field-group" style="margin-bottom:0;">
           <label>Nombre</label>
           <input class="field-input" type="text" id="inputNewUserNombre" placeholder="Nombre del cliente"
-            value="${state.newUserNombre.replace(/"/g,'&quot;')}" oninput="setState({newUserNombre:this.value})"/>
+            value="${state.newUserNombre.replace(/"/g, '&quot;')}" oninput="setState({newUserNombre:this.value})"/>
         </div>
         <div class="field-group" style="margin-bottom:0;">
           <label>Email</label>
           <input class="field-input" type="text" id="inputNewUserEmail" placeholder="cliente@empresa.com"
-            value="${state.newUserEmail.replace(/"/g,'&quot;')}" oninput="setState({newUserEmail:this.value})"
+            value="${state.newUserEmail.replace(/"/g, '&quot;')}" oninput="setState({newUserEmail:this.value})"
             onkeydown="if(event.key==='Enter')createUser()"/>
         </div>
       </div>
       <p style="font-size:12px;color:var(--ink-faint);margin-bottom:12px;">Se creará la cuenta y se enviará automáticamente un correo con un link para que el cliente defina su contraseña.</p>
-      <button class="btn primary" onclick="createUser()" ${(!state.newUserNombre.trim()||!state.newUserEmail.trim())?'disabled':''}>Crear usuario y enviar invitación</button>
+      <button class="btn primary" onclick="createUser()" ${!state.newUserNombre.trim() || !state.newUserEmail.trim() ? 'disabled' : ''}>Crear usuario y enviar invitación</button>
     </div>`;
 
-  const list = state.users.length === 0
-    ? `<div class="empty-state" style="padding:24px 0;">Aún no has creado ningún workspace admin.</div>`
-    : `<div style="display:flex;flex-direction:column;gap:10px;">
-        ${state.users.map(u => {
-          const esc = (u.nombre || '').replace(/'/g, "\\'");
-          const escEmail = (u.email || '').replace(/'/g, "\\'");
-          return `
+  const list =
+    state.users.length === 0
+      ? `<div class="empty-state" style="padding:24px 0;">Aún no has creado ningún workspace admin.</div>`
+      : `<div style="display:flex;flex-direction:column;gap:10px;">
+        ${state.users
+          .map((u) => {
+            const esc = (u.nombre || '').replace(/'/g, "\\'");
+            const escEmail = (u.email || '').replace(/'/g, "\\'");
+            return `
             <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div>
@@ -2674,23 +3071,29 @@ function renderUsuarios() {
                   ${u.creadoEn ? `<div style="font-size:11px;color:var(--ink-faint);margin-top:2px;">Creado: ${u.creadoEn.toDate ? u.creadoEn.toDate().toLocaleDateString('es') : ''}</div>` : ''}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                  <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:${u.activo?'var(--green-light)':'var(--red-light)'};color:${u.activo?'var(--green)':'var(--red)'};">
+                  <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:${u.activo ? 'var(--green-light)' : 'var(--red-light)'};color:${u.activo ? 'var(--green)' : 'var(--red)'};">
                     ${u.activo ? 'Activo' : 'Suspendido'}
                   </span>
-                  ${u.activo
-                    ? `<button class="btn sm" onclick="suspendUser('${u.id}','${esc}')">Suspender</button>`
-                    : `<button class="btn sm" onclick="reactivateUser('${u.id}','${esc}')">Reactivar</button>`}
+                  ${
+                    u.activo
+                      ? `<button class="btn sm" onclick="suspendUser('${u.id}','${esc}')">Suspender</button>`
+                      : `<button class="btn sm" onclick="reactivateUser('${u.id}','${esc}')">Reactivar</button>`
+                  }
                   <button class="btn sm" onclick="resendInvite('${escEmail}','${esc}')">Reenviar invitación</button>
                   <button class="btn sm danger" onclick="deleteUser('${u.id}','${esc}')">Eliminar</button>
                 </div>
               </div>
             </div>`;
-        }).join('')}
+          })
+          .join('')}
       </div>`;
 
-  return addForm + `
+  return (
+    addForm +
+    `
     <div class="section-card">
       <div class="section-title">Workspace admins (${state.users.length})</div>
       ${list}
-    </div>`;
+    </div>`
+  );
 }

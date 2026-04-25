@@ -1,4 +1,12 @@
-import { calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide } from '../assets/admin-api.js';
+import {
+  calcDispersion,
+  isPolarized,
+  detectRoleGaps,
+  getMajorityRole,
+  getTeamFilteredStats,
+  computeStats,
+  generateDebriefGuide,
+} from '../assets/admin-api.js';
 
 // ── calcDispersion ────────────────────────────────────────────────
 
@@ -109,10 +117,20 @@ describe('getMajorityRole', () => {
 
 // ── helpers para construir respuestas de test ─────────────────────
 
-function makeResponse({ teamId = 'team1', rol = 'Dev Team', ciclo = 'Sprint 1',
-  scoreEventos = 10, scoreBacklog = 7, scoreDevTeam = 10,
-  scoreTransparencia = 7, scoreTecnico = 7, scoreCliente = 7,
-  totalPct = 80, tamano = '4–6', tiempoScrum = '6–18 meses' } = {}) {
+function makeResponse({
+  teamId = 'team1',
+  rol = 'Dev Team',
+  ciclo = 'Sprint 1',
+  scoreEventos = 10,
+  scoreBacklog = 7,
+  scoreDevTeam = 10,
+  scoreTransparencia = 7,
+  scoreTecnico = 7,
+  scoreCliente = 7,
+  totalPct = 80,
+  tamano = '4–6',
+  tiempoScrum = '6–18 meses',
+} = {}) {
   return {
     fields: {
       Equipo: [teamId],
@@ -127,8 +145,8 @@ function makeResponse({ teamId = 'team1', rol = 'Dev Team', ciclo = 'Sprint 1',
       'Score Total %': totalPct,
       'Tamaño Equipo': tamano,
       'Tiempo Scrum': tiempoScrum,
-      Answers: {}
-    }
+      Answers: {},
+    },
   };
 }
 
@@ -139,7 +157,7 @@ describe('getTeamFilteredStats', () => {
     state.responses = [
       makeResponse({ totalPct: 80, rol: 'Dev Team', ciclo: 'Sprint 1' }),
       makeResponse({ totalPct: 60, rol: 'Product Owner', ciclo: 'Sprint 1' }),
-      makeResponse({ totalPct: 70, rol: 'Dev Team', ciclo: 'Sprint 2' })
+      makeResponse({ totalPct: 70, rol: 'Dev Team', ciclo: 'Sprint 2' }),
     ];
   });
 
@@ -180,7 +198,7 @@ describe('getTeamFilteredStats', () => {
 
   test('incluye avgDims para cada dimensión', () => {
     const stats = getTeamFilteredStats('team1', 'Todos', 'Todos');
-    DIMS.forEach(d => {
+    DIMS.forEach((d) => {
       expect(stats.avgDims[d.key]).toBeDefined();
       expect(stats.avgDims[d.key]).toHaveProperty('pct');
       expect(stats.avgDims[d.key]).toHaveProperty('score');
@@ -194,12 +212,12 @@ describe('computeStats', () => {
   beforeEach(() => {
     state.teams = [
       { id: 'team1', name: 'Alpha', active: true },
-      { id: 'team2', name: 'Beta',  active: true }
+      { id: 'team2', name: 'Beta', active: true },
     ];
     state.responses = [
       makeResponse({ teamId: 'team1', totalPct: 80 }),
       makeResponse({ teamId: 'team1', totalPct: 60 }),
-      makeResponse({ teamId: 'team2', totalPct: 40 })
+      makeResponse({ teamId: 'team2', totalPct: 40 }),
     ];
     state.teamStats = {};
   });
@@ -244,7 +262,9 @@ describe('detectRoleGaps', () => {
   // Helper: 3 respuestas de un rol con el mismo porcentaje en todas las dimensiones
   function makeRoleResps(teamId, rol, ciclo, dimPct) {
     const base = { Equipo: [teamId], Rol: rol, Ciclo: ciclo, 'Score Total %': dimPct };
-    DIMS.forEach(d => { base[d.field] = Math.round((dimPct / 100) * d.max); });
+    DIMS.forEach((d) => {
+      base[d.field] = Math.round((dimPct / 100) * d.max);
+    });
     return Array.from({ length: 3 }, () => ({ fields: { ...base } }));
   }
 
@@ -255,8 +275,34 @@ describe('detectRoleGaps', () => {
   test('retorna array vacío cuando no hay roles con suficientes respuestas', () => {
     // Solo 1 respuesta por rol — por debajo del umbral de 3
     state.responses = [
-      { fields: { Equipo: ['t1'], Rol: 'Dev Team', Ciclo: 'Q1', 'Score Eventos': 8, 'Score Backlog': 6, 'Score Dev Team': 8, 'Score Transparencia': 6, 'Score Técnico': 6, 'Score Cliente': 6, 'Score Total %': 70 } },
-      { fields: { Equipo: ['t1'], Rol: 'Product Owner', Ciclo: 'Q1', 'Score Eventos': 4, 'Score Backlog': 3, 'Score Dev Team': 4, 'Score Transparencia': 3, 'Score Técnico': 3, 'Score Cliente': 3, 'Score Total %': 33 } }
+      {
+        fields: {
+          Equipo: ['t1'],
+          Rol: 'Dev Team',
+          Ciclo: 'Q1',
+          'Score Eventos': 8,
+          'Score Backlog': 6,
+          'Score Dev Team': 8,
+          'Score Transparencia': 6,
+          'Score Técnico': 6,
+          'Score Cliente': 6,
+          'Score Total %': 70,
+        },
+      },
+      {
+        fields: {
+          Equipo: ['t1'],
+          Rol: 'Product Owner',
+          Ciclo: 'Q1',
+          'Score Eventos': 4,
+          'Score Backlog': 3,
+          'Score Dev Team': 4,
+          'Score Transparencia': 3,
+          'Score Técnico': 3,
+          'Score Cliente': 3,
+          'Score Total %': 33,
+        },
+      },
     ];
     expect(detectRoleGaps('t1', 'Todos')).toHaveLength(0);
   });
@@ -267,29 +313,20 @@ describe('detectRoleGaps', () => {
   });
 
   test('detecta brecha cuando la diferencia supera el umbral', () => {
-    state.responses = [
-      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
-      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
-    ];
+    state.responses = [...makeRoleResps('t1', 'Dev Team', 'Q1', 80), ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)];
     const gaps = detectRoleGaps('t1', 'Todos', 25);
     expect(gaps.length).toBeGreaterThan(0);
     expect(gaps[0].diff).toBeGreaterThanOrEqual(25);
   });
 
   test('no detecta brecha cuando la diferencia es menor al umbral', () => {
-    state.responses = [
-      ...makeRoleResps('t1', 'Dev Team', 'Q1', 70),
-      ...makeRoleResps('t1', 'Product Owner', 'Q1', 65)
-    ];
+    state.responses = [...makeRoleResps('t1', 'Dev Team', 'Q1', 70), ...makeRoleResps('t1', 'Product Owner', 'Q1', 65)];
     const gaps = detectRoleGaps('t1', 'Todos', 25);
     expect(gaps).toHaveLength(0);
   });
 
   test('las brechas se ordenan de mayor a menor diferencia', () => {
-    state.responses = [
-      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
-      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
-    ];
+    state.responses = [...makeRoleResps('t1', 'Dev Team', 'Q1', 80), ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)];
     const gaps = detectRoleGaps('t1', 'Todos', 0);
     for (let i = 1; i < gaps.length; i++) {
       expect(gaps[i - 1].diff).toBeGreaterThanOrEqual(gaps[i].diff);
@@ -301,7 +338,7 @@ describe('detectRoleGaps', () => {
       ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
       ...makeRoleResps('t1', 'Product Owner', 'Q1', 30),
       ...makeRoleResps('t1', 'Dev Team', 'Q2', 60),
-      ...makeRoleResps('t1', 'Product Owner', 'Q2', 55)
+      ...makeRoleResps('t1', 'Product Owner', 'Q2', 55),
     ];
     const gapsQ1 = detectRoleGaps('t1', 'Q1', 25);
     const gapsQ2 = detectRoleGaps('t1', 'Q2', 25);
@@ -310,10 +347,7 @@ describe('detectRoleGaps', () => {
   });
 
   test('cada gap incluye roleHigh, pctHigh, roleLow, pctLow', () => {
-    state.responses = [
-      ...makeRoleResps('t1', 'Dev Team', 'Q1', 80),
-      ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)
-    ];
+    state.responses = [...makeRoleResps('t1', 'Dev Team', 'Q1', 80), ...makeRoleResps('t1', 'Product Owner', 'Q1', 30)];
     const gaps = detectRoleGaps('t1', 'Todos', 25);
     const g = gaps[0];
     expect(g).toHaveProperty('roleHigh');
@@ -329,7 +363,9 @@ describe('detectRoleGaps', () => {
 describe('generateDebriefGuide', () => {
   function makeResp(teamId, ciclo, pct, rol = 'Dev Team') {
     const base = { Equipo: [teamId], Rol: rol, Ciclo: ciclo, 'Score Total %': pct, Answers: {} };
-    DIMS.forEach(d => { base[d.field] = Math.round((pct / 100) * d.max); });
+    DIMS.forEach((d) => {
+      base[d.field] = Math.round((pct / 100) * d.max);
+    });
     return { fields: base };
   }
 
@@ -339,10 +375,7 @@ describe('generateDebriefGuide', () => {
       { id: 'c1', name: 'Q1', active: false },
       { id: 'c2', name: 'Q2', active: true },
     ];
-    state.responses = [
-      makeResp('team1', 'Q1', 50),
-      makeResp('team1', 'Q2', 70),
-    ];
+    state.responses = [makeResp('team1', 'Q1', 50), makeResp('team1', 'Q2', 70)];
   });
 
   test('retorna null cuando el equipo no existe', () => {
@@ -372,7 +405,7 @@ describe('generateDebriefGuide', () => {
 
   test('cada oportunidad incluye preguntas de coaching', () => {
     const guide = generateDebriefGuide('team1', 'Todos');
-    guide.opportunities.forEach(op => {
+    guide.opportunities.forEach((op) => {
       expect(op.questions).toBeDefined();
       expect(op.questions).toHaveLength(3);
       expect(typeof op.questions[0]).toBe('string');
@@ -383,7 +416,7 @@ describe('generateDebriefGuide', () => {
     // Forzar score bajo en todas las dims
     state.responses = [makeResp('team1', 'Q1', 20)];
     const guide = generateDebriefGuide('team1', 'Todos');
-    guide.opportunities.forEach(op => {
+    guide.opportunities.forEach((op) => {
       const lvl0Qs = COACHING_QUESTIONS[op.key][0];
       expect(op.questions).toEqual(lvl0Qs);
     });
@@ -392,7 +425,7 @@ describe('generateDebriefGuide', () => {
   test('preguntas corresponden al nivel medio cuando pct está entre 34% y 66%', () => {
     state.responses = [makeResp('team1', 'Q1', 50)];
     const guide = generateDebriefGuide('team1', 'Todos');
-    guide.opportunities.forEach(op => {
+    guide.opportunities.forEach((op) => {
       const lvl1Qs = COACHING_QUESTIONS[op.key][1];
       expect(op.questions).toEqual(lvl1Qs);
     });
@@ -400,13 +433,10 @@ describe('generateDebriefGuide', () => {
 
   test('detecta celebraciones cuando una dimensión mejoró >= 5 pts', () => {
     // Q1: 40%, Q2: 70% → todas las dims mejoraron ~30 pts
-    state.responses = [
-      makeResp('team1', 'Q1', 40),
-      makeResp('team1', 'Q2', 70),
-    ];
+    state.responses = [makeResp('team1', 'Q1', 40), makeResp('team1', 'Q2', 70)];
     const guide = generateDebriefGuide('team1', 'Q2');
     expect(guide.celebrations.length).toBeGreaterThan(0);
-    guide.celebrations.forEach(c => {
+    guide.celebrations.forEach((c) => {
       expect(c.pct - c.prevPct).toBeGreaterThanOrEqual(5);
     });
   });
@@ -418,10 +448,7 @@ describe('generateDebriefGuide', () => {
   });
 
   test('celebrations se ordenan de mayor a menor delta', () => {
-    state.responses = [
-      makeResp('team1', 'Q1', 40),
-      makeResp('team1', 'Q2', 70),
-    ];
+    state.responses = [makeResp('team1', 'Q1', 40), makeResp('team1', 'Q2', 70)];
     const guide = generateDebriefGuide('team1', 'Q2');
     for (let i = 1; i < guide.celebrations.length; i++) {
       const prev = guide.celebrations[i - 1];

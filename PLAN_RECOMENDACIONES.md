@@ -33,8 +33,9 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Cuando el filtro de rol es "Todos", actualmente se usan los textos genéricos de `RECS` en lugar de los textos específicos por rol de `RECS_ROLE`. Todos los demás ítems heredan este comportamiento, por eso va primero.
 
 **Implementado:**
+
 - `getMajorityRole(resps)` — cuenta roles del subconjunto filtrado (excluye "Otro"), devuelve `null` si hay empate.
-- `renderAnalysis()`: `filteredByCycle` aplica el filtro de ciclo activo antes de calcular el rol mayoritario. El label muestra *(rol mayoritario: Dev Team)* cuando aplica.
+- `renderAnalysis()`: `filteredByCycle` aplica el filtro de ciclo activo antes de calcular el rol mayoritario. El label muestra _(rol mayoritario: Dev Team)_ cuando aplica.
 - `renderEvolution()`: usa `evolTeamResps` filtrado por equipo para calcular el rol mayoritario.
 
 **Resultado:** Las recomendaciones en vista "Todos" usan el rol más representado del equipo, con nota discreta visible para el admin.
@@ -48,6 +49,7 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Los campos `tamanoEquipo` y `tiempoScrum` se guardan en Firestore pero nunca se usan en las recomendaciones. Un equipo nuevo de 10 personas tiene desafíos distintos a uno maduro de 4.
 
 **Implementado:**
+
 - `getContextNote(dim, pct, tamano, tiempoScrum)` en `assessment-config.js` — 6 reglas de contexto:
   - `<6 meses` + cualquier dimensión < 70% → priorizar cadencia básica
   - `>18 meses` + dimensión < 50% → impedimentos sistémicos o resistencia estructural
@@ -69,14 +71,15 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Las recomendaciones son independientes por dimensión. Cuando múltiples dimensiones bajas co-ocurren hay un patrón sistémico que merece un diagnóstico diferente al de cada dimensión por separado.
 
 **Implementado:**
+
 - `CROSS_PATTERNS` en `assessment-config.js` — 4 patrones con `{ dims, maxPct, label, color, text }`:
 
-  | Patrón | Condición | Color |
-  |--------|-----------|-------|
-  | Adopción inicial total | Todas las dimensiones < 40% | Rojo |
-  | Base Scrum débil | Ceremonias + Transparencia < 50% | Amber |
-  | Limitación técnica sistémica | Dev Team + Exc. Técnica < 45% | Cyan |
-  | Desconexión del valor | Backlog + Orient. Cliente < 45% | Violeta |
+  | Patrón                       | Condición                        | Color   |
+  | ---------------------------- | -------------------------------- | ------- |
+  | Adopción inicial total       | Todas las dimensiones < 40%      | Rojo    |
+  | Base Scrum débil             | Ceremonias + Transparencia < 50% | Amber   |
+  | Limitación técnica sistémica | Dev Team + Exc. Técnica < 45%    | Cyan    |
+  | Desconexión del valor        | Backlog + Orient. Cliente < 45%  | Violeta |
 
 - `detectPatterns(dimScores)` evalúa todos los patrones activos y devuelve array (puede activarse más de uno).
 - En `renderAnalysis()`, bloque `pattern-block` con borde lateral coloreado aparece antes de las recomendaciones individuales cuando hay patrones activos.
@@ -92,8 +95,9 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Actualmente la pestaña Evolución detecta retrocesos pero solo añade un prefijo de texto. No reconoce el progreso ni diferencia la urgencia visualmente.
 
 **Implementado:**
-- `rec-item--urgent`: fondo rojo + borde izquierdo rojo cuando `pct < prevPct`. Badge *"▼ Retroceso −X% vs. ciclo anterior"* en rojo.
-- `rec-item--improving`: fondo verde + borde izquierdo verde cuando `pct > prevPct && pct < 60`. Badge *"▲ Mejora +X% vs. ciclo anterior — mantener el foco"* en verde.
+
+- `rec-item--urgent`: fondo rojo + borde izquierdo rojo cuando `pct < prevPct`. Badge _"▼ Retroceso −X% vs. ciclo anterior"_ en rojo.
+- `rec-item--improving`: fondo verde + borde izquierdo verde cuando `pct > prevPct && pct < 60`. Badge _"▲ Mejora +X% vs. ciclo anterior — mantener el foco"_ en verde.
 - Cuando `prevPct === null` (un solo ciclo): sin indicador de tendencia.
 - El delta numérico exacto aparece en ambos casos.
 
@@ -108,6 +112,7 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Todas las recomendaciones tienen el mismo peso visual. El admin no sabe de un vistazo cuál dimensión requiere atención inmediata.
 
 **Implementado:**
+
 - `criticalDim`: la dimensión con menor pct si ese pct es < 33. Máximo una por tarjeta.
 - Badge `<span class="badge-critical no-print">Crítica</span>` aparece inline antes del label de la dimensión.
 - Clase `no-print` asegura que no aparece en el PDF exportado.
@@ -123,6 +128,7 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** Las recomendaciones y el Plan de Acción son funcionalidades desconectadas. El admin tiene que leer la recomendación, memorizarla y escribirla manualmente en el plan.
 
 **Implementado:**
+
 - `recTexts = {}` — objeto global que se resetea al inicio de cada `renderAnalysis()`. Almacena textos indexados por clave `teamId_dimKey` (análisis) o `evol_dimKey` (evolución).
 - `prefillPlan(teamId, recKey, ciclo)` — asigna `newPlanTeamId`, `newPlanIniciativa` desde `recTexts`, `newPlanCiclo` (usa ciclo activo si el filtro es "Todos"), cambia a pestaña Plan y hace scroll a `#plan-form`.
 - Botón `+ Plan` (clase `no-print`) en cada `rec-item` de `renderAnalysis()` y `renderEvolution()`.
@@ -139,6 +145,7 @@ Fase 4 — Comparativa global
 **Problema que resuelve:** No hay referencia externa. El admin no sabe si un equipo con 60% en Ceremonias está bien o mal respecto a los demás equipos.
 
 **Implementado:**
+
 - `computeGlobalDimAverages(cFilter)` — calcula promedio de promedios (no ponderado) de cada dimensión entre todos los equipos con datos. Devuelve `null` si hay menos de 2 equipos.
 - Calculado una vez al inicio de `renderAnalysis()` y reutilizado en cada tarjeta.
 - En cada fila de dimensión: badge `+X% vs. media` (verde) o `-X% vs. media` (rojo) junto al porcentaje.
@@ -150,38 +157,38 @@ Fase 4 — Comparativa global
 
 ## Distribución de cambios por archivo
 
-| Ítem | admin.html | assessment-config.js |
-|------|-----------|----------------------|
-| 4 — Rol mayoritario | `renderAnalysis`, `renderEvolution` | — |
-| 1 — Contexto equipo | `getTeamFilteredStats`, `renderAnalysis` | Nueva `getContextNote()` |
-| 2 — Análisis cruzado | `renderAnalysis` (bloque de patrones) | `CROSS_PATTERNS` + `detectPatterns()` |
-| 3 — Tendencia en Evolución | `renderEvolution` | — |
-| 6 — Badge Crítica | `renderAnalysis` | — |
-| 5 — Botón Plan de Acción | Nueva `prefillPlan()`, `renderAnalysis`, `renderEvolution`, `renderPlan` | — |
-| 7 — Comparativa global | Nueva `computeGlobalDimAverages()`, `renderAnalysis` | — |
+| Ítem                       | admin.html                                                               | assessment-config.js                  |
+| -------------------------- | ------------------------------------------------------------------------ | ------------------------------------- |
+| 4 — Rol mayoritario        | `renderAnalysis`, `renderEvolution`                                      | —                                     |
+| 1 — Contexto equipo        | `getTeamFilteredStats`, `renderAnalysis`                                 | Nueva `getContextNote()`              |
+| 2 — Análisis cruzado       | `renderAnalysis` (bloque de patrones)                                    | `CROSS_PATTERNS` + `detectPatterns()` |
+| 3 — Tendencia en Evolución | `renderEvolution`                                                        | —                                     |
+| 6 — Badge Crítica          | `renderAnalysis`                                                         | —                                     |
+| 5 — Botón Plan de Acción   | Nueva `prefillPlan()`, `renderAnalysis`, `renderEvolution`, `renderPlan` | —                                     |
+| 7 — Comparativa global     | Nueva `computeGlobalDimAverages()`, `renderAnalysis`                     | —                                     |
 
 ---
 
 ## Riesgos identificados
 
-| Riesgo | Ítems afectados | Mitigación |
-|--------|----------------|------------|
-| Ítem 1 genera notas con rol incorrecto si ítem 4 no está implementado primero | 1, 4 | Implementar ítem 4 antes que el 1 |
-| Texto con comillas en atributos `onclick` rompe el HTML | 5 | Usar objeto `recTexts` indexado por clave; nunca incrustar texto plano |
-| `computeGlobalDimAverages` re-calcula en cada render | 7 | Calcular una vez por render en variable local, no en cada tarjeta |
-| Badge "Crítica" no aparece si ninguna dimensión baja de 33% | 6 | Documentar umbral y revisar si bajarlo a 40% da más utilidad |
-| CSS inconsistente entre ítems 2, 3 y 6 (todos añaden estilos de alerta) | 2, 3, 6 | Reutilizar variables CSS existentes `--red`, `--amber` y definir clases compartidas al inicio |
+| Riesgo                                                                        | Ítems afectados | Mitigación                                                                                    |
+| ----------------------------------------------------------------------------- | --------------- | --------------------------------------------------------------------------------------------- |
+| Ítem 1 genera notas con rol incorrecto si ítem 4 no está implementado primero | 1, 4            | Implementar ítem 4 antes que el 1                                                             |
+| Texto con comillas en atributos `onclick` rompe el HTML                       | 5               | Usar objeto `recTexts` indexado por clave; nunca incrustar texto plano                        |
+| `computeGlobalDimAverages` re-calcula en cada render                          | 7               | Calcular una vez por render en variable local, no en cada tarjeta                             |
+| Badge "Crítica" no aparece si ninguna dimensión baja de 33%                   | 6               | Documentar umbral y revisar si bajarlo a 40% da más utilidad                                  |
+| CSS inconsistente entre ítems 2, 3 y 6 (todos añaden estilos de alerta)       | 2, 3, 6         | Reutilizar variables CSS existentes `--red`, `--amber` y definir clases compartidas al inicio |
 
 ---
 
 ## Estado
 
-| Ítem | Estado | Commit |
-|------|--------|--------|
-| 4 — Rol mayoritario | ✅ Completado | `214674c` |
-| 1 — Contexto equipo | ✅ Completado | `214674c` |
-| 2 — Análisis cruzado | ✅ Completado | `214674c` |
+| Ítem                       | Estado        | Commit    |
+| -------------------------- | ------------- | --------- |
+| 4 — Rol mayoritario        | ✅ Completado | `214674c` |
+| 1 — Contexto equipo        | ✅ Completado | `214674c` |
+| 2 — Análisis cruzado       | ✅ Completado | `214674c` |
 | 3 — Tendencia en Evolución | ✅ Completado | `1bf9013` |
-| 6 — Badge Crítica | ✅ Completado | `1bf9013` |
-| 5 — Botón Plan de Acción | ✅ Completado | `827ab3e` |
-| 7 — Comparativa global | ✅ Completado | `827ab3e` |
+| 6 — Badge Crítica          | ✅ Completado | `1bf9013` |
+| 5 — Botón Plan de Acción   | ✅ Completado | `827ab3e` |
+| 7 — Comparativa global     | ✅ Completado | `827ab3e` |
