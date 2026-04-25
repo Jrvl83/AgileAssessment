@@ -13,6 +13,7 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 **Contexto:** Errores en producción pasan silenciosos. No hay forma de detectar un spike de fallos de CF sin mirar manualmente Firebase Console. Un bug que afecte a un cliente pasa desapercibido hasta que él lo reporta.
 
 **Propuesta:** integrar Sentry (free tier hasta 5k errors/mes) o Firebase Crashlytics web. Capturar:
+
 - Uncaught exceptions en frontend (admin.html, assessment-agile.html, equipo.html, reporte.html)
 - CF errors con contexto (uid, equipoId, ciclo)
 
@@ -23,6 +24,7 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 ### D4 — README de onboarding
 
 **Contexto:** No hay `README.md` en el repo. `PROYECTO.md` es documentación funcional detallada, no onboarding. Falta:
+
 - Pasos de setup local (`npm install` en raíz y en `functions/`)
 - Instrucciones de emuladores Firebase
 - Variables de entorno / secrets (dónde se configura `ANTHROPIC_API_KEY`, `webhookUrl`)
@@ -48,12 +50,14 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 ### D6 — Tests de render/auth/CFs ausentes
 
 **Contexto:** 96 tests Vitest, pero 100% son unitarios sobre `admin-api.js` y `assessment-config.js`. No hay tests para:
+
 - `render()` y funciones `render*` de `admin-render.js` (genera HTML dinámico)
 - Flujos de autenticación (`admin-auth.js`)
 - Cloud Functions (requiere emulator)
 - Flujos de integración (submit assessment → Firestore → cálculo)
 
 **Propuesta:** agregar suite progresiva:
+
 - `tests/render.test.js` con JSDOM para las funciones `render*` puras (reciben state, retornan string).
 - `tests/functions.test.js` con Firebase emulator para CFs.
 - No apuntar al 100% — priorizar rutas críticas (callAnalyzeTeamWithClaude, createUser).
@@ -82,16 +86,6 @@ Testear en staging antes de producción — CSP estricta puede romper inline sty
 
 ---
 
-### D8 — `.gitattributes` para normalizar line endings
-
-**Contexto:** Trabajando en Windows, `git` convierte LF ↔ CRLF automáticamente (`core.autocrlf`). Eso hace que herramientas como Prettier con `endOfLine: lf` marquen archivos como "mal formateados" cuando en realidad están bien. Se resolvió cambiando Prettier a `endOfLine: auto` pero es un workaround.
-
-**Propuesta:** agregar `.gitattributes` con `* text=auto eol=lf` para forzar LF en el repo, y que las checkouts en Windows tengan LF también. Compatible con todos los editores modernos.
-
-**Esfuerzo:** S (10 minutos + validación).
-
----
-
 ### D9 — Duplicación de lógica entre `admin-api.js` y `functions/index.js`
 
 **Contexto:** `DIMS`, `SECTIONS`, las recomendaciones y parte del scoring están duplicados entre `assessment-config.js` (frontend) y `functions/index.js` como `DIMS_CFG`, `SECTIONS_CFG`. Cualquier cambio obliga a tocar ambos.
@@ -114,14 +108,15 @@ Testear en staging antes de producción — CSP estricta puede romper inline sty
 
 ## Resuelto
 
-| Fecha | Ítem | Commit |
-|-------|------|--------|
-| 2026-04-23 | Endurecer ESLint (no-var, prefer-const, eqeqeq); cubrir `tests/` | `04caac9` |
-| 2026-04-23 | Agregar Prettier + scripts `format`/`format:check` | `04caac9` |
-| 2026-04-23 | Pre-commit hook (`simple-git-hooks` + `lint-staged`) con lint + prettier-check | `04caac9` |
-| 2026-04-23 | Escape HTML en 7 interpolaciones user-controlled de `admin-render.js` | `abfee42` |
-| 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos | `b2e770f` |
+| Fecha      | Ítem                                                                                                                                                                                                                                                                                                           | Commit    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 2026-04-23 | Endurecer ESLint (no-var, prefer-const, eqeqeq); cubrir `tests/`                                                                                                                                                                                                                                               | `04caac9` |
+| 2026-04-23 | Agregar Prettier + scripts `format`/`format:check`                                                                                                                                                                                                                                                             | `04caac9` |
+| 2026-04-23 | Pre-commit hook (`simple-git-hooks` + `lint-staged`) con lint + prettier-check                                                                                                                                                                                                                                 | `04caac9` |
+| 2026-04-23 | Escape HTML en 7 interpolaciones user-controlled de `admin-render.js`                                                                                                                                                                                                                                          | `abfee42` |
+| 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos                                                                                                                                                                           | `b2e770f` |
 | 2026-04-24 | **D2** — `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; integrado en `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `analyzeTeamWithClaude`; eliminados los 2 `catch { /* silent */ }` y 3 `.catch(() => {})` del frontend | `fa01fae` |
+| 2026-04-24 | **D8** — `.gitattributes` con `* text=auto eol=lf` + binarios comunes; `.prettierrc.json` revertido a `endOfLine: lf`; renormalización de 26 archivos (formato puro, sin lógica)                                                                                                                                | `bcbc853` |
 
 ---
 
