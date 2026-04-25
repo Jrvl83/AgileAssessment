@@ -42,8 +42,9 @@ AssessmentAgile/
 ├── package.json            # devDependencies: vitest, eslint, prettier, simple-git-hooks, lint-staged, firebase-tools
 ├── vitest.config.js        # Configuración de tests
 ├── .eslintrc.json          # ESLint: eslint:recommended, browser env, no-var, prefer-const, eqeqeq smart
-├── .prettierrc.json        # Prettier: singleQuote, 2-space, printWidth 120, endOfLine auto
+├── .prettierrc.json        # Prettier: singleQuote, 2-space, printWidth 120, endOfLine lf
 ├── .prettierignore         # Excluye node_modules, dist y package-lock
+├── .gitattributes          # `* text=auto eol=lf` + binarios — normaliza line endings independiente del SO
 ├── .gitignore              # Ignora node_modules/, .firebase/, *.docx
 ├── .github/
 │   └── workflows/
@@ -61,8 +62,8 @@ PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
 PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — completado 2026-04-12
 PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento (completo)
-PLAN_ARQUITECTURA.md        # Plan estratégico de deuda técnica — 9 ítems (Vue 3, paginación, auditoría pendientes)
-DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos de auditorías
+PLAN_ARQUITECTURA.md        # Plan estratégico de deuda técnica — 9 ítems (Vue 3 y paginación pendientes; auditoría parcial con D2)
+DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos — D1, D2, D8 cerrados; D3–D7, D9, D10 pendientes
 ```
 
 ### Routing (firebase.json)
