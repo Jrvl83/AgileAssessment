@@ -109,6 +109,14 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Audit log ─────────────────────────────────────────────────
+    // Lectura solo para super_admin (trazabilidad de acciones críticas).
+    // Escritura exclusivamente vía Cloud Function (admin SDK bypassa reglas).
+    match /auditLog/{id} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
     // ── Portales de equipo ────────────────────────────────────────
     // Lectura pública: el equipo accede sin login con el token.
     // Creación/actualización: solo el workspace admin dueño.

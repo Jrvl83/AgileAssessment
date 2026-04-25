@@ -1,28 +1,47 @@
 const functions = require('firebase-functions/v1');
-const admin     = require('firebase-admin');
+const logger = require('firebase-functions/logger');
+const admin = require('firebase-admin');
 
 admin.initializeApp();
 
-const db   = admin.firestore();
+const db = admin.firestore();
 const auth = admin.auth();
+
+// ── writeAudit ────────────────────────────────────────────────────
+// Registra una acción administrativa en la colección auditLog.
+// Escribe con admin SDK — las reglas bloquean escritura desde cliente.
+// Nunca rompe la CF si falla: solo loguea.
+async function writeAudit({ accion, realizadoPor, detalles, severity }) {
+  try {
+    await db.collection('auditLog').add({
+      accion,
+      realizadoPor: realizadoPor || null,
+      detalles: detalles || {},
+      severity: severity || 'info',
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    logger.error('auditLog.write.failed', { accion, error: e.message });
+  }
+}
 
 // ── Configuración de dimensiones y secciones (espejo de assessment-config.js) ─
 const DIMS_CFG = [
-  { key:'eventos',       label:'Ceremonias',           max:12, storeKey:'scoreEventos' },
-  { key:'backlog',       label:'Product Backlog',       max:9,  storeKey:'scoreBacklog' },
-  { key:'devteam',       label:'Dev Team',              max:12, storeKey:'scoreDevTeam' },
-  { key:'transparencia', label:'Transparencia',         max:9,  storeKey:'scoreTransparencia' },
-  { key:'tecnico',       label:'Exc. Técnica',          max:9,  storeKey:'scoreTecnico' },
-  { key:'cliente',       label:'Orient. Cliente',       max:9,  storeKey:'scoreCliente' },
+  { key: 'eventos', label: 'Ceremonias', max: 12, storeKey: 'scoreEventos' },
+  { key: 'backlog', label: 'Product Backlog', max: 9, storeKey: 'scoreBacklog' },
+  { key: 'devteam', label: 'Dev Team', max: 12, storeKey: 'scoreDevTeam' },
+  { key: 'transparencia', label: 'Transparencia', max: 9, storeKey: 'scoreTransparencia' },
+  { key: 'tecnico', label: 'Exc. Técnica', max: 9, storeKey: 'scoreTecnico' },
+  { key: 'cliente', label: 'Orient. Cliente', max: 9, storeKey: 'scoreCliente' },
 ];
 
 const SECTIONS_CFG = [
-  { id:'eventos',       title:'Ceremonias y ritmo del equipo' },
-  { id:'backlog',       title:'Gestión del Product Backlog' },
-  { id:'devteam',       title:'Autoorganización y entrega' },
-  { id:'transparencia', title:'Transparencia, inspección y adaptación' },
-  { id:'tecnico',       title:'Excelencia técnica' },
-  { id:'cliente',       title:'Orientación al cliente' },
+  { id: 'eventos', title: 'Ceremonias y ritmo del equipo' },
+  { id: 'backlog', title: 'Gestión del Product Backlog' },
+  { id: 'devteam', title: 'Autoorganización y entrega' },
+  { id: 'transparencia', title: 'Transparencia, inspección y adaptación' },
+  { id: 'tecnico', title: 'Excelencia técnica' },
+  { id: 'cliente', title: 'Orientación al cliente' },
 ];
 
 function getLevel(pct) {
@@ -48,9 +67,12 @@ async function assertSuperAdmin(context) {
 // El correo de invitación lo envía el cliente con sendPasswordResetEmail.
 exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
   await assertSuperAdmin(context);
+  const callerUid = context.auth.uid;
 
   const nombre = (data.nombre || '').trim();
-  const email  = (data.email  || '').trim();
+  const email = (data.email || '').trim();
+
+  logger.info('createWorkspaceAdmin.start', { callerUid, email });
 
   if (!nombre || !email) {
     throw new functions.https.HttpsError('invalid-argument', 'Nombre y email son requeridos.');
@@ -62,8 +84,10 @@ exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
     userRecord = await auth.createUser({ email });
   } catch (e) {
     if (e.code === 'auth/email-already-exists') {
+      logger.warn('createWorkspaceAdmin.emailExists', { callerUid, email });
       throw new functions.https.HttpsError('already-exists', 'Ese email ya tiene una cuenta registrada.');
     }
+    logger.error('createWorkspaceAdmin.authCreateFailed', { callerUid, email, error: e.message });
     throw new functions.https.HttpsError('internal', 'Error al crear la cuenta: ' + e.message);
   }
 
@@ -71,9 +95,15 @@ exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
   await db.collection('usuarios').doc(userRecord.uid).set({
     nombre,
     email,
-    role:     'admin',
-    activo:   true,
-    creadoEn: admin.firestore.FieldValue.serverTimestamp()
+    role: 'admin',
+    activo: true,
+    creadoEn: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  await writeAudit({
+    accion: 'workspace_admin.created',
+    realizadoPor: callerUid,
+    detalles: { uid: userRecord.uid, email, nombre },
   });
 
   return { uid: userRecord.uid, email };
@@ -83,11 +113,14 @@ exports.createWorkspaceAdmin = functions.https.onCall(async (data, context) => {
 // Elimina la cuenta de Firebase Auth + el documento en Firestore.
 exports.deleteWorkspaceAdmin = functions.https.onCall(async (data, context) => {
   await assertSuperAdmin(context);
+  const callerUid = context.auth.uid;
 
   const uid = (data.uid || '').trim();
   if (!uid) {
     throw new functions.https.HttpsError('invalid-argument', 'UID requerido.');
   }
+
+  logger.info('deleteWorkspaceAdmin.start', { callerUid, targetUid: uid });
 
   // Eliminar de Firebase Auth
   try {
@@ -95,12 +128,21 @@ exports.deleteWorkspaceAdmin = functions.https.onCall(async (data, context) => {
   } catch (e) {
     // Si la cuenta ya no existe en Auth, continuamos igual para limpiar Firestore
     if (e.code !== 'auth/user-not-found') {
+      logger.error('deleteWorkspaceAdmin.authDeleteFailed', { callerUid, targetUid: uid, error: e.message });
       throw new functions.https.HttpsError('internal', 'Error al eliminar la cuenta: ' + e.message);
     }
+    logger.warn('deleteWorkspaceAdmin.authUserNotFound', { callerUid, targetUid: uid });
   }
 
   // Eliminar documento de Firestore
   await db.collection('usuarios').doc(uid).delete();
+
+  await writeAudit({
+    accion: 'workspace_admin.deleted',
+    realizadoPor: callerUid,
+    detalles: { uid },
+    severity: 'warn',
+  });
 
   return { uid };
 });
@@ -117,103 +159,106 @@ exports.dispatchWebhook = functions.https.onCall(async (data, context) => {
   if (!webhookUrl) return { skipped: true };
 
   const payload = {
-    event:       data.event,
-    timestamp:   new Date().toISOString(),
+    event: data.event,
+    timestamp: new Date().toISOString(),
     workspaceId: uid,
-    data:        data.payload || {}
+    data: data.payload || {},
   };
 
   try {
     const res = await fetch(webhookUrl, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(payload),
+      body: JSON.stringify(payload),
     });
     return { status: res.status };
   } catch (e) {
+    logger.error('dispatchWebhook.fetchFailed', { workspaceId: uid, event: data.event, error: e.message });
     throw new functions.https.HttpsError('internal', 'Error al enviar webhook: ' + e.message);
   }
 });
 
 // ── onPlanUpdatedByTeam ───────────────────────────────────────────
 // Firestore trigger: dispara el webhook cuando el equipo actualiza un plan.
-exports.onPlanUpdatedByTeam = functions.firestore
-  .document('planes/{planId}')
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after  = change.after.data();
-    if (!after.updatedByTeam || before.updatedByTeam === after.updatedByTeam) return null;
+exports.onPlanUpdatedByTeam = functions.firestore.document('planes/{planId}').onUpdate(async (change, context) => {
+  const before = change.before.data();
+  const after = change.after.data();
+  if (!after.updatedByTeam || before.updatedByTeam === after.updatedByTeam) return null;
 
-    const ownerId = after.ownerId;
-    if (!ownerId) return null;
+  const ownerId = after.ownerId;
+  if (!ownerId) return null;
 
-    const wsDoc = await db.collection('workspaces').doc(ownerId).get();
-    const webhookUrl = wsDoc.exists ? wsDoc.data().webhookUrl : null;
-    if (!webhookUrl) return null;
+  const wsDoc = await db.collection('workspaces').doc(ownerId).get();
+  const webhookUrl = wsDoc.exists ? wsDoc.data().webhookUrl : null;
+  if (!webhookUrl) return null;
 
-    const payload = {
-      event:       'plan.actualizado',
-      timestamp:   new Date().toISOString(),
-      workspaceId: ownerId,
-      data: {
-        planId:     context.params.planId,
-        equipoId:   after.equipoId   || '',
-        iniciativa: after.iniciativa || '',
-        estado:     after.estado     || '',
-        dimension:  after.dimension  || '',
-        ciclo:      after.ciclo      || '',
-      }
-    };
+  const payload = {
+    event: 'plan.actualizado',
+    timestamp: new Date().toISOString(),
+    workspaceId: ownerId,
+    data: {
+      planId: context.params.planId,
+      equipoId: after.equipoId || '',
+      iniciativa: after.iniciativa || '',
+      estado: after.estado || '',
+      dimension: after.dimension || '',
+      ciclo: after.ciclo || '',
+    },
+  };
 
-    try {
-      await fetch(webhookUrl, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload),
-      });
-    } catch (e) {
-      console.error('Webhook error (plan.actualizado):', e.message);
-    }
-    return null;
-  });
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    logger.error('onPlanUpdatedByTeam.webhookFailed', {
+      planId: context.params.planId,
+      ownerId,
+      error: e.message,
+    });
+  }
+  return null;
+});
 
 // ── buildTeamPrompt ───────────────────────────────────────────────
 // Agrega los datos del equipo y construye el prompt para Claude.
 // allResps: todos los documentos de la colección respuestas de este equipo.
 function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContexto) {
   const isAllCycles = !ciclo || ciclo === 'Todos';
-  const cycleResps  = isAllCycles ? allResps : allResps.filter(r => r.ciclo === ciclo);
+  const cycleResps = isAllCycles ? allResps : allResps.filter((r) => r.ciclo === ciclo);
   if (!cycleResps.length) return null;
 
   // Perfil del equipo (moda por campo)
-  const modeOf = key => {
+  const modeOf = (key) => {
     const counts = {};
-    cycleResps.forEach(r => { if (r[key]) counts[r[key]] = (counts[r[key]] || 0) + 1; });
+    cycleResps.forEach((r) => {
+      if (r[key]) counts[r[key]] = (counts[r[key]] || 0) + 1;
+    });
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
   };
   const profile = {
-    teamAge:     modeOf('teamAge')    || 'No especificado',
-    teamSize:    modeOf('teamSize')   || 'No especificado',
-    dedicatedPO: modeOf('dedicatedPO')|| 'No especificado',
-    workMode:    modeOf('workMode')   || 'No especificado',
-    count:       cycleResps.length,
+    teamAge: modeOf('teamAge') || 'No especificado',
+    teamSize: modeOf('teamSize') || 'No especificado',
+    dedicatedPO: modeOf('dedicatedPO') || 'No especificado',
+    workMode: modeOf('workMode') || 'No especificado',
+    count: cycleResps.length,
   };
 
   // Scores por dimensión
   const dimScores = {};
-  DIMS_CFG.forEach(d => {
+  DIMS_CFG.forEach((d) => {
     const avg = cycleResps.reduce((s, r) => s + (r[d.storeKey] || 0), 0) / cycleResps.length;
     dimScores[d.key] = Math.round((avg / d.max) * 100);
   });
-  const totalPct = Math.round(
-    cycleResps.reduce((s, r) => s + (r.scoreTotalPct || 0), 0) / cycleResps.length
-  );
+  const totalPct = Math.round(cycleResps.reduce((s, r) => s + (r.scoreTotalPct || 0), 0) / cycleResps.length);
   const level = getLevel(totalPct);
 
   // Brechas de percepción entre roles (umbral ≥ 25pp, mín 3 resp por rol)
   const MIN_ROLE = 3;
   const roleGroups = {};
-  cycleResps.forEach(r => {
+  cycleResps.forEach((r) => {
     if (r.rol) roleGroups[r.rol] = (roleGroups[r.rol] || []).concat(r);
   });
   const validRoles = Object.entries(roleGroups).filter(([, rs]) => rs.length >= MIN_ROLE);
@@ -222,17 +267,19 @@ function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContex
     const roleAvgs = {};
     validRoles.forEach(([role, rs]) => {
       roleAvgs[role] = {};
-      DIMS_CFG.forEach(d => {
+      DIMS_CFG.forEach((d) => {
         const sum = rs.reduce((a, r) => a + (r[d.storeKey] || 0), 0);
         roleAvgs[role][d.key] = Math.round((sum / rs.length / d.max) * 100);
       });
     });
-    DIMS_CFG.forEach(d => {
+    DIMS_CFG.forEach((d) => {
       const byRole = validRoles.map(([role]) => ({ role, pct: roleAvgs[role][d.key] }));
-      const hi = byRole.reduce((a, b) => b.pct > a.pct ? b : a);
-      const lo = byRole.reduce((a, b) => b.pct < a.pct ? b : a);
+      const hi = byRole.reduce((a, b) => (b.pct > a.pct ? b : a));
+      const lo = byRole.reduce((a, b) => (b.pct < a.pct ? b : a));
       if (hi.pct - lo.pct >= 25) {
-        roleGapsLines.push(`${d.label}: ${hi.role} ${hi.pct}% vs ${lo.role} ${lo.pct}% (diferencia: ${hi.pct - lo.pct}pp)`);
+        roleGapsLines.push(
+          `${d.label}: ${hi.role} ${hi.pct}% vs ${lo.role} ${lo.pct}% (diferencia: ${hi.pct - lo.pct}pp)`
+        );
       }
     });
   }
@@ -240,20 +287,22 @@ function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContex
   // Momentum vs. ciclo anterior
   let momentumText = 'Sin datos de ciclos anteriores';
   if (!isAllCycles) {
-    const prevResps = allResps.filter(r => r.ciclo && r.ciclo !== ciclo);
+    const prevResps = allResps.filter((r) => r.ciclo && r.ciclo !== ciclo);
     if (prevResps.length) {
       const byCycle = {};
-      prevResps.forEach(r => { if (r.ciclo) byCycle[r.ciclo] = (byCycle[r.ciclo] || []).concat(r); });
+      prevResps.forEach((r) => {
+        if (r.ciclo) byCycle[r.ciclo] = (byCycle[r.ciclo] || []).concat(r);
+      });
       const prevCycles = Object.keys(byCycle);
-      const lastPrev   = prevCycles[prevCycles.length - 1];
+      const lastPrev = prevCycles[prevCycles.length - 1];
       const prevCycleR = byCycle[lastPrev];
-      const prevAvg    = Math.round(prevCycleR.reduce((s, r) => s + (r.scoreTotalPct || 0), 0) / prevCycleR.length);
-      const delta      = totalPct - prevAvg;
-      const dir        = delta > 2 ? 'mejorando' : delta < -2 ? 'empeorando' : 'estable';
-      const dimDeltas  = DIMS_CFG.map(d => {
+      const prevAvg = Math.round(prevCycleR.reduce((s, r) => s + (r.scoreTotalPct || 0), 0) / prevCycleR.length);
+      const delta = totalPct - prevAvg;
+      const dir = delta > 2 ? 'mejorando' : delta < -2 ? 'empeorando' : 'estable';
+      const dimDeltas = DIMS_CFG.map((d) => {
         const prevDimAvg = prevCycleR.reduce((s, r) => s + (r[d.storeKey] || 0), 0) / prevCycleR.length;
-        const prevPct    = Math.round((prevDimAvg / d.max) * 100);
-        const diff       = dimScores[d.key] - prevPct;
+        const prevPct = Math.round((prevDimAvg / d.max) * 100);
+        const diff = dimScores[d.key] - prevPct;
         return Math.abs(diff) >= 8 ? `${d.label}: ${diff > 0 ? '+' : ''}${diff}pp` : null;
       }).filter(Boolean);
       momentumText = `${dir} (${delta >= 0 ? '+' : ''}${delta}pp vs ciclo ${lastPrev})`;
@@ -263,23 +312,25 @@ function buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContex
 
   // Comentarios por sección con etiqueta de rol
   const commentLines = [];
-  SECTIONS_CFG.forEach(sec => {
+  SECTIONS_CFG.forEach((sec) => {
     const items = cycleResps
-      .map(r => ({ text: ((r.comments || {})[sec.id] || '').trim(), rol: r.rol || '' }))
-      .filter(c => c.text.length > 0);
+      .map((r) => ({ text: ((r.comments || {})[sec.id] || '').trim(), rol: r.rol || '' }))
+      .filter((c) => c.text.length > 0);
     if (items.length) {
       commentLines.push(`### ${sec.title}`);
-      items.forEach(c => commentLines.push(`- [${c.rol}] "${c.text}"`));
+      items.forEach((c) => commentLines.push(`- [${c.rol}] "${c.text}"`));
     }
   });
 
-  const dimScoresText = DIMS_CFG.map(d => `- ${d.label}: ${dimScores[d.key]}%`).join('\n');
+  const dimScoresText = DIMS_CFG.map((d) => `- ${d.label}: ${dimScores[d.key]}%`).join('\n');
 
-  const contextoSection = contextoCoach && contextoCoach.trim()
-    ? `\n## Contexto adicional del coach\n${contextoCoach.trim()}\n` : '';
+  const contextoSection =
+    contextoCoach && contextoCoach.trim() ? `\n## Contexto adicional del coach\n${contextoCoach.trim()}\n` : '';
 
-  const documentoSection = documentoContexto && documentoContexto.trim()
-    ? `\n## Documento adjunto (extracto del coach, máx. ~5 páginas)\n${documentoContexto.trim()}\n` : '';
+  const documentoSection =
+    documentoContexto && documentoContexto.trim()
+      ? `\n## Documento adjunto (extracto del coach, máx. ~5 páginas)\n${documentoContexto.trim()}\n`
+      : '';
 
   const prompt = `Eres un coach agile experto. Analiza los datos de assessment de madurez Scrum del siguiente equipo y devuelve un JSON estructurado.
 ${contextoSection}${documentoSection}
@@ -334,118 +385,158 @@ exports.analyzeTeamWithClaude = functions
   .runWith({ secrets: ['ANTHROPIC_API_KEY'], timeoutSeconds: 300, memory: '512MB' })
   .https.onCall(async (data, context) => {
     try {
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
-    }
-
-    const ownerId           = context.auth.uid;
-    const teamId            = (data.teamId            || '').trim();
-    const ciclo             = (data.ciclo             || '').trim() || null;
-    const contextoCoach     = (data.contextoCoach     || '').trim() || null;
-    const documentoContexto = (data.documentoContexto || '').trim() || null;
-    const images            = Array.isArray(data.images) ? data.images : null;
-
-    if (!teamId) {
-      throw new functions.https.HttpsError('invalid-argument', 'teamId es requerido.');
-    }
-
-    // Verificar pertenencia del equipo
-    const teamDoc = await db.collection('equipos').doc(teamId).get();
-    if (!teamDoc.exists || teamDoc.data().ownerId !== ownerId) {
-      throw new functions.https.HttpsError('permission-denied', 'No tienes acceso a este equipo.');
-    }
-
-    // Verificar que la IA está activada
-    const wsDoc = await db.collection('workspaces').doc(ownerId).get();
-    if (!wsDoc.exists || !wsDoc.data().aiEnabled) {
-      throw new functions.https.HttpsError('failed-precondition', 'La IA no está activada para este workspace.');
-    }
-
-    // Obtener todas las respuestas del equipo
-    const respsSnap = await db.collection('respuestas').where('equipoId', '==', teamId).get();
-    const allResps  = respsSnap.docs.map(d => d.data());
-    const isAllCycles = !ciclo || ciclo === 'Todos';
-    const cycleResps  = isAllCycles ? allResps : allResps.filter(r => r.ciclo === ciclo);
-
-    if (cycleResps.length < 3) {
-      throw new functions.https.HttpsError('failed-precondition', 'Se necesitan al menos 3 respuestas para el análisis.');
-    }
-
-    // Clave de caché: teamId + ciclo (sanitizado para Firestore)
-    const cacheKey = `${teamId}_${(ciclo || 'Todos').replace(/[^a-zA-Z0-9\-]/g, '_')}`;
-
-    // Verificar caché existente
-    const cacheRef = db.collection('analisis_ia').doc(cacheKey);
-    const cacheDoc = await cacheRef.get();
-
-    if (cacheDoc.exists) {
-      const cached    = cacheDoc.data();
-      const cachedAt  = cached.generadoEn ? new Date(cached.generadoEn) : null;
-      if (cachedAt) {
-        const newResponsesCount = cycleResps.filter(r => {
-          const fecha = r.fecha ? r.fecha.toDate() : null;
-          return fecha && fecha > cachedAt;
-        }).length;
-        if (newResponsesCount === 0) {
-          return { data: cached, fromCache: true, newResponsesCount: 0 };
-        }
-        // Hay respuestas nuevas: regenerar pero informar cuántas hay
+      if (!context.auth) {
+        throw new functions.https.HttpsError('unauthenticated', 'No autenticado.');
       }
-    }
 
-    // Construir prompt con datos calculados
-    const built = buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContexto);
-    if (!built) {
-      throw new functions.https.HttpsError('not-found', 'Sin datos para analizar.');
-    }
+      const ownerId = context.auth.uid;
+      const teamId = (data.teamId || '').trim();
+      const ciclo = (data.ciclo || '').trim() || null;
+      const contextoCoach = (data.contextoCoach || '').trim() || null;
+      const documentoContexto = (data.documentoContexto || '').trim() || null;
+      const images = Array.isArray(data.images) ? data.images : null;
 
-    // Llamar a Claude
-    const { Anthropic } = require('@anthropic-ai/sdk');
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new functions.https.HttpsError('internal', 'API key no configurada. Configura ANTHROPIC_API_KEY en Secret Manager.');
-    }
+      if (!teamId) {
+        throw new functions.https.HttpsError('invalid-argument', 'teamId es requerido.');
+      }
 
-    const anthropic = new Anthropic({ apiKey });
-    let parsed;
-    try {
-      // Construir contenido del mensaje: texto + imágenes opcionales
-      let msgContent;
-      if (images && images.length) {
-        msgContent = [];
-        for (const img of images) {
-          const mt = img.mediaType === 'image/jpeg' ? 'image/jpeg' : 'image/png';
-          msgContent.push({ type: 'image', source: { type: 'base64', media_type: mt, data: img.data } });
+      // Verificar pertenencia del equipo
+      const teamDoc = await db.collection('equipos').doc(teamId).get();
+      if (!teamDoc.exists || teamDoc.data().ownerId !== ownerId) {
+        throw new functions.https.HttpsError('permission-denied', 'No tienes acceso a este equipo.');
+      }
+
+      // Verificar que la IA está activada
+      const wsDoc = await db.collection('workspaces').doc(ownerId).get();
+      if (!wsDoc.exists || !wsDoc.data().aiEnabled) {
+        throw new functions.https.HttpsError('failed-precondition', 'La IA no está activada para este workspace.');
+      }
+
+      // Obtener todas las respuestas del equipo
+      const respsSnap = await db.collection('respuestas').where('equipoId', '==', teamId).get();
+      const allResps = respsSnap.docs.map((d) => d.data());
+      const isAllCycles = !ciclo || ciclo === 'Todos';
+      const cycleResps = isAllCycles ? allResps : allResps.filter((r) => r.ciclo === ciclo);
+
+      if (cycleResps.length < 3) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Se necesitan al menos 3 respuestas para el análisis.'
+        );
+      }
+
+      // Clave de caché: teamId + ciclo (sanitizado para Firestore)
+      const cacheKey = `${teamId}_${(ciclo || 'Todos').replace(/[^a-zA-Z0-9\-]/g, '_')}`;
+
+      // Verificar caché existente
+      const cacheRef = db.collection('analisis_ia').doc(cacheKey);
+      const cacheDoc = await cacheRef.get();
+
+      if (cacheDoc.exists) {
+        const cached = cacheDoc.data();
+        const cachedAt = cached.generadoEn ? new Date(cached.generadoEn) : null;
+        if (cachedAt) {
+          const newResponsesCount = cycleResps.filter((r) => {
+            const fecha = r.fecha ? r.fecha.toDate() : null;
+            return fecha && fecha > cachedAt;
+          }).length;
+          if (newResponsesCount === 0) {
+            logger.info('analyzeTeamWithClaude.cacheHit', { ownerId, teamId, ciclo });
+            await writeAudit({
+              accion: 'ai.analyzed',
+              realizadoPor: ownerId,
+              detalles: { teamId, ciclo, fromCache: true, newResponsesCount: 0 },
+            });
+            return { data: cached, fromCache: true, newResponsesCount: 0 };
+          }
+          // Hay respuestas nuevas: regenerar pero informar cuántas hay
         }
-        // Instrucción + prompt después de las imágenes
-        msgContent.push({
-          type: 'text',
-          text: `Se adjuntan ${images.length} imagen${images.length !== 1 ? 'es' : ''} (capturas de gráficos o tablas del equipo). Analízalas e incorpóralas a tu análisis donde sean relevantes.\n\n${built.prompt}`
+      }
+
+      // Construir prompt con datos calculados
+      const built = buildTeamPrompt(teamId, ciclo, allResps, contextoCoach, documentoContexto);
+      if (!built) {
+        throw new functions.https.HttpsError('not-found', 'Sin datos para analizar.');
+      }
+
+      // Llamar a Claude
+      const { Anthropic } = require('@anthropic-ai/sdk');
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        throw new functions.https.HttpsError(
+          'internal',
+          'API key no configurada. Configura ANTHROPIC_API_KEY en Secret Manager.'
+        );
+      }
+
+      const anthropic = new Anthropic({ apiKey });
+      let parsed;
+      try {
+        // Construir contenido del mensaje: texto + imágenes opcionales
+        let msgContent;
+        if (images && images.length) {
+          msgContent = [];
+          for (const img of images) {
+            const mt = img.mediaType === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+            msgContent.push({ type: 'image', source: { type: 'base64', media_type: mt, data: img.data } });
+          }
+          // Instrucción + prompt después de las imágenes
+          msgContent.push({
+            type: 'text',
+            text: `Se adjuntan ${images.length} imagen${images.length !== 1 ? 'es' : ''} (capturas de gráficos o tablas del equipo). Analízalas e incorpóralas a tu análisis donde sean relevantes.\n\n${built.prompt}`,
+          });
+        } else {
+          msgContent = built.prompt;
+        }
+        const message = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 4096,
+          messages: [{ role: 'user', content: msgContent }],
         });
-      } else {
-        msgContent = built.prompt;
+        const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+        // Extraer JSON aunque el modelo añada backticks
+        const jsonStr = rawText
+          .replace(/^```(?:json)?\n?/i, '')
+          .replace(/\n?```$/i, '')
+          .trim();
+        parsed = JSON.parse(jsonStr);
+        parsed.generadoEn = new Date().toISOString();
+      } catch (e) {
+        throw new functions.https.HttpsError('internal', 'Error al procesar la respuesta de IA: ' + e.message);
       }
-      const message = await anthropic.messages.create({
-        model:      'claude-sonnet-4-6',
-        max_tokens: 4096,
-        messages:   [{ role: 'user', content: msgContent }],
+
+      // Guardar en caché (admin SDK — sin pasar por reglas)
+      if (contextoCoach) parsed.contextoCoach = contextoCoach;
+      await cacheRef.set(parsed);
+
+      logger.info('analyzeTeamWithClaude.generated', {
+        ownerId,
+        teamId,
+        ciclo,
+        respCount: cycleResps.length,
+        hasImages: !!(images && images.length),
+        hasDocumento: !!documentoContexto,
       });
-      const rawText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
-      // Extraer JSON aunque el modelo añada backticks
-      const jsonStr = rawText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
-      parsed = JSON.parse(jsonStr);
-      parsed.generadoEn = new Date().toISOString();
-    } catch (e) {
-      throw new functions.https.HttpsError('internal', 'Error al procesar la respuesta de IA: ' + e.message);
-    }
+      await writeAudit({
+        accion: 'ai.analyzed',
+        realizadoPor: ownerId,
+        detalles: { teamId, ciclo, fromCache: false, respCount: cycleResps.length },
+      });
 
-    // Guardar en caché (admin SDK — sin pasar por reglas)
-    if (contextoCoach) parsed.contextoCoach = contextoCoach;
-    await cacheRef.set(parsed);
-
-    return { data: parsed, fromCache: false, newResponsesCount: 0 };
+      return { data: parsed, fromCache: false, newResponsesCount: 0 };
     } catch (e) {
-      if (e instanceof functions.https.HttpsError) throw e;
+      if (e instanceof functions.https.HttpsError) {
+        logger.warn('analyzeTeamWithClaude.httpsError', {
+          uid: context.auth && context.auth.uid,
+          code: e.code,
+          msg: e.message,
+        });
+        throw e;
+      }
+      logger.error('analyzeTeamWithClaude.unexpected', {
+        uid: context.auth && context.auth.uid,
+        error: e.message,
+      });
       throw new functions.https.HttpsError('internal', e.message || 'Error inesperado');
     }
   });

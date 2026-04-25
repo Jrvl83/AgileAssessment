@@ -335,4 +335,4 @@ Solo se escribe desde Cloud Functions (no desde el cliente) para garantizar inte
 | 6 — Tests | ✅ Completado (alcance parcial) | Vitest; **96 tests** en `tests/scoring.test.js` (27), `analysis.test.js` (52), `evolution.test.js` (17); CJS stubs en `assessment-config.js` y `admin-api.js`. Cobertura limitada a lógica pura — faltan tests de `render()`, auth y Cloud Functions (ver `DEUDA_TECNICA.md` ítem D6). |
 | 7 — CI/CD | ✅ Completado | `.github/workflows/deploy.yml`: job `test` (lint+vitest, push+PRs) → job `deploy` (solo push a main); requiere secret `FIREBASE_TOKEN` |
 | 8 — Paginación | Pendiente | |
-| 9 — Auditoría | Pendiente | |
+| 9 — Auditoría | ✅ Completado (alcance parcial) | `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; eventos registrados: `workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`. Observabilidad (Sentry/Crashlytics) y audit de acciones admin frontend pendientes en `DEUDA_TECNICA.md` (D3 y posible D2-bis). |

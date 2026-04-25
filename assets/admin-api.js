@@ -2,13 +2,16 @@
 
 function calcDispersion(pctArr) {
   if (pctArr.length < 2) return null;
-  const mean = pctArr.reduce((a,b) => a+b, 0) / pctArr.length;
-  const sd = Math.round(Math.sqrt(pctArr.reduce((a,b) => a + Math.pow(b-mean, 2), 0) / pctArr.length));
+  const mean = pctArr.reduce((a, b) => a + b, 0) / pctArr.length;
+  const sd = Math.round(Math.sqrt(pctArr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / pctArr.length));
   const min = Math.min(...pctArr);
   const max = Math.max(...pctArr);
-  const align = sd < 15 ? { label:'Alta',  color:'#0d7a52', bg:'#d4f0e5' }
-              : sd < 25 ? { label:'Media', color:'#a05c0a', bg:'#fdefd6' }
-              :            { label:'Baja',  color:'#c0282a', bg:'#fce8e8' };
+  const align =
+    sd < 15
+      ? { label: 'Alta', color: '#0d7a52', bg: '#d4f0e5' }
+      : sd < 25
+        ? { label: 'Media', color: '#a05c0a', bg: '#fdefd6' }
+        : { label: 'Baja', color: '#c0282a', bg: '#fce8e8' };
   return { sd, min, max, align };
 }
 
@@ -19,9 +22,7 @@ function calcDispersion(pctArr) {
 function isPolarized(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   if (total < 3) return false;
-  return counts[0] / total >= 0.2
-      && counts[3] / total >= 0.2
-      && (counts[0] + counts[3]) / total >= 0.5;
+  return counts[0] / total >= 0.2 && counts[3] / total >= 0.2 && (counts[0] + counts[3]) / total >= 0.5;
 }
 
 // Detecta brechas de percepción entre roles por dimensión
@@ -31,13 +32,12 @@ function detectRoleGaps(tid, cycleFilter, threshold) {
   const thresh = threshold !== undefined ? threshold : 25;
   const minResp = typeof MIN_ROLE_RESPONSES !== 'undefined' ? MIN_ROLE_RESPONSES : 3;
   const cf = cycleFilter || 'Todos';
-  const teamResps = state.responses.filter(r =>
-    (r.fields.Equipo || []).includes(tid) &&
-    (cf === 'Todos' || r.fields.Ciclo === cf)
+  const teamResps = state.responses.filter(
+    (r) => (r.fields.Equipo || []).includes(tid) && (cf === 'Todos' || r.fields.Ciclo === cf)
   );
 
   const roleGroups = {};
-  teamResps.forEach(r => {
+  teamResps.forEach((r) => {
     const rol = r.fields.Rol;
     if (!rol) return;
     if (!roleGroups[rol]) roleGroups[rol] = [];
@@ -53,28 +53,28 @@ function detectRoleGaps(tid, cycleFilter, threshold) {
   const roleAvgs = {};
   validRoles.forEach(({ role, rs }) => {
     roleAvgs[role] = {};
-    DIMS.forEach(d => {
+    DIMS.forEach((d) => {
       const sum = rs.reduce((a, r) => a + (r.fields[d.field] || 0), 0);
       roleAvgs[role][d.key] = Math.round((sum / rs.length / d.max) * 100);
     });
   });
 
   const gaps = [];
-  DIMS.forEach(d => {
+  DIMS.forEach((d) => {
     const byRole = validRoles.map(({ role }) => ({ role, pct: roleAvgs[role][d.key] }));
-    const maxPct = Math.max(...byRole.map(r => r.pct));
-    const minPct = Math.min(...byRole.map(r => r.pct));
+    const maxPct = Math.max(...byRole.map((r) => r.pct));
+    const minPct = Math.min(...byRole.map((r) => r.pct));
     const diff = maxPct - minPct;
     if (diff >= thresh) {
       gaps.push({
-        dimKey:   d.key,
+        dimKey: d.key,
         dimLabel: d.label,
         dimColor: d.color,
-        roleHigh: byRole.find(r => r.pct === maxPct).role,
-        pctHigh:  maxPct,
-        roleLow:  byRole.find(r => r.pct === minPct).role,
-        pctLow:   minPct,
-        diff
+        roleHigh: byRole.find((r) => r.pct === maxPct).role,
+        pctHigh: maxPct,
+        roleLow: byRole.find((r) => r.pct === minPct).role,
+        pctLow: minPct,
+        diff,
       });
     }
   });
@@ -85,29 +85,45 @@ function detectRoleGaps(tid, cycleFilter, threshold) {
 // Agrupa comentarios por sección, incluyendo el rol del autor
 // Retorna array de { secId, secTitle, secColor, comments:[{text,rol}] } (solo secciones con comentarios)
 function groupCommentsBySection(teamResps) {
-  return SECTIONS.map(sec => {
-    const dim = DIMS.find(d => d.key === sec.id);
+  return SECTIONS.map((sec) => {
+    const dim = DIMS.find((d) => d.key === sec.id);
     const secColor = dim ? dim.color : '#374151';
     const comments = teamResps
-      .map(r => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
-      .filter(c => c.text.length > 0);
+      .map((r) => ({ text: ((r.fields.Comments || {})[sec.id] || '').trim(), rol: r.fields.Rol || '' }))
+      .filter((c) => c.text.length > 0);
     return { secId: sec.id, secTitle: sec.title, secColor, comments };
-  }).filter(s => s.comments.length > 0);
+  }).filter((s) => s.comments.length > 0);
 }
 
 // Detecta inconsistencias score-comentario: sección con score alto pero comentarios con términos de riesgo
 // Retorna { [secId]: boolean } — true = señal oculta detectada
-const COMMENT_RISK_TERMS = ['teatro','vacía','vacío','nadie','no funciona','no se usa','rara vez','nunca','solo de nombre','obligados','forzado','forzada','no sirve','inútil'];
+const COMMENT_RISK_TERMS = [
+  'teatro',
+  'vacía',
+  'vacío',
+  'nadie',
+  'no funciona',
+  'no se usa',
+  'rara vez',
+  'nunca',
+  'solo de nombre',
+  'obligados',
+  'forzado',
+  'forzada',
+  'no sirve',
+  'inútil',
+];
 
 function detectCommentRisk(teamResps, dimAvgPcts) {
   const risks = {};
-  SECTIONS.forEach(sec => {
+  SECTIONS.forEach((sec) => {
     const pct = dimAvgPcts[sec.id] !== undefined ? dimAvgPcts[sec.id] : 0;
-    if (pct < 67) { risks[sec.id] = false; return; }
-    const allComments = teamResps
-      .map(r => ((r.fields.Comments || {})[sec.id] || '').toLowerCase())
-      .join(' ');
-    risks[sec.id] = allComments.length > 0 && COMMENT_RISK_TERMS.some(t => allComments.includes(t));
+    if (pct < 67) {
+      risks[sec.id] = false;
+      return;
+    }
+    const allComments = teamResps.map((r) => ((r.fields.Comments || {})[sec.id] || '').toLowerCase()).join(' ');
+    risks[sec.id] = allComments.length > 0 && COMMENT_RISK_TERMS.some((t) => allComments.includes(t));
   });
   return risks;
 }
@@ -129,70 +145,88 @@ function calcMomentum(tid, role, n) {
 }
 
 function computeGlobalDimAverages(cFilter, excludeOtro) {
-  const teamsWithData = Object.values(state.teamStats).filter(s => s.count > 0);
+  const teamsWithData = Object.values(state.teamStats).filter((s) => s.count > 0);
   if (teamsWithData.length < 2) return null;
   const sums = {};
-  DIMS.forEach(d => { sums[d.key] = 0; });
+  DIMS.forEach((d) => {
+    sums[d.key] = 0;
+  });
   let count = 0;
-  teamsWithData.forEach(s => {
+  teamsWithData.forEach((s) => {
     const st = getTeamFilteredStats(s.id, 'Todos', cFilter, excludeOtro);
     if (!st) return;
-    DIMS.forEach(d => { sums[d.key] += st.avgDims[d.key].pct; });
+    DIMS.forEach((d) => {
+      sums[d.key] += st.avgDims[d.key].pct;
+    });
     count++;
   });
   if (count < 2) return null;
   const result = {};
-  DIMS.forEach(d => { result[d.key] = Math.round(sums[d.key] / count); });
+  DIMS.forEach((d) => {
+    result[d.key] = Math.round(sums[d.key] / count);
+  });
   return result;
 }
 
 function getMajorityRole(resps) {
   const counts = {};
-  resps.forEach(r => {
+  resps.forEach((r) => {
     const rol = r.fields.Rol;
     if (rol && rol !== 'Otro') counts[rol] = (counts[rol] || 0) + 1;
   });
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  if (!entries.length || entries.length > 1 && entries[0][1] === entries[1][1]) return null;
+  if (!entries.length || (entries.length > 1 && entries[0][1] === entries[1][1])) return null;
   return entries[0][0];
 }
 
 function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   const cf = cFilter || 'Todos';
-  const filtered = state.responses.filter(r =>
-    (r.fields.Equipo || []).includes(tid) &&
-    (roleFilter === 'Todos' || r.fields.Rol === roleFilter) &&
-    (roleFilter !== 'Todos' || !excludeOtro || r.fields.Rol !== 'Otro') &&
-    (cf === 'Todos' || r.fields.Ciclo === cf)
+  const filtered = state.responses.filter(
+    (r) =>
+      (r.fields.Equipo || []).includes(tid) &&
+      (roleFilter === 'Todos' || r.fields.Rol === roleFilter) &&
+      (roleFilter !== 'Todos' || !excludeOtro || r.fields.Rol !== 'Otro') &&
+      (cf === 'Todos' || r.fields.Ciclo === cf)
   );
   if (!filtered.length) return null;
   const dimSums = {};
-  DIMS.forEach(d => { dimSums[d.key] = 0; });
+  DIMS.forEach((d) => {
+    dimSums[d.key] = 0;
+  });
   let totalPct = 0;
-  filtered.forEach(r => {
-    DIMS.forEach(d => { dimSums[d.key] += r.fields[d.field] || 0; });
+  filtered.forEach((r) => {
+    DIMS.forEach((d) => {
+      dimSums[d.key] += r.fields[d.field] || 0;
+    });
     totalPct += r.fields['Score Total %'] || 0;
   });
   const avgTotal = Math.round(totalPct / filtered.length);
   const avgDims = {};
-  DIMS.forEach(d => {
+  DIMS.forEach((d) => {
     const avg = dimSums[d.key] / filtered.length;
     avgDims[d.key] = { score: +avg.toFixed(1), pct: Math.round((avg / d.max) * 100) };
   });
   const dispersion = {};
-  DIMS.forEach(d => {
-    const pcts = filtered.map(r => Math.round(((r.fields[d.field] || 0) / d.max) * 100));
+  DIMS.forEach((d) => {
+    const pcts = filtered.map((r) => Math.round(((r.fields[d.field] || 0) / d.max) * 100));
     dispersion[d.key] = calcDispersion(pcts);
   });
-  dispersion.overall = calcDispersion(filtered.map(r => r.fields['Score Total %'] || 0));
-  const tamanoCount = {}, scrumTimeCount = {};
-  const teamAgeCount = {}, teamSizeCount = {}, dedicatedPOCount = {}, workModeCount = {};
-  filtered.forEach(r => {
-    const t = r.fields['Tamaño Equipo'], s = r.fields['Tiempo Scrum'];
+  dispersion.overall = calcDispersion(filtered.map((r) => r.fields['Score Total %'] || 0));
+  const tamanoCount = {},
+    scrumTimeCount = {};
+  const teamAgeCount = {},
+    teamSizeCount = {},
+    dedicatedPOCount = {},
+    workModeCount = {};
+  filtered.forEach((r) => {
+    const t = r.fields['Tamaño Equipo'],
+      s = r.fields['Tiempo Scrum'];
     if (t) tamanoCount[t] = (tamanoCount[t] || 0) + 1;
     if (s) scrumTimeCount[s] = (scrumTimeCount[s] || 0) + 1;
-    const ta = r.fields['Team Age'], ts = r.fields['Team Size'];
-    const dp = r.fields['Dedicated PO'], wm = r.fields['Work Mode'];
+    const ta = r.fields['Team Age'],
+      ts = r.fields['Team Size'];
+    const dp = r.fields['Dedicated PO'],
+      wm = r.fields['Work Mode'];
     if (ta) teamAgeCount[ta] = (teamAgeCount[ta] || 0) + 1;
     if (ts) teamSizeCount[ts] = (teamSizeCount[ts] || 0) + 1;
     if (dp) dedicatedPOCount[dp] = (dedicatedPOCount[dp] || 0) + 1;
@@ -201,34 +235,38 @@ function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   const tamano = Object.entries(tamanoCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
   const tiempoScrum = Object.entries(scrumTimeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
   const ctx = {
-    teamAge:    Object.entries(teamAgeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
-    teamSize:   Object.entries(teamSizeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    teamAge: Object.entries(teamAgeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    teamSize: Object.entries(teamSizeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
     dedicatedPO: Object.entries(dedicatedPOCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
-    workMode:   Object.entries(workModeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+    workMode: Object.entries(workModeCount).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
   };
   return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion, tamano, tiempoScrum, ctx };
 }
 
 function computeStats() {
   const stats = {};
-  state.teams.forEach(t => {
+  state.teams.forEach((t) => {
     stats[t.id] = { id: t.id, name: t.name, active: t.active, count: 0, dimSums: {}, totalPct: 0 };
-    DIMS.forEach(d => { stats[t.id].dimSums[d.key] = 0; });
+    DIMS.forEach((d) => {
+      stats[t.id].dimSums[d.key] = 0;
+    });
   });
-  state.responses.forEach(r => {
-    (r.fields.Equipo || []).forEach(tid => {
+  state.responses.forEach((r) => {
+    (r.fields.Equipo || []).forEach((tid) => {
       if (!stats[tid]) return;
       const s = stats[tid];
       s.count++;
-      DIMS.forEach(d => { s.dimSums[d.key] += r.fields[d.field] || 0; });
+      DIMS.forEach((d) => {
+        s.dimSums[d.key] += r.fields[d.field] || 0;
+      });
       s.totalPct += r.fields['Score Total %'] || 0;
     });
   });
-  Object.values(stats).forEach(s => {
+  Object.values(stats).forEach((s) => {
     if (s.count > 0) {
       s.avgTotal = Math.round(s.totalPct / s.count);
       s.avgDims = {};
-      DIMS.forEach(d => {
+      DIMS.forEach((d) => {
         const avg = s.dimSums[d.key] / s.count;
         s.avgDims[d.key] = { score: +avg.toFixed(1), pct: Math.round((avg / d.max) * 100) };
       });
@@ -240,50 +278,58 @@ function computeStats() {
 
 // ── Evolution ────────────────────────────────────────────────────
 function getEvolutionData(tid, role) {
-  const resps = state.responses.filter(r =>
-    (r.fields.Equipo || []).includes(tid) &&
-    (role === 'Todos' || r.fields.Rol === role)
+  const resps = state.responses.filter(
+    (r) => (r.fields.Equipo || []).includes(tid) && (role === 'Todos' || r.fields.Rol === role)
   );
   const byCycle = {};
-  resps.forEach(r => {
+  resps.forEach((r) => {
     const cn = r.fields.Ciclo || 'Sin ciclo';
     if (!byCycle[cn]) byCycle[cn] = [];
     byCycle[cn].push(r);
   });
-  return Object.entries(byCycle).map(([cycleName, rs]) => {
-    const dimSums = {};
-    DIMS.forEach(d => { dimSums[d.key] = 0; });
-    let totalPct = 0;
-    rs.forEach(r => {
-      DIMS.forEach(d => { dimSums[d.key] += r.fields[d.field] || 0; });
-      totalPct += r.fields['Score Total %'] || 0;
+  return Object.entries(byCycle)
+    .map(([cycleName, rs]) => {
+      const dimSums = {};
+      DIMS.forEach((d) => {
+        dimSums[d.key] = 0;
+      });
+      let totalPct = 0;
+      rs.forEach((r) => {
+        DIMS.forEach((d) => {
+          dimSums[d.key] += r.fields[d.field] || 0;
+        });
+        totalPct += r.fields['Score Total %'] || 0;
+      });
+      const avgTotal = Math.round(totalPct / rs.length);
+      const avgDims = {};
+      DIMS.forEach((d) => {
+        const avg = dimSums[d.key] / rs.length;
+        avgDims[d.key] = { pct: Math.round((avg / d.max) * 100) };
+      });
+      const qSums = {};
+      let qCount = 0;
+      rs.forEach((r) => {
+        if (r.fields.Answers && Object.keys(r.fields.Answers).length > 0) {
+          qCount++;
+          Object.entries(r.fields.Answers).forEach(([k, v]) => {
+            qSums[k] = (qSums[k] || 0) + Number(v);
+          });
+        }
+      });
+      const avgQuestions =
+        qCount > 0
+          ? Object.fromEntries(Object.entries(qSums).map(([k, sum]) => [k, +(sum / qCount).toFixed(2)]))
+          : null;
+      return { cycleName, count: rs.length, avgTotal, avgDims, level: getLevel(avgTotal), avgQuestions };
+    })
+    .sort((a, b) => {
+      const ia = state.cycles.findIndex((c) => c.name === a.cycleName);
+      const ib = state.cycles.findIndex((c) => c.name === b.cycleName);
+      if (ia !== -1 && ib !== -1) return ia - ib;
+      if (ia !== -1) return -1;
+      if (ib !== -1) return 1;
+      return a.cycleName.localeCompare(b.cycleName);
     });
-    const avgTotal = Math.round(totalPct / rs.length);
-    const avgDims = {};
-    DIMS.forEach(d => {
-      const avg = dimSums[d.key] / rs.length;
-      avgDims[d.key] = { pct: Math.round((avg / d.max) * 100) };
-    });
-    const qSums = {};
-    let qCount = 0;
-    rs.forEach(r => {
-      if (r.fields.Answers && Object.keys(r.fields.Answers).length > 0) {
-        qCount++;
-        Object.entries(r.fields.Answers).forEach(([k, v]) => { qSums[k] = (qSums[k] || 0) + Number(v); });
-      }
-    });
-    const avgQuestions = qCount > 0
-      ? Object.fromEntries(Object.entries(qSums).map(([k, sum]) => [k, +(sum / qCount).toFixed(2)]))
-      : null;
-    return { cycleName, count: rs.length, avgTotal, avgDims, level: getLevel(avgTotal), avgQuestions };
-  }).sort((a, b) => {
-    const ia = state.cycles.findIndex(c => c.name === a.cycleName);
-    const ib = state.cycles.findIndex(c => c.name === b.cycleName);
-    if (ia !== -1 && ib !== -1) return ia - ib;
-    if (ia !== -1) return -1;
-    if (ib !== -1) return 1;
-    return a.cycleName.localeCompare(b.cycleName);
-  });
 }
 
 // ── API ──────────────────────────────────────────────────────────
@@ -293,17 +339,21 @@ async function fetchAllData() {
     let tQuery = db.collection('equipos');
     if (state.currentRole === 'admin') tQuery = tQuery.where('ownerId', '==', state.currentUser.uid);
     const tSnap = await tQuery.get();
-    state.teams = tSnap.docs.map(d => ({
-      id: d.id, name: d.data().nombre, active: !!d.data().activo,
-      ownerId: d.data().ownerId || null,
-      notas: d.data().notas || {},
-      category: d.data().category || ''
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    state.teams = tSnap.docs
+      .map((d) => ({
+        id: d.id,
+        name: d.data().nombre,
+        active: !!d.data().activo,
+        ownerId: d.data().ownerId || null,
+        notas: d.data().notas || {},
+        category: d.data().category || '',
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    const teamIds = new Set(state.teams.map(t => t.id));
+    const teamIds = new Set(state.teams.map((t) => t.id));
     const rSnap = await db.collection('respuestas').get();
     state.responses = rSnap.docs
-      .map(d => {
+      .map((d) => {
         const r = d.data();
         return {
           id: d.id,
@@ -312,7 +362,7 @@ async function fetchAllData() {
             Participante: r.participante,
             Rol: r.rol,
             Ciclo: r.ciclo || '',
-            ...Object.fromEntries(DIMS.map(d => [d.field, r[d.storeKey] || 0])),
+            ...Object.fromEntries(DIMS.map((d) => [d.field, r[d.storeKey] || 0])),
             'Score Total %': r.scoreTotalPct || 0,
             Nivel: r.nivel || '',
             Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
@@ -327,17 +377,18 @@ async function fetchAllData() {
             FlaggedFast: r.flaggedFast || false,
             CompletionSeconds: r.completionSeconds || null,
             TeamType: r.teamType || '',
-            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null
-          }
+            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null,
+          },
         };
       })
-      .filter(r => teamIds.has(r.fields.Equipo[0]))
+      .filter((r) => teamIds.has(r.fields.Equipo[0]))
       .sort((a, b) => (b.fields.Fecha || '').localeCompare(a.fields.Fecha || ''));
 
     let cQuery = db.collection('ciclos');
     if (state.currentRole === 'admin') cQuery = cQuery.where('ownerId', '==', state.currentUser.uid);
     const cSnap = await cQuery.get();
-    state.cycles = cSnap.docs.map(d => ({ id: d.id, name: d.data().nombre, active: !!d.data().activo }))
+    state.cycles = cSnap.docs
+      .map((d) => ({ id: d.id, name: d.data().nombre, active: !!d.data().activo }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     await fetchPlans();
@@ -347,41 +398,58 @@ async function fetchAllData() {
     try {
       const wsSnap = await db.collection('workspaces').doc(state.currentUser.uid).get();
       const wsData = wsSnap.exists ? wsSnap.data() : {};
-      state.briefingTexto  = wsData.briefingTexto  || '';
-      state.marca          = wsData.marca          || '';
-      state.logoUrl        = wsData.logoUrl         || '';
-      state.colorAcento    = wsData.colorAcento     || '';
-      state.webhookUrl              = wsData.webhookUrl              || '';
-      state.anonymityMode           = wsData.anonymityMode           || 'full';
-      state.aiEnabled               = wsData.aiEnabled               || false;
-      state.assessmentCadenceWeeks  = wsData.assessmentCadenceWeeks  || 0;
-      state.teamHealthEnabled       = wsData.teamHealthEnabled        || false;
-      state.guidanceText            = wsData.guidanceText             || '';
-    } catch(e) { state.briefingTexto = ''; state.marca = ''; state.logoUrl = ''; state.colorAcento = ''; state.webhookUrl = ''; state.anonymityMode = 'full'; state.aiEnabled = false; state.assessmentCadenceWeeks = 0; state.teamHealthEnabled = false; state.guidanceText = ''; }
+      state.briefingTexto = wsData.briefingTexto || '';
+      state.marca = wsData.marca || '';
+      state.logoUrl = wsData.logoUrl || '';
+      state.colorAcento = wsData.colorAcento || '';
+      state.webhookUrl = wsData.webhookUrl || '';
+      state.anonymityMode = wsData.anonymityMode || 'full';
+      state.aiEnabled = wsData.aiEnabled || false;
+      state.assessmentCadenceWeeks = wsData.assessmentCadenceWeeks || 0;
+      state.teamHealthEnabled = wsData.teamHealthEnabled || false;
+      state.guidanceText = wsData.guidanceText || '';
+    } catch (e) {
+      state.briefingTexto = '';
+      state.marca = '';
+      state.logoUrl = '';
+      state.colorAcento = '';
+      state.webhookUrl = '';
+      state.anonymityMode = 'full';
+      state.aiEnabled = false;
+      state.assessmentCadenceWeeks = 0;
+      state.teamHealthEnabled = false;
+      state.guidanceText = '';
+    }
 
     let rptQuery = db.collection('reportes');
     if (state.currentRole === 'admin') rptQuery = rptQuery.where('ownerId', '==', state.currentUser.uid);
     const rptSnap = await rptQuery.get();
-    state.reports = rptSnap.docs.map(d => {
-      const r = d.data();
-      return {
-        id: d.id,
-        equipoNombre: r.equipoNombre || '',
-        ciclo: r.ciclo || 'Todos',
-        ownerId: r.ownerId || '',
-        generatedAt: r.generatedAt ? r.generatedAt.toDate() : null,
-        expiresAt:   r.expiresAt   ? r.expiresAt.toDate()   : null,
-      };
-    }).sort((a, b) => (b.generatedAt || 0) - (a.generatedAt || 0));
+    state.reports = rptSnap.docs
+      .map((d) => {
+        const r = d.data();
+        return {
+          id: d.id,
+          equipoNombre: r.equipoNombre || '',
+          ciclo: r.ciclo || 'Todos',
+          ownerId: r.ownerId || '',
+          generatedAt: r.generatedAt ? r.generatedAt.toDate() : null,
+          expiresAt: r.expiresAt ? r.expiresAt.toDate() : null,
+        };
+      })
+      .sort((a, b) => (b.generatedAt || 0) - (a.generatedAt || 0));
 
     await fetchConfig();
     await fetchPortals();
     // Sync portales en background — no bloquea la UI
     const portalTeamIds = Object.keys(state.portals);
     if (portalTeamIds.length) {
-      Promise.all(portalTeamIds.map(tid => syncPortalData(tid))).catch(() => {});
+      Promise.all(portalTeamIds.map((tid) => syncPortalData(tid))).catch((err) => {
+        console.warn('portal background sync failed:', err);
+      });
     }
-  } catch(e) { toast('Error al conectar con Firebase'); }
+  } catch (e) {
+    toast('Error al conectar con Firebase');
+  }
   setState({ loading: false });
 }
 
@@ -393,7 +461,9 @@ async function addTeam() {
     state.newTeamName = '';
     toast(`Equipo "${name}" creado`);
     await fetchAllData();
-  } catch(e) { toast('Error al crear equipo'); }
+  } catch (e) {
+    toast('Error al crear equipo');
+  }
 }
 
 async function toggleActive(id, name, current) {
@@ -401,16 +471,18 @@ async function toggleActive(id, name, current) {
     await db.collection('equipos').doc(id).update({ activo: !current });
     toast(current ? `"${name}" desactivado` : `"${name}" activado`);
     await fetchAllData();
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 async function saveTeamHealthEnabled(val) {
   setState({ teamHealthEnabled: val });
   try {
-    await db.collection('workspaces').doc(state.currentUser.uid).set(
-      { teamHealthEnabled: val }, { merge: true }
-    );
-  } catch(e) { toast('Error al guardar'); }
+    await db.collection('workspaces').doc(state.currentUser.uid).set({ teamHealthEnabled: val }, { merge: true });
+  } catch (e) {
+    toast('Error al guardar');
+  }
 }
 
 const _guidanceTimer = {};
@@ -419,20 +491,29 @@ function saveGuidanceText(txt) {
   clearTimeout(_guidanceTimer.t);
   _guidanceTimer.t = setTimeout(async () => {
     try {
-      await db.collection('workspaces').doc(state.currentUser.uid).set(
-        { guidanceText: txt || firebase.firestore.FieldValue.delete() }, { merge: true }
-      );
-    } catch(e) { /* silent */ }
+      await db
+        .collection('workspaces')
+        .doc(state.currentUser.uid)
+        .set({ guidanceText: txt || firebase.firestore.FieldValue.delete() }, { merge: true });
+    } catch (e) {
+      console.warn('saveGuidanceText failed:', e);
+      toast('Error al guardar la guía');
+    }
   }, 800);
 }
 
 async function saveTeamCategory(teamId, category) {
   try {
-    await db.collection('equipos').doc(teamId).update({ category: category || firebase.firestore.FieldValue.delete() });
-    const t = state.teams.find(t => t.id === teamId);
+    await db
+      .collection('equipos')
+      .doc(teamId)
+      .update({ category: category || firebase.firestore.FieldValue.delete() });
+    const t = state.teams.find((t) => t.id === teamId);
     if (t) t.category = category || '';
     setState({});
-  } catch(e) { toast('Error al guardar categoría'); }
+  } catch (e) {
+    toast('Error al guardar categoría');
+  }
 }
 
 async function deleteTeam(id, name) {
@@ -441,7 +522,9 @@ async function deleteTeam(id, name) {
     await db.collection('equipos').doc(id).delete();
     toast(`Equipo "${name}" eliminado`);
     await fetchAllData();
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 // ── Cycle management ─────────────────────────────────────────────
@@ -453,28 +536,36 @@ async function addCycle() {
     state.newCycleName = '';
     toast(`Ciclo "${name}" creado`);
     await fetchAllData();
-  } catch(e) { toast('Error al crear ciclo'); }
+  } catch (e) {
+    toast('Error al crear ciclo');
+  }
 }
 
 async function toggleCycle(id, name, current) {
   try {
     if (!current) {
       const batch = db.batch();
-      state.cycles.filter(c => c.active && c.id !== id).forEach(c => {
-        batch.update(db.collection('ciclos').doc(c.id), { activo: false });
-      });
+      state.cycles
+        .filter((c) => c.active && c.id !== id)
+        .forEach((c) => {
+          batch.update(db.collection('ciclos').doc(c.id), { activo: false });
+        });
       await batch.commit();
     }
     await db.collection('ciclos').doc(id).update({ activo: !current });
     toast(current ? `"${name}" cerrado` : `"${name}" activado`);
     if (state.webhookUrl) {
-      fns.httpsCallable('dispatchWebhook')({
-        event:   current ? 'ciclo.cerrado' : 'ciclo.abierto',
-        payload: { cicloId: id, nombre: name }
-      }).catch(() => {});
+      fns
+        .httpsCallable('dispatchWebhook')({
+          event: current ? 'ciclo.cerrado' : 'ciclo.abierto',
+          payload: { cicloId: id, nombre: name },
+        })
+        .catch((err) => console.warn('webhook ciclo dispatch failed:', err));
     }
     await fetchAllData();
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 async function deleteCycle(id, name) {
@@ -483,25 +574,29 @@ async function deleteCycle(id, name) {
     await db.collection('ciclos').doc(id).delete();
     toast(`Ciclo "${name}" eliminado`);
     await fetchAllData();
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 // ── Plan de Acción ───────────────────────────────────────────────
 async function fetchPlans() {
   try {
-    const teamIds = new Set(state.teams.map(t => t.id));
+    const teamIds = new Set(state.teams.map((t) => t.id));
     const snap = await db.collection('planes').get();
     state.plans = snap.docs
-      .map(d => ({ id: d.id, ...d.data(), _ms: d.data().fechaCreacion ? d.data().fechaCreacion.toMillis() : 0 }))
-      .filter(p => teamIds.has(p.equipoId))
+      .map((d) => ({ id: d.id, ...d.data(), _ms: d.data().fechaCreacion ? d.data().fechaCreacion.toMillis() : 0 }))
+      .filter((p) => teamIds.has(p.equipoId))
       .sort((a, b) => b._ms - a._ms);
-  } catch(e) { state.plans = []; }
+  } catch (e) {
+    state.plans = [];
+  }
 }
 
 async function addPlan() {
   if (!state.newPlanTeamId || !state.newPlanIniciativa.trim()) return;
-  const team = state.teams.find(t => t.id === state.newPlanTeamId);
-  const cicloFinal = state.newPlanCiclo || (state.cycles.find(c => c.active) || {}).name || '';
+  const team = state.teams.find((t) => t.id === state.newPlanTeamId);
+  const cicloFinal = state.newPlanCiclo || (state.cycles.find((c) => c.active) || {}).name || '';
   const portalToken = (state.portals[state.newPlanTeamId] || {}).token || null;
   try {
     const planData = {
@@ -513,16 +608,20 @@ async function addPlan() {
       estado: 'pendiente',
       ciclo: cicloFinal,
       dimension: state.newPlanDimension || '',
-      fechaCreacion: firebase.firestore.FieldValue.serverTimestamp()
+      fechaCreacion: firebase.firestore.FieldValue.serverTimestamp(),
     };
     if (portalToken) planData.portalToken = portalToken;
     await db.collection('planes').add(planData);
-    state.newPlanIniciativa = ''; state.newPlanResponsable = ''; state.newPlanFecha = '';
+    state.newPlanIniciativa = '';
+    state.newPlanResponsable = '';
+    state.newPlanFecha = '';
     state.newPlanDimension = '';
     toast('Acción agregada');
     await fetchPlans();
     setState({});
-  } catch(e) { toast('Error al guardar'); }
+  } catch (e) {
+    toast('Error al guardar');
+  }
 }
 
 async function updatePlanStatus(id, status) {
@@ -530,7 +629,9 @@ async function updatePlanStatus(id, status) {
     await db.collection('planes').doc(id).update({ estado: status, updatedByTeam: false });
     await fetchPlans();
     setState({});
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 async function deletePlan(id) {
@@ -540,31 +641,40 @@ async function deletePlan(id) {
     toast('Acción eliminada');
     await fetchPlans();
     setState({});
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 // ── User management ──────────────────────────────────────────────
 async function fetchUsers() {
   try {
     const snap = await db.collection('usuarios').get();
-    state.users = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      .filter(u => u.role !== 'super_admin')
+    state.users = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((u) => u.role !== 'super_admin')
       .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-  } catch(e) { state.users = []; }
+  } catch (e) {
+    state.users = [];
+  }
 }
 
 async function createUser() {
   const nombre = state.newUserNombre.trim();
-  const email  = state.newUserEmail.trim();
-  if (!nombre || !email) { toast('Completa nombre y email'); return; }
+  const email = state.newUserEmail.trim();
+  if (!nombre || !email) {
+    toast('Completa nombre y email');
+    return;
+  }
   try {
     await fns.httpsCallable('createWorkspaceAdmin')({ nombre, email });
     await auth.sendPasswordResetEmail(email);
-    state.newUserNombre = ''; state.newUserEmail = '';
+    state.newUserNombre = '';
+    state.newUserEmail = '';
     toast(`Usuario ${nombre} creado — se envió invitación a ${email}`);
     await fetchUsers();
     setState({});
-  } catch(e) {
+  } catch (e) {
     if (e.code === 'already-exists') {
       toast('Ese email ya tiene una cuenta registrada');
     } else {
@@ -579,7 +689,9 @@ async function suspendUser(uid, nombre) {
     toast(`"${nombre}" suspendido`);
     await fetchUsers();
     setState({});
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 async function reactivateUser(uid, nombre) {
@@ -588,58 +700,78 @@ async function reactivateUser(uid, nombre) {
     toast(`"${nombre}" reactivado`);
     await fetchUsers();
     setState({});
-  } catch(e) { toast('Error de conexión'); }
+  } catch (e) {
+    toast('Error de conexión');
+  }
 }
 
 async function deleteUser(uid, nombre) {
-  if (!confirm(`¿Eliminar la cuenta de "${nombre}"?\n\nEsta acción bloqueará el acceso permanentemente. Sus datos (equipos, respuestas, ciclos) se conservan.`)) return;
+  if (
+    !confirm(
+      `¿Eliminar la cuenta de "${nombre}"?\n\nEsta acción bloqueará el acceso permanentemente. Sus datos (equipos, respuestas, ciclos) se conservan.`
+    )
+  )
+    return;
   try {
     await fns.httpsCallable('deleteWorkspaceAdmin')({ uid });
     toast(`Cuenta de "${nombre}" eliminada`);
     await fetchUsers();
     setState({});
-  } catch(e) { toast('Error al eliminar: ' + (e.message || e.code)); }
+  } catch (e) {
+    toast('Error al eliminar: ' + (e.message || e.code));
+  }
 }
 
 async function resendInvite(email, nombre) {
   try {
     await auth.sendPasswordResetEmail(email);
     toast(`Invitación reenviada a ${email}`);
-  } catch(e) { toast('Error al enviar correo'); }
+  } catch (e) {
+    toast('Error al enviar correo');
+  }
 }
 
 // ── Reportes compartibles ─────────────────────────────────────────
 async function generateReport(teamId, cycleFilter) {
-  const team = state.teams.find(t => t.id === teamId);
+  const team = state.teams.find((t) => t.id === teamId);
   if (!team) return;
 
   const cf = cycleFilter || 'Todos';
   const ds = getTeamFilteredStats(teamId, 'Todos', cf);
-  if (!ds) { toast('Sin respuestas para generar el reporte'); return; }
+  if (!ds) {
+    toast('Sin respuestas para generar el reporte');
+    return;
+  }
 
   const teamResps = state.responses
-    .filter(r => (r.fields.Equipo || []).includes(teamId))
-    .filter(r => cf === 'Todos' || r.fields.Ciclo === cf);
+    .filter((r) => (r.fields.Equipo || []).includes(teamId))
+    .filter((r) => cf === 'Todos' || r.fields.Ciclo === cf);
 
-  const availRoles = [...new Set(teamResps.map(r => r.fields.Rol).filter(Boolean))].sort();
-  const roleStats = availRoles.map(role => {
-    const rr = teamResps.filter(r => r.fields.Rol === role);
-    const avg = Math.round(rr.reduce((sum, r) => sum + (r.fields['Score Total %'] || 0), 0) / rr.length);
-    return { role, count: rr.length, avg, level: getLevel(avg) };
-  }).sort((a, b) => b.avg - a.avg);
+  const availRoles = [...new Set(teamResps.map((r) => r.fields.Rol).filter(Boolean))].sort();
+  const roleStats = availRoles
+    .map((role) => {
+      const rr = teamResps.filter((r) => r.fields.Rol === role);
+      const avg = Math.round(rr.reduce((sum, r) => sum + (r.fields['Score Total %'] || 0), 0) / rr.length);
+      return { role, count: rr.length, avg, level: getLevel(avg) };
+    })
+    .sort((a, b) => b.avg - a.avg);
 
   const majorityRole = getMajorityRole(teamResps);
-  const below80 = DIMS.filter(d => ds.avgDims[d.key].pct < 80)
-    .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct);
-  const recDims = below80.length > 0
-    ? below80
-    : DIMS.slice().sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct).slice(0, 4);
-  const recommendations = recDims.map(d => ({
+  const below80 = DIMS.filter((d) => ds.avgDims[d.key].pct < 80).sort(
+    (a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct
+  );
+  const recDims =
+    below80.length > 0
+      ? below80
+      : DIMS.slice()
+          .sort((a, b) => ds.avgDims[a.key].pct - ds.avgDims[b.key].pct)
+          .slice(0, 4);
+  const recommendations = recDims.map((d) => ({
     dimKey: d.key,
     dimLabel: d.label,
     dimColor: d.color,
     pct: ds.avgDims[d.key].pct,
-    text: getRec(d.key, ds.avgDims[d.key].pct, majorityRole)
+    text: getRec(d.key, ds.avgDims[d.key].pct, majorityRole),
   }));
 
   const expiresAt = new Date();
@@ -653,8 +785,8 @@ async function generateReport(teamId, cycleFilter) {
     generatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     expiresAt: firebase.firestore.Timestamp.fromDate(expiresAt),
     branding: {
-      marca:       state.marca       || '',
-      logoUrl:     state.logoUrl     || '',
+      marca: state.marca || '',
+      logoUrl: state.logoUrl || '',
       colorAcento: state.colorAcento || '',
     },
     data: {
@@ -662,14 +794,14 @@ async function generateReport(teamId, cycleFilter) {
       count: ds.count,
       level: ds.level,
       avgDims: ds.avgDims,
-      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
-      radarValues: DIMS.map(d => ds.avgDims[d.key].pct),
-      radarLabels: DIMS.map(d => d.label),
-      radarColors: DIMS.map(d => d.color),
+      dims: DIMS.map((d) => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
+      radarValues: DIMS.map((d) => ds.avgDims[d.key].pct),
+      radarLabels: DIMS.map((d) => d.label),
+      radarColors: DIMS.map((d) => d.color),
       roleStats,
       dispersion: ds.dispersion || {},
-      recommendations
-    }
+      recommendations,
+    },
   };
 
   try {
@@ -678,12 +810,16 @@ async function generateReport(teamId, cycleFilter) {
     showReportLink(url, team.name, cf);
     toast('Reporte generado');
     if (state.webhookUrl) {
-      fns.httpsCallable('dispatchWebhook')({
-        event:   'reporte.generado',
-        payload: { token: ref.id, equipoId: teamId, equipoNombre: team.name, ciclo: cf, url }
-      }).catch(() => {});
+      fns
+        .httpsCallable('dispatchWebhook')({
+          event: 'reporte.generado',
+          payload: { token: ref.id, equipoId: teamId, equipoNombre: team.name, ciclo: cf, url },
+        })
+        .catch((err) => console.warn('webhook reporte dispatch failed:', err));
     }
-  } catch(e) { toast('Error al generar el reporte'); }
+  } catch (e) {
+    toast('Error al generar el reporte');
+  }
 }
 
 // ── Reportes compartibles — gestión ──────────────────────────────
@@ -693,7 +829,9 @@ async function revokeReport(token, label) {
     await db.collection('reportes').doc(token).delete();
     toast('Reporte revocado');
     await fetchAllData();
-  } catch(e) { toast('Error al revocar el reporte'); }
+  } catch (e) {
+    toast('Error al revocar el reporte');
+  }
 }
 
 // ── Briefing pre-assessment ──────────────────────────────────────
@@ -703,10 +841,10 @@ function saveBriefing(text) {
   clearTimeout(_briefingTimer.t);
   _briefingTimer.t = setTimeout(async () => {
     try {
-      await db.collection('workspaces').doc(state.currentUser.uid).set(
-        { briefingTexto: text }, { merge: true }
-      );
-    } catch(e) { toast('Error al guardar el briefing'); }
+      await db.collection('workspaces').doc(state.currentUser.uid).set({ briefingTexto: text }, { merge: true });
+    } catch (e) {
+      toast('Error al guardar el briefing');
+    }
   }, 800);
 }
 
@@ -717,10 +855,13 @@ function saveBranding(field, value) {
   clearTimeout(_brandingTimers[field]);
   _brandingTimers[field] = setTimeout(async () => {
     try {
-      await db.collection('workspaces').doc(state.currentUser.uid).set(
-        { [field]: value }, { merge: true }
-      );
-    } catch(e) { toast('Error al guardar'); }
+      await db
+        .collection('workspaces')
+        .doc(state.currentUser.uid)
+        .set({ [field]: value }, { merge: true });
+    } catch (e) {
+      toast('Error al guardar');
+    }
   }, 800);
 }
 
@@ -731,10 +872,10 @@ function saveWebhookUrl(url) {
   clearTimeout(_webhookTimer.t);
   _webhookTimer.t = setTimeout(async () => {
     try {
-      await db.collection('workspaces').doc(state.currentUser.uid).set(
-        { webhookUrl: url }, { merge: true }
-      );
-    } catch(e) { toast('Error al guardar la URL del webhook'); }
+      await db.collection('workspaces').doc(state.currentUser.uid).set({ webhookUrl: url }, { merge: true });
+    } catch (e) {
+      toast('Error al guardar la URL del webhook');
+    }
   }, 800);
 }
 
@@ -742,19 +883,19 @@ function saveWebhookUrl(url) {
 async function saveAnonymityMode(mode) {
   setState({ anonymityMode: mode });
   try {
-    await db.collection('workspaces').doc(state.currentUser.uid).set(
-      { anonymityMode: mode }, { merge: true }
-    );
-  } catch(e) { toast('Error al guardar'); }
+    await db.collection('workspaces').doc(state.currentUser.uid).set({ anonymityMode: mode }, { merge: true });
+  } catch (e) {
+    toast('Error al guardar');
+  }
 }
 
 async function saveAiEnabled(val) {
   setState({ aiEnabled: val });
   try {
-    await db.collection('workspaces').doc(state.currentUser.uid).set(
-      { aiEnabled: val }, { merge: true }
-    );
-  } catch(e) { toast('Error al guardar'); }
+    await db.collection('workspaces').doc(state.currentUser.uid).set({ aiEnabled: val }, { merge: true });
+  } catch (e) {
+    toast('Error al guardar');
+  }
 }
 
 // ── Cadencia de ciclos ────────────────────────────────────────────
@@ -762,29 +903,40 @@ async function saveCadenceWeeks(val) {
   const n = parseInt(val, 10) || 0;
   setState({ assessmentCadenceWeeks: n, cadenceBannerDismissed: false });
   try {
-    await db.collection('workspaces').doc(state.currentUser.uid).set(
-      { assessmentCadenceWeeks: n }, { merge: true }
-    );
-  } catch(e) { toast('Error al guardar'); }
+    await db.collection('workspaces').doc(state.currentUser.uid).set({ assessmentCadenceWeeks: n }, { merge: true });
+  } catch (e) {
+    toast('Error al guardar');
+  }
 }
 
 async function testWebhook() {
-  if (!state.webhookUrl) { toast('Configura una URL primero'); return; }
+  if (!state.webhookUrl) {
+    toast('Configura una URL primero');
+    return;
+  }
   try {
-    await fns.httpsCallable('dispatchWebhook')({ event: 'test', payload: { message: 'Webhook de prueba desde AssessmentAgile' } });
+    await fns.httpsCallable('dispatchWebhook')({
+      event: 'test',
+      payload: { message: 'Webhook de prueba desde AssessmentAgile' },
+    });
     toast('Webhook enviado — revisa tu endpoint');
-  } catch(e) { toast('Error: ' + (e.message || 'No se pudo enviar')); }
+  } catch (e) {
+    toast('Error: ' + (e.message || 'No se pudo enviar'));
+  }
 }
 
 // ── Contador en tiempo real ──────────────────────────────────────
 let _liveCountUnsub = null;
 function startLiveResponseCount() {
-  if (_liveCountUnsub) { _liveCountUnsub(); _liveCountUnsub = null; }
-  const teamIds = new Set(state.teams.map(t => t.id));
+  if (_liveCountUnsub) {
+    _liveCountUnsub();
+    _liveCountUnsub = null;
+  }
+  const teamIds = new Set(state.teams.map((t) => t.id));
   if (!teamIds.size) return;
-  _liveCountUnsub = db.collection('respuestas').onSnapshot(snap => {
+  _liveCountUnsub = db.collection('respuestas').onSnapshot((snap) => {
     const updated = snap.docs
-      .map(d => {
+      .map((d) => {
         const r = d.data();
         return {
           id: d.id,
@@ -793,7 +945,7 @@ function startLiveResponseCount() {
             Participante: r.participante,
             Rol: r.rol,
             Ciclo: r.ciclo || '',
-            ...Object.fromEntries(DIMS.map(d => [d.field, r[d.storeKey] || 0])),
+            ...Object.fromEntries(DIMS.map((d) => [d.field, r[d.storeKey] || 0])),
             'Score Total %': r.scoreTotalPct || 0,
             Nivel: r.nivel || '',
             Fecha: r.fecha ? r.fecha.toDate().toISOString() : '',
@@ -808,11 +960,11 @@ function startLiveResponseCount() {
             FlaggedFast: r.flaggedFast || false,
             CompletionSeconds: r.completionSeconds || null,
             TeamType: r.teamType || '',
-            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null
-          }
+            HealthScore: r.teamHealthScore !== undefined ? r.teamHealthScore : null,
+          },
         };
       })
-      .filter(r => teamIds.has(r.fields.Equipo[0]))
+      .filter((r) => teamIds.has(r.fields.Equipo[0]))
       .sort((a, b) => (b.fields.Fecha || '').localeCompare(a.fields.Fecha || ''));
     if (updated.length !== state.responses.length) {
       state.responses = updated;
@@ -831,11 +983,19 @@ function saveCoachNote(teamId, ciclo, text) {
   clearTimeout(_noteTimers[teamId]);
   _noteTimers[teamId] = setTimeout(async () => {
     try {
-      await db.collection('equipos').doc(teamId).update({ [`notas.${key}`]: text });
-      const team = state.teams.find(t => t.id === teamId);
-      if (team) { team.notas = team.notas || {}; team.notas[key] = text; }
+      await db
+        .collection('equipos')
+        .doc(teamId)
+        .update({ [`notas.${key}`]: text });
+      const team = state.teams.find((t) => t.id === teamId);
+      if (team) {
+        team.notas = team.notas || {};
+        team.notas[key] = text;
+      }
       delete _noteDrafts[teamId + '_' + key];
-    } catch(e) { toast('Error al guardar nota'); }
+    } catch (e) {
+      toast('Error al guardar nota');
+    }
   }, 800);
 }
 
@@ -844,7 +1004,7 @@ function saveCoachNote(teamId, ciclo, text) {
 // Retorna null si el equipo no existe o no tiene respuestas.
 function generateDebriefGuide(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
-  const team = state.teams.find(t => t.id === tid);
+  const team = state.teams.find((t) => t.id === tid);
   if (!team) return null;
 
   const ds = getTeamFilteredStats(tid, 'Todos', cf);
@@ -854,44 +1014,44 @@ function generateDebriefGuide(tid, cycleFilter) {
   const evData = getEvolutionData(tid, 'Todos');
   let prevDimPcts = null;
   if (cf !== 'Todos') {
-    const idx = evData.findIndex(e => e.cycleName === cf);
+    const idx = evData.findIndex((e) => e.cycleName === cf);
     if (idx > 0) prevDimPcts = evData[idx - 1].avgDims;
   } else if (evData.length >= 2) {
     prevDimPcts = evData[evData.length - 2].avgDims;
   }
 
   // Scores por dimensión con delta respecto al ciclo anterior
-  const dimScores = DIMS.map(d => ({
-    key:     d.key,
-    label:   d.label,
-    color:   d.color,
-    pct:     ds.avgDims[d.key].pct,
+  const dimScores = DIMS.map((d) => ({
+    key: d.key,
+    label: d.label,
+    color: d.color,
+    pct: ds.avgDims[d.key].pct,
     prevPct: prevDimPcts ? prevDimPcts[d.key].pct : null,
   }));
 
   // Top 3 oportunidades (menor score, priorizando las < 80%)
   const sorted = [...dimScores].sort((a, b) => a.pct - b.pct);
-  const below80 = sorted.filter(d => d.pct < 80);
+  const below80 = sorted.filter((d) => d.pct < 80);
   const focusDims = (below80.length > 0 ? below80 : sorted).slice(0, 3);
 
-  const opportunities = focusDims.map(d => {
+  const opportunities = focusDims.map((d) => {
     const lvl = d.pct <= 33 ? 0 : d.pct <= 66 ? 1 : 2;
     return { ...d, questions: COACHING_QUESTIONS[d.key][lvl] };
   });
 
   // Celebraciones: dimensiones que mejoraron >= 5 pts vs. ciclo anterior
   const celebrations = dimScores
-    .filter(d => d.prevPct !== null && d.pct - d.prevPct >= 5)
-    .sort((a, b) => (b.pct - b.prevPct) - (a.pct - a.prevPct));
+    .filter((d) => d.prevPct !== null && d.pct - d.prevPct >= 5)
+    .sort((a, b) => b.pct - b.prevPct - (a.pct - a.prevPct));
 
   // Brechas de percepción entre roles
   const gaps = detectRoleGaps(tid, cf);
 
   return {
-    teamName:    team.name,
+    teamName: team.name,
     cycleFilter: cf,
-    date:        new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }),
-    stats:       { avgTotal: ds.avgTotal, count: ds.count, level: ds.level },
+    date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' }),
+    stats: { avgTotal: ds.avgTotal, count: ds.count, level: ds.level },
     opportunities,
     celebrations,
     gaps,
@@ -906,12 +1066,15 @@ async function fetchConfig() {
     if (snap.exists) {
       const d = snap.data();
       state.configOverrides = d.questionOverrides || {};
-      state.configCustom    = d.customQuestions   || {};
+      state.configCustom = d.customQuestions || {};
     } else {
       state.configOverrides = {};
-      state.configCustom    = {};
+      state.configCustom = {};
     }
-  } catch(e) { state.configOverrides = {}; state.configCustom = {}; }
+  } catch (e) {
+    state.configOverrides = {};
+    state.configCustom = {};
+  }
 }
 
 let _configSaveTimer = null;
@@ -921,9 +1084,11 @@ function scheduleConfigSave() {
     try {
       await db.collection('configuraciones').doc(state.currentUser.uid).set({
         questionOverrides: state.configOverrides,
-        customQuestions:   state.configCustom
+        customQuestions: state.configCustom,
       });
-    } catch(e) { toast('Error al guardar la configuración'); }
+    } catch (e) {
+      toast('Error al guardar la configuración');
+    }
   }, 800);
 }
 
@@ -952,7 +1117,7 @@ function addCustomQuestion(sectionId) {
   state.configCustom[sectionId].push({
     id: 'cq_' + sectionId + '_' + Date.now(),
     texto: '',
-    opts: ['', '', '', '']
+    opts: ['', '', '', ''],
   });
   scheduleConfigSave();
   setState({});
@@ -980,110 +1145,124 @@ function saveCustomQuestionField(sectionId, idx, field, value) {
 function generateToken() {
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
-  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+  return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function fetchPortals() {
   if (!state.currentUser) return;
   try {
-    const snap = await db.collection('portales')
-      .where('ownerId', '==', state.currentUser.uid).get();
+    const snap = await db.collection('portales').where('ownerId', '==', state.currentUser.uid).get();
     const portals = {};
-    snap.docs.forEach(d => {
+    snap.docs.forEach((d) => {
       const data = d.data();
       if (data.teamId) portals[data.teamId] = { token: d.id, updatedAt: data.updatedAt || null };
     });
     state.portals = portals;
-  } catch(e) { state.portals = {}; }
+  } catch (e) {
+    state.portals = {};
+  }
 }
 
 async function syncPortalData(teamId) {
   const portal = state.portals[teamId];
   if (!portal) return;
-  const team = state.teams.find(t => t.id === teamId);
+  const team = state.teams.find((t) => t.id === teamId);
   if (!team) return;
 
   const ds = getTeamFilteredStats(teamId, 'Todos', 'Todos');
   const evData = getEvolutionData(teamId, 'Todos');
-  const activeCycle = (state.cycles.find(c => c.active) || {}).name || '';
-  const teamPlans = state.plans.filter(p => p.equipoId === teamId).map(p => ({
-    id: p.id,
-    iniciativa: p.iniciativa || '',
-    responsable: p.responsable || '',
-    fechaObjetivo: p.fechaObjetivo || '',
-    estado: p.estado || 'pendiente',
-    ciclo: p.ciclo || '',
-    dimension: p.dimension || ''
-  }));
+  const activeCycle = (state.cycles.find((c) => c.active) || {}).name || '';
+  const teamPlans = state.plans
+    .filter((p) => p.equipoId === teamId)
+    .map((p) => ({
+      id: p.id,
+      iniciativa: p.iniciativa || '',
+      responsable: p.responsable || '',
+      fechaObjetivo: p.fechaObjetivo || '',
+      estado: p.estado || 'pendiente',
+      ciclo: p.ciclo || '',
+      dimension: p.dimension || '',
+    }));
 
   const portalUpdate = {
     teamName: team.name,
     branding: { marca: state.marca || '', logoUrl: state.logoUrl || '', colorAcento: state.colorAcento || '' },
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    data: ds ? {
-      avgTotal: ds.avgTotal,
-      count: ds.count,
-      level: ds.level,
-      avgDims: ds.avgDims,
-      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
-      radarValues: DIMS.map(d => ds.avgDims[d.key].pct),
-      radarLabels: DIMS.map(d => d.label),
-      radarColors: DIMS.map(d => d.color),
-      evolutionData: evData.map(e => ({ cycleName: e.cycleName, avgTotal: e.avgTotal, count: e.count })),
-      plans: teamPlans,
-      activeCycle
-    } : {
-      dims: DIMS.map(d => ({ key: d.key, label: d.label, color: d.color })),
-      plans: teamPlans,
-      activeCycle
-    }
+    data: ds
+      ? {
+          avgTotal: ds.avgTotal,
+          count: ds.count,
+          level: ds.level,
+          avgDims: ds.avgDims,
+          dims: DIMS.map((d) => ({ key: d.key, label: d.label, color: d.color, max: d.max })),
+          radarValues: DIMS.map((d) => ds.avgDims[d.key].pct),
+          radarLabels: DIMS.map((d) => d.label),
+          radarColors: DIMS.map((d) => d.color),
+          evolutionData: evData.map((e) => ({ cycleName: e.cycleName, avgTotal: e.avgTotal, count: e.count })),
+          plans: teamPlans,
+          activeCycle,
+        }
+      : {
+          dims: DIMS.map((d) => ({ key: d.key, label: d.label, color: d.color })),
+          plans: teamPlans,
+          activeCycle,
+        },
   };
 
   try {
     await db.collection('portales').doc(portal.token).set(portalUpdate, { merge: true });
     if (state.portals[teamId]) state.portals[teamId].updatedAt = new Date();
-  } catch(e) { /* silent */ }
+  } catch (e) {
+    console.warn('syncPortalData failed for team', teamId, e);
+  }
 }
 
 // Asigna portalToken a todos los planes de un equipo (en batch)
 async function setPortalTokenOnPlans(teamId, token) {
-  const plans = state.plans.filter(p => p.equipoId === teamId);
+  const plans = state.plans.filter((p) => p.equipoId === teamId);
   if (!plans.length) return;
   const batch = db.batch();
-  plans.forEach(p => batch.update(db.collection('planes').doc(p.id), { portalToken: token }));
+  plans.forEach((p) => batch.update(db.collection('planes').doc(p.id), { portalToken: token }));
   await batch.commit();
 }
 
 // Elimina portalToken de todos los planes de un equipo
 async function clearPortalTokenOnPlans(teamId) {
-  const plans = state.plans.filter(p => p.equipoId === teamId);
+  const plans = state.plans.filter((p) => p.equipoId === teamId);
   if (!plans.length) return;
   const batch = db.batch();
-  plans.forEach(p => batch.update(db.collection('planes').doc(p.id), { portalToken: firebase.firestore.FieldValue.delete() }));
+  plans.forEach((p) =>
+    batch.update(db.collection('planes').doc(p.id), { portalToken: firebase.firestore.FieldValue.delete() })
+  );
   await batch.commit();
 }
 
 async function createPortal(teamId) {
-  const team = state.teams.find(t => t.id === teamId);
+  const team = state.teams.find((t) => t.id === teamId);
   if (!team) return;
   const token = generateToken();
   try {
-    await db.collection('portales').doc(token).set({
-      teamId,
-      ownerId: state.currentUser.uid,
-      teamName: team.name,
-      branding: { marca: state.marca || '', logoUrl: state.logoUrl || '', colorAcento: state.colorAcento || '' },
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      data: {}
-    });
+    await db
+      .collection('portales')
+      .doc(token)
+      .set({
+        teamId,
+        ownerId: state.currentUser.uid,
+        teamName: team.name,
+        branding: { marca: state.marca || '', logoUrl: state.logoUrl || '', colorAcento: state.colorAcento || '' },
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        data: {},
+      });
     state.portals[teamId] = { token };
     await setPortalTokenOnPlans(teamId, token);
     await syncPortalData(teamId);
     showPortalLink(location.origin + '/equipo.html?t=' + token, team.name);
     toast('Portal del equipo creado');
     setState({});
-  } catch(e) { toast('Error al crear el portal'); }
+  } catch (e) {
+    toast('Error al crear el portal');
+  }
 }
 
 async function revokePortal(teamId, teamName) {
@@ -1096,7 +1275,9 @@ async function revokePortal(teamId, teamName) {
     delete state.portals[teamId];
     toast('Portal revocado');
     setState({});
-  } catch(e) { toast('Error al revocar el portal'); }
+  } catch (e) {
+    toast('Error al revocar el portal');
+  }
 }
 
 async function syncPortalAndRefresh(teamId) {
@@ -1108,19 +1289,33 @@ async function syncPortalAndRefresh(teamId) {
 // Tendencia org por ciclo — score promedio de TODOS los equipos activos por ciclo
 // Retorna array de { ciclo, avg, count, teamCount } ordenado por el orden de state.cycles
 function calcOrgTrend() {
-  const cycleNames = state.cycles.map(c => c.name).filter(Boolean);
+  const cycleNames = state.cycles.map((c) => c.name).filter(Boolean);
   if (cycleNames.length < 2) return [];
-  const points = cycleNames.map(ciclo => {
-    const resps = state.responses.filter(r => r.fields.Ciclo === ciclo);
-    if (!resps.length) return null;
-    const teamSet = new Set(resps.map(r => (r.fields.Equipo || [])[0]).filter(Boolean));
-    const avg = Math.round(resps.reduce((s, r) => s + (r.fields['Score Total %'] || 0), 0) / resps.length);
-    return { ciclo, avg, count: resps.length, teamCount: teamSet.size };
-  }).filter(Boolean);
+  const points = cycleNames
+    .map((ciclo) => {
+      const resps = state.responses.filter((r) => r.fields.Ciclo === ciclo);
+      if (!resps.length) return null;
+      const teamSet = new Set(resps.map((r) => (r.fields.Equipo || [])[0]).filter(Boolean));
+      const avg = Math.round(resps.reduce((s, r) => s + (r.fields['Score Total %'] || 0), 0) / resps.length);
+      return { ciclo, avg, count: resps.length, teamCount: teamSet.size };
+    })
+    .filter(Boolean);
   return points;
 }
 
 // CommonJS exports para tests (no-op en el browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { calcDispersion, isPolarized, detectRoleGaps, calcMomentum, getMajorityRole, computeGlobalDimAverages, getTeamFilteredStats, computeStats, getEvolutionData, generateDebriefGuide, calcOrgTrend };
+  module.exports = {
+    calcDispersion,
+    isPolarized,
+    detectRoleGaps,
+    calcMomentum,
+    getMajorityRole,
+    computeGlobalDimAverages,
+    getTeamFilteredStats,
+    computeStats,
+    getEvolutionData,
+    generateDebriefGuide,
+    calcOrgTrend,
+  };
 }

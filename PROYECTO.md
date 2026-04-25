@@ -54,7 +54,7 @@ AssessmentAgile/
 │   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (52 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
-│   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB
+│   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB. Logging estructurado vía `firebase-functions/logger` (info/warn/error) + helper `writeAudit()` que registra en colección `auditLog`.
 │   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22), @anthropic-ai/sdk
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
@@ -480,6 +480,17 @@ ID del documento = UID del workspace admin. Acceso: lectura pública, escritura 
 | `data` | object | Snapshot con avgTotal, level, avgDims, dims, radarValues, roleStats, dispersion, recommendations |
 
 Acceso: lectura pública (cualquiera con el token), creación autenticada, eliminación solo por owner o super_admin.
+
+#### `auditLog`
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `accion` | string | Evento (`workspace_admin.created`, `workspace_admin.deleted`, `ai.analyzed`, …) |
+| `realizadoPor` | string | UID del llamador de la CF |
+| `detalles` | object | Payload relevante del evento (uid target, teamId, ciclo, fromCache, etc.) |
+| `severity` | string | `info` \| `warn` \| `error` |
+| `timestamp` | timestamp | `serverTimestamp()` al momento de la escritura |
+
+Escritura exclusivamente vía Cloud Function (helper `writeAudit` usa admin SDK). Lectura: solo super_admin.
 
 ---
 
