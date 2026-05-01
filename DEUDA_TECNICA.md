@@ -58,24 +58,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ## Prioridad Baja
 
-### D7 — CSP headers ausentes
-
-**Contexto:** `firebase.json` no configura `Content-Security-Policy`. Los navegadores aceptan cualquier fuente de scripts. Aunque usamos CDNs conocidos (jsDelivr, cdnjs, gstatic), un XSS exitoso tendría ejecución total.
-
-**Propuesta:** agregar header CSP en `firebase.json` con allowlist de los CDNs actuales:
-
-```json
-"headers": [{ "source": "**",
-  "headers": [{ "key": "Content-Security-Policy",
-    "value": "default-src 'self'; script-src 'self' https://*.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; ..." }]}]
-```
-
-Testear en staging antes de producción — CSP estricta puede romper inline styles o event handlers.
-
-**Esfuerzo:** S (medio día), pero requiere validación cuidadosa.
-
----
-
 ### D9 — Duplicación de lógica entre `admin-api.js` y `functions/index.js`
 
 **Contexto:** `DIMS`, `SECTIONS`, las recomendaciones y parte del scoring están duplicados entre `assessment-config.js` (frontend) y `functions/index.js` como `DIMS_CFG`, `SECTIONS_CFG`. Cualquier cambio obliga a tocar ambos.
@@ -107,7 +89,8 @@ Testear en staging antes de producción — CSP estricta puede romper inline sty
 | 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos                                                                                                                                                                           | `b2e770f` |
 | 2026-04-24 | **D2** — `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; integrado en `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `analyzeTeamWithClaude`; eliminados los 2 `catch { /* silent */ }` y 3 `.catch(() => {})` del frontend | `fa01fae` |
 | 2026-04-24 | **D8** — `.gitattributes` con `* text=auto eol=lf` + binarios comunes; `.prettierrc.json` revertido a `endOfLine: lf`; renormalización de 26 archivos (formato puro, sin lógica)                                                                                                                                | `bcbc853` |
-| 2026-05-01 | **D5** — Listener global `Escape` cierra `qr-modal` y `close-cycle-modal`; `aria-label="Cerrar"` en botones ✕ (3 modales); foco al primer botón al abrir; foco devuelto al disparador al cerrar | pendiente |
+| 2026-05-01 | **D5** — Listener global `Escape` cierra `qr-modal` y `close-cycle-modal`; `aria-label="Cerrar"` en botones ✕ (3 modales); foco al primer botón al abrir; foco devuelto al disparador al cerrar | `b0a7ce7` |
+| 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. `'unsafe-inline'` requerido por onclick/style inline. | pendiente |
 
 ---
 
