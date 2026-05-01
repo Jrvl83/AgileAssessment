@@ -1,5 +1,7 @@
 // e() → assets/escape.js (cargado antes de este archivo en admin.html)
 
+let _modalOpener = null;
+
 // ── Toast ────────────────────────────────────────────────────────
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -245,6 +247,7 @@ function showCloseCycleModal(cycleId, cycleName) {
 
   const safeEscName = cycleName.replace(/"/g, '&quot;').replace(/'/g, "\\'");
 
+  _modalOpener = document.activeElement;
   const modal = document.getElementById('close-cycle-modal');
   modal.innerHTML = `
     <div style="background:white;border-radius:14px;padding:32px;max-width:420px;width:90%;box-shadow:0 24px 80px rgba(0,0,0,.22);">
@@ -263,11 +266,14 @@ function showCloseCycleModal(cycleId, cycleName) {
       </div>
     </div>`;
   modal.style.display = 'flex';
+  modal.querySelector('button')?.focus();
 }
 
 function closeCloseCycleModal() {
   const modal = document.getElementById('close-cycle-modal');
   if (modal) modal.style.display = 'none';
+  _modalOpener?.focus();
+  _modalOpener = null;
 }
 
 async function confirmCloseCycle(cycleId, cycleName) {
@@ -2538,6 +2544,7 @@ function showDebriefGuide(tid, cycleFilter) {
 
 // ── Reporte compartible ───────────────────────────────────────────
 function showReportLink(url, teamName, ciclo) {
+  _modalOpener = document.activeElement;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
   const cicloLabel = ciclo && ciclo !== 'Todos' ? ` · ${ciclo}` : '';
@@ -2546,7 +2553,7 @@ function showReportLink(url, teamName, ciclo) {
     <div style="background:white;border-radius:var(--radius);padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div style="font-size:16px;font-weight:600;color:var(--ink);">Reporte para stakeholders</div>
-        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+        <button onclick="closeQR()" aria-label="Cerrar" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
       <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
         Link de <strong>solo lectura</strong> para <strong>${e(teamName)}${e(cicloLabel)}</strong>.
@@ -2561,10 +2568,12 @@ function showReportLink(url, teamName, ciclo) {
   modal.onclick = (e) => {
     if (e.target === modal) closeQR();
   };
+  modal.querySelector('button')?.focus();
 }
 
 // ── Portal del equipo ─────────────────────────────────────────────
 function showPortalLink(url, teamName) {
+  _modalOpener = document.activeElement;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
   const escapedUrl = url.replace(/'/g, "\\'");
@@ -2572,7 +2581,7 @@ function showPortalLink(url, teamName) {
     <div style="background:white;border-radius:var(--radius);padding:28px;max-width:480px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div style="font-size:16px;font-weight:600;color:var(--ink);">Portal del equipo</div>
-        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+        <button onclick="closeQR()" aria-label="Cerrar" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
       <div style="font-size:13px;color:var(--ink-muted);margin-bottom:16px;">
         Link permanente de <strong>solo lectura</strong> para <strong>${e(teamName)}</strong>.<br>
@@ -2587,6 +2596,7 @@ function showPortalLink(url, teamName) {
   modal.onclick = (e) => {
     if (e.target === modal) closeQR();
   };
+  modal.querySelector('button')?.focus();
 }
 
 function showExistingPortal(teamId, teamName) {
@@ -2604,6 +2614,7 @@ function openFacilitar(tid) {
 
 // ── QR Code ──────────────────────────────────────────────────────
 function showQR(teamId, teamName) {
+  _modalOpener = document.activeElement;
   const url = window.location.origin + '/?workspaceId=' + state.currentUser.uid + '&equipoId=' + teamId;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
@@ -2611,7 +2622,7 @@ function showQR(teamId, teamName) {
     <div style="background:white;border-radius:var(--radius);padding:28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);" onclick="event.stopPropagation()">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div style="font-size:16px;font-weight:600;color:var(--ink);">Compartir assessment</div>
-        <button onclick="closeQR()" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
+        <button onclick="closeQR()" aria-label="Cerrar" style="background:none;border:none;font-size:20px;line-height:1;cursor:pointer;color:var(--ink-faint);padding:0 2px;">✕</button>
       </div>
       <div style="font-size:13px;color:var(--ink-muted);margin-bottom:20px;">Comparte este QR con el equipo <strong>${e(teamName)}</strong> para que accedan al assessment con el equipo pre-seleccionado.</div>
       <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:20px;"></div>
@@ -2624,6 +2635,7 @@ function showQR(teamId, teamName) {
   modal.onclick = (e) => {
     if (e.target === modal) closeQR();
   };
+  modal.querySelector('button')?.focus();
   if (typeof QRCode !== 'undefined') {
     new QRCode(document.getElementById('qr-canvas'), {
       text: url,
@@ -2642,6 +2654,8 @@ function closeQR() {
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'none';
   modal.innerHTML = '';
+  _modalOpener?.focus();
+  _modalOpener = null;
 }
 
 function copyQRUrl(url) {
@@ -3097,3 +3111,11 @@ function renderUsuarios() {
     </div>`
   );
 }
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key !== 'Escape') return;
+  const qr = document.getElementById('qr-modal');
+  if (qr && qr.style.display === 'flex') { closeQR(); return; }
+  const cc = document.getElementById('close-cycle-modal');
+  if (cc && cc.style.display === 'flex') closeCloseCycleModal();
+});
