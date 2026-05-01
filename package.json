@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
     "lint": "eslint assets/ assessment-config.js tests/",
     "format": "prettier --write",
     "format:check": "prettier --check",
@@ -20,11 +22,17 @@
     "*.{json,yml,yaml}": "prettier --check"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.6",
     "eslint": "^8.57.1",
     "firebase-tools": "^13.0.0",
     "lint-staged": "16.4.0",
     "prettier": "3.8.3",
     "simple-git-hooks": "2.13.1",
+    "vite": "^5.4.21",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "firebase": "^12.12.1",
+    "vue": "^3.5.33"
   }
 }
