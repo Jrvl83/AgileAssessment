@@ -21,22 +21,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ---
 
-### D4 — README de onboarding
-
-**Contexto:** No hay `README.md` en el repo. `PROYECTO.md` es documentación funcional detallada, no onboarding. Falta:
-
-- Pasos de setup local (`npm install` en raíz y en `functions/`)
-- Instrucciones de emuladores Firebase
-- Variables de entorno / secrets (dónde se configura `ANTHROPIC_API_KEY`, `webhookUrl`)
-- Cómo correr la app sin desplegar
-- Cómo correr tests
-
-**Propuesta:** `README.md` breve (<150 líneas) enfocado en "empezar a contribuir en 10 minutos". Link a `PROYECTO.md` para detalles funcionales.
-
-**Esfuerzo:** S (2–3 horas).
-
----
-
 ### D6 — Tests de render/auth/CFs ausentes
 
 **Contexto:** 96 tests Vitest, pero 100% son unitarios sobre `admin-api.js` y `assessment-config.js`. No hay tests para:
@@ -90,7 +74,8 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 | 2026-04-24 | **D2** — `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; integrado en `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `analyzeTeamWithClaude`; eliminados los 2 `catch { /* silent */ }` y 3 `.catch(() => {})` del frontend | `fa01fae` |
 | 2026-04-24 | **D8** — `.gitattributes` con `* text=auto eol=lf` + binarios comunes; `.prettierrc.json` revertido a `endOfLine: lf`; renormalización de 26 archivos (formato puro, sin lógica)                                                                                                                                | `bcbc853` |
 | 2026-05-01 | **D5** — Listener global `Escape` cierra `qr-modal` y `close-cycle-modal`; `aria-label="Cerrar"` en botones ✕ (3 modales); foco al primer botón al abrir; foco devuelto al disparador al cerrar | `b0a7ce7` |
-| 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. `'unsafe-inline'` requerido por onclick/style inline. | pendiente |
+| 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. `'unsafe-inline'` requerido por onclick/style inline. | `3771ef8` |
+| 2026-05-01 | **D4** — `README.md` con setup local, tests, lint, secrets (Secret Manager), deploy y datos de prueba | pendiente |
 
 ---
 
