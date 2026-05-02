@@ -23,13 +23,14 @@
     <!-- Contenido principal -->
     <div class="tab-content-wrapper">
       <!-- Tabs migrados a SFC -->
-      <TeamsView   v-if="state.activeTab === 'teams'"    />
-      <ConfigView  v-if="state.activeTab === 'config'"   />
-      <PlanView    v-if="state.activeTab === 'plan'"     />
+      <TeamsView    v-if="state.activeTab === 'teams'"    />
+      <ConfigView   v-if="state.activeTab === 'config'"   />
+      <PlanView     v-if="state.activeTab === 'plan'"     />
       <UsuariosView v-if="state.activeTab === 'usuarios'" />
+      <EvolutionView v-if="state.activeTab === 'evolution'" />
 
-      <!-- Tabs pendientes — siguen usando v-html hasta Fase 5 Grupo C -->
-      <div v-if="state.activeTab === 'analysis' || state.activeTab === 'evolution'"
+      <!-- Análisis — sigue en v-html hasta Fase 5 Grupo C -->
+      <div v-if="state.activeTab === 'analysis'"
         v-html="tabContent" ref="tabContentEl"></div>
     </div>
 
@@ -58,34 +59,28 @@ import { fetchAllData } from '../../assets/admin-api.js';
 import {
   renderCadenceBanner,
   renderAnalysis,
-  renderEvolution,
   initRadarCharts,
-  initEvolutionTrendChart,
   initOrgTrendChart,
 } from '../../assets/admin-render.js';
-import TeamsView    from './TeamsView.vue';
-import ConfigView   from './ConfigView.vue';
-import PlanView     from './PlanView.vue';
-import UsuariosView from './UsuariosView.vue';
+import TeamsView     from './TeamsView.vue';
+import ConfigView    from './ConfigView.vue';
+import PlanView      from './PlanView.vue';
+import UsuariosView  from './UsuariosView.vue';
+import EvolutionView from './EvolutionView.vue';
 
 const tabContentEl = ref(null);
 
 const tabContent = computed(() => {
-  if (state.activeTab !== 'analysis' && state.activeTab !== 'evolution') return '';
+  if (state.activeTab !== 'analysis') return '';
   window._radarData = {};
   window._compareData = null;
-  window._evolTrendData = null;
   window._orgTrendData = null;
-
-  const banner = renderCadenceBanner();
-  if (state.activeTab === 'evolution') return banner + renderEvolution();
-  return banner + renderAnalysis();
+  return renderCadenceBanner() + renderAnalysis();
 });
 
 watch(tabContent, async () => {
   await nextTick();
   initRadarCharts();
-  initEvolutionTrendChart();
   initOrgTrendChart();
 }, { flush: 'post' });
 
