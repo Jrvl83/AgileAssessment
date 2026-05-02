@@ -2,7 +2,8 @@
 
 Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITECTURA.md` (plan estratégico: Vue 3, paginación, auditoría). Acá van los ítems chicos que surgen de revisiones de código, pair-reviews, bugs de producción y auditorías de buenas prácticas.
 
-**Última auditoría:** 2026-04-23 (buenas prácticas previas a refactor Vue 3).
+**Última auditoría:** 2026-04-23 (buenas prácticas previas a refactor Vue 3).  
+**Última actualización:** 2026-05-01 — Fases 0-3 de migración Vue 3 completadas.
 
 ---
 
@@ -21,34 +22,37 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ---
 
-### D6 — Tests de render/auth/CFs ausentes
+### D6 — Tests de componentes Vue y CFs ausentes
 
-**Contexto:** 96 tests Vitest, pero 100% son unitarios sobre `admin-api.js` y `assessment-config.js`. No hay tests para:
+**Contexto:** 96 tests Vitest, pero 100% son unitarios sobre `admin-api.js` y `assessment-config.js`. Con la migración Vue 3 (Fases 0-3 completas), hay nuevos objetivos de testing:
 
-- `render()` y funciones `render*` de `admin-render.js` (genera HTML dinámico)
-- Flujos de autenticación (`admin-auth.js`)
+- Componentes Vue (`EquipoApp`, `AssessmentApp`, `FacilitarApp`) — happy path y edge cases
+- Flujos de autenticación (`admin-auth.js`, `FacilitarApp` login flow)
 - Cloud Functions (requiere emulator)
 - Flujos de integración (submit assessment → Firestore → cálculo)
 
-**Propuesta:** agregar suite progresiva:
+**Propuesta:** agregar suite progresiva con `@vue/test-utils`:
 
-- `tests/render.test.js` con JSDOM para las funciones `render*` puras (reciben state, retornan string).
+- `tests/components/AssessmentApp.test.js` — renderizado condicional de screens, pick/answer state.
+- `tests/components/FacilitarApp.test.js` — navegación de slides, action form.
 - `tests/functions.test.js` con Firebase emulator para CFs.
-- No apuntar al 100% — priorizar rutas críticas (callAnalyzeTeamWithClaude, createUser).
+- No apuntar al 100% — priorizar rutas críticas (submit assessment, callAnalyzeTeamWithClaude).
 
-**Esfuerzo:** L (3–5 días). Superpone con `PLAN_ARQUITECTURA.md` ítem 6 (que se marcó como completo con 59 tests — está incompleto en alcance).
+**Esfuerzo:** L (3–5 días). Desbloqueado en Fase 6 de `PLAN_MIGRACION_VUE3.md`.
 
 ---
 
 ## Prioridad Baja
 
-### D9 — Duplicación de lógica entre `admin-api.js` y `functions/index.js`
+### D9 — Duplicación de lógica entre `assessment-config.js` y `functions/index.js`
 
 **Contexto:** `DIMS`, `SECTIONS`, las recomendaciones y parte del scoring están duplicados entre `assessment-config.js` (frontend) y `functions/index.js` como `DIMS_CFG`, `SECTIONS_CFG`. Cualquier cambio obliga a tocar ambos.
 
-**Propuesta:** mover a `shared/config.js` importado por ambos. Requiere resolver el bundling de CFs (no acepta require de fuera de su carpeta sin workaround).
+**Avance (2026-05-01):** `assessment-config.js` ahora se importa como ESM desde los componentes Vue via `build.commonjsOptions` en Vite. El bloqueo de "ES modules" en frontend está resuelto. Falta resolver el lado de Cloud Functions.
 
-**Esfuerzo:** M (medio día, bloqueado hasta migración a ES modules).
+**Propuesta:** mover a `shared/config.js` importado por ambos. Para functions, se puede usar un `symlink` o copiar el archivo en el step de build de CI. Ver Fase 6 de `PLAN_MIGRACION_VUE3.md`.
+
+**Esfuerzo:** M (medio día, desbloqueado en Fase 6).
 
 ---
 
@@ -56,9 +60,9 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 **Contexto:** `generateDebriefGuide()` tiene ~800 líneas. `render()` llama a ~15 funciones que concatenan template literals con 6+ niveles de anidamiento.
 
-**Propuesta:** se resolverá cuando migremos a Vue 3 (ítem 4 de `PLAN_ARQUITECTURA.md`). Por ahora, al tocar cada función, extraer sub-funciones si se puede sin riesgo.
+**Avance (2026-05-01):** equipo.html, reporte.html, assessment-agile.html y facilitar.html ya migraron a Vue 3 SFCs — sus funciones de render desaparecieron. Solo queda `admin-render.js` (admin.html). Se resolverá en Fases 4-5 de `PLAN_MIGRACION_VUE3.md`.
 
-**Esfuerzo:** L (depende de la migración).
+**Esfuerzo:** L (depende de Fases 4-5 de la migración).
 
 ---
 
@@ -75,7 +79,7 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 | 2026-04-24 | **D8** — `.gitattributes` con `* text=auto eol=lf` + binarios comunes; `.prettierrc.json` revertido a `endOfLine: lf`; renormalización de 26 archivos (formato puro, sin lógica)                                                                                                                                | `bcbc853` |
 | 2026-05-01 | **D5** — Listener global `Escape` cierra `qr-modal` y `close-cycle-modal`; `aria-label="Cerrar"` en botones ✕ (3 modales); foco al primer botón al abrir; foco devuelto al disparador al cerrar | `b0a7ce7` |
 | 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. `'unsafe-inline'` requerido por onclick/style inline. | `3771ef8` |
-| 2026-05-01 | **D4** — `README.md` con setup local, tests, lint, secrets (Secret Manager), deploy y datos de prueba | pendiente |
+| 2026-05-01 | **D4** — `README.md` con setup local, tests, lint, secrets (Secret Manager), deploy y datos de prueba | `f6c6f85` |
 
 ---
 

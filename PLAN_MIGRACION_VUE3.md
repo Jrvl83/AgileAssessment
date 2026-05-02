@@ -1,7 +1,7 @@
 # Plan de Migración Vanilla JS → Vue 3
 
 **Fecha:** 2026-05-01  
-**Estado:** Aprobado
+**Estado:** En progreso — Fases 0–3 completas (2026-05-01)
 
 ---
 
@@ -62,7 +62,7 @@ git push origin pre-vue-migration
 
 ---
 
-## Fase 0 — Setup de Vite
+## Fase 0 — Setup de Vite ✅ `20d2e28`
 
 **Objetivo:** Introducir Vite sin tocar ninguna página. Al final, el build produce archivos equivalentes a los actuales y Firebase Hosting sirve desde `dist/`.
 
@@ -142,11 +142,16 @@ shared/
 
 ---
 
-## Fase 1 — equipo.html + reporte.html
+## Fase 1 — equipo.html + reporte.html ✅ `b356ff1`
 
 **Objetivo:** Primeros SFCs en producción. Son las páginas más simples: solo lectura, sin auth, sin Chart.js.
 
 **Esfuerzo:** 2-3 días | **Riesgo:** Bajo
+
+**Lo que cambió respecto al plan original:**
+- `vite.config.js` → renombrado a `vite.config.mjs` (ESM explícito — `@vitejs/plugin-vue@6.x` y `vite-plugin-static-copy` son ESM-only)
+- Chart.js importado con tree-shaking manual (RadarController, RadialLinearScale, etc.) — no `chart.js/auto`
+- `useRadarChart.js` composable compartido por EquipoApp y ReporteApp
 
 ### Pasos
 
@@ -182,59 +187,31 @@ createApp(EquipoApp).mount('#app');
 
 ---
 
-## Fase 2 — assessment-agile.html
+## Fase 2 — assessment-agile.html ✅ `99b227e`
 
 **Objetivo:** El formulario público principal como SFC Vue. ~1.193 líneas inline → componentes.
 
 **Esfuerzo:** 3-4 días | **Riesgo:** Medio (página más usada por usuarios finales)
 
-### Componentes
-
-- `AssessmentApp.vue` — raíz, carga config, maneja submit
-- `AssessmentIntro.vue` — selección de rol y equipo
-- `AssessmentSection.vue` — sección de preguntas (recibe sección + answers como props)
-- `AssessmentResult.vue` — confirmación post-submit
-
-**Nota:** `assessment-config.js` se importa directamente como módulo ES — sin cambios al archivo.
-
-**Precaución:** deploy en horario de baja actividad. Monitorear Firebase Console 24h post-deploy.
+**Lo que cambió respecto al plan original:**
+- Un solo SFC `AssessmentApp.vue` (no se dividió en sub-componentes) — todos los screens en `v-if` directamente. Apropiado dado el acoplamiento de estado entre screens.
+- `build.commonjsOptions: { include: [/assessment-config\.js$/] }` en `vite.config.mjs` para que Rollup consuma el `module.exports` condicional de `assessment-config.js` sin tocar el archivo fuente (admin.html lo sigue cargando como `<script>` plano).
+- 1241 líneas → 12 líneas en `assessment-agile.html`.
 
 ---
 
-## Fase 3 — facilitar.html
+## Fase 3 — facilitar.html ✅ `9091677`
 
-**Objetivo:** Herramienta de facilitación (~1.126 líneas) como SFC Vue. Sirve de ensayo para el patrón auth + estado que se reutiliza en admin (Fase 4).
+**Objetivo:** Herramienta de facilitación (~1.193 líneas) como SFC Vue. Sirve de ensayo para el patrón auth + estado que se reutiliza en admin (Fase 4).
 
 **Esfuerzo:** 3-4 días | **Riesgo:** Bajo (uso interno)
 
-### Composable clave a crear
-
-```js
-// src/composables/useFirebaseAuth.js
-import { ref, onMounted } from 'vue';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase.js';
-
-export function useFirebaseAuth() {
-  const user = ref(null);
-  const loading = ref(true);
-  onMounted(() => {
-    onAuthStateChanged(auth, (u) => {
-      user.value = u;
-      loading.value = false;
-    });
-  });
-  return { user, loading };
-}
-```
-
-Este composable se reutilizará en Fase 4.
-
-### Componentes
-
-- `FacilitarApp.vue` — raíz, auth guard
-- `FacilitarLogin.vue` — formulario de login
-- `FacilitarSession.vue` — sesión activa con estado de slides
+**Lo que cambió respecto al plan original:**
+- Un solo SFC `FacilitarApp.vue` en lugar de tres componentes separados — el estado de slides está demasiado acoplado al login y la sesión para dividirlo con ganancia real.
+- No se creó `useFirebaseAuth.js` — `onAuthStateChanged` se llama directamente en `onMounted` del componente. Para admin (Fase 4) se evaluará si el composable aporta suficiente para justificarlo.
+- Keyboard navigation con `addEventListener`/`removeEventListener` en `onMounted`/`onUnmounted`.
+- Export a ventana de print conservado como función JS pura (genera HTML con `window.open` + `document.write`) — no necesita Vue.
+- 1193 líneas → 12 líneas en `facilitar.html`.
 
 ---
 
@@ -339,18 +316,17 @@ Reemplaza el workaround de `document.createElement('script')`.
 
 ## Tabla resumen
 
-| Fase | Contenido | Esfuerzo | Riesgo |
-|------|-----------|----------|--------|
-| 0 | Setup Vite, dist/, CI | 1 día | Bajo |
-| 1 | equipo.html + reporte.html | 2-3 días | Bajo |
-| 2 | assessment-agile.html | 3-4 días | Medio |
-| 3 | facilitar.html | 3-4 días | Bajo |
-| 4 | Admin: shell Vue + estado reactivo | 4-5 días | Alto |
-| 5A | Admin: componentes atómicos + tabs simples | 3-4 días | Medio |
-| 5B | Admin: tabs con charts | 4-5 días | Medio |
-| 5C | Admin: modales + Config | 3-4 días | Bajo |
-| 6 | Limpieza, CSP, tests | 2-3 días | Bajo |
-| **Total** | | **~25-33 días hábiles** | |
+| Fase | Contenido | Estado | Commit |
+|------|-----------|--------|--------|
+| 0 | Setup Vite, dist/, CI | ✅ Completo | `20d2e28` |
+| 1 | equipo.html + reporte.html | ✅ Completo | `b356ff1` |
+| 2 | assessment-agile.html | ✅ Completo | `99b227e` |
+| 3 | facilitar.html | ✅ Completo | `9091677` |
+| 4 | Admin: shell Vue + estado reactivo | ⏳ Pendiente | — |
+| 5A | Admin: componentes atómicos + tabs simples | ⏳ Pendiente | — |
+| 5B | Admin: tabs con charts | ⏳ Pendiente | — |
+| 5C | Admin: modales + Config | ⏳ Pendiente | — |
+| 6 | Limpieza, CSP, tests | ⏳ Pendiente | — |
 
 Cada fase es deployable de forma independiente. La app permanece funcional en producción durante toda la migración.
 

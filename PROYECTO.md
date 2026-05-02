@@ -6,14 +6,17 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 
 ## Stack tecnológico
 
-| Capa          | Tecnología                                   |
-| ------------- | -------------------------------------------- |
-| Frontend      | HTML / CSS / JavaScript (Vanilla SPA)        |
-| Base de datos | Firebase Firestore                           |
-| Auth          | Firebase Authentication (email + contraseña) |
-| Backend       | Firebase Cloud Functions (Node.js 22)        |
-| Hosting       | Firebase Hosting                             |
-| Idioma        | Español                                      |
+| Capa          | Tecnología                                                        |
+| ------------- | ----------------------------------------------------------------- |
+| Frontend      | Vue 3 (Composition API) + Vite — migración incremental en curso   |
+| Build         | Vite MPA (`vite.config.mjs`) — 4 de 5 páginas migradas a Vue 3   |
+| Base de datos | Firebase Firestore (SDK modular v10)                              |
+| Auth          | Firebase Authentication (email + contraseña)                      |
+| Backend       | Firebase Cloud Functions (Node.js 22)                             |
+| Hosting       | Firebase Hosting — sirve desde `dist/`                            |
+| Idioma        | Español                                                           |
+
+> **Estado de migración Vue 3 (2026-05-01):** Fases 0–3 completas. equipo.html, reporte.html, assessment-agile.html y facilitar.html son SFCs Vue 3 con Firebase modular. admin.html sigue en Vanilla JS (Fase 4 pendiente).
 
 **Proyecto Firebase:** `agile-assessment-5a117` — Plan **Blaze**
 
@@ -23,47 +26,64 @@ Herramienta web para evaluar el nivel de madurez de equipos Scrum. Permite a los
 
 ```
 AssessmentAgile/
-├── assessment-agile.html   # Formulario público del assessment (requiere ?workspaceId en URL)
-├── admin.html              # Panel de administración — solo HTML + script tags (34 líneas)
-├── reporte.html            # Reporte de solo lectura para stakeholders (acceso por token, sin login)
-├── equipo.html             # Portal público del equipo (acceso por token, ?t=TOKEN, sin login, dinámico)
-├── facilitar.html          # Modo facilitación in-session (requiere login — solo coaches)
-├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones
+├── assessment-agile.html   # Shell Vue (12 líneas) — monta AssessmentApp.vue
+├── admin.html              # Panel de administración — Vanilla JS legacy (Fase 4 pendiente)
+├── reporte.html            # Shell Vue (12 líneas) — monta ReporteApp.vue
+├── equipo.html             # Shell Vue (12 líneas) — monta EquipoApp.vue
+├── facilitar.html          # Shell Vue (12 líneas) — monta FacilitarApp.vue
+├── assessment-config.js    # Fuente única de verdad: preguntas, niveles, dimensiones, recomendaciones (cargado como script en admin.html; importado como ESM en componentes Vue)
 ├── seed-data.js            # Script de datos de prueba (pegar en consola del navegador logueado en admin)
+├── src/
+│   ├── firebase.js         # Firebase modular v10: db, auth, fns
+│   ├── pages/
+│   │   ├── equipo.js       # Entry point Vue → monta EquipoApp
+│   │   ├── reporte.js      # Entry point Vue → monta ReporteApp
+│   │   ├── assessment.js   # Entry point Vue → monta AssessmentApp
+│   │   └── facilitar.js    # Entry point Vue → monta FacilitarApp
+│   ├── components/
+│   │   ├── EquipoApp.vue       # Portal del equipo: onSnapshot, plan de acción optimista, radar
+│   │   ├── ReporteApp.vue      # Reporte stakeholder: getDoc, expiración, radar, PDF
+│   │   ├── AssessmentApp.vue   # Formulario: 7 screens, config workspace, submit Firestore
+│   │   └── FacilitarApp.vue    # Presenter: login Auth, slides, notas coach, export print
+│   └── composables/
+│       └── useRadarChart.js    # Chart.js radar tree-shaken (compartido por Equipo y Reporte)
 ├── assets/
-│   ├── admin.css           # Todos los estilos del panel admin
-│   ├── admin-state.js      # Firebase init + variables de estado globales
+│   ├── admin.css           # Todos los estilos del panel admin (legacy)
+│   ├── admin-state.js      # Firebase compat init + variables de estado globales (legacy)
 │   ├── admin-api.js        # Funciones Firestore + helpers de cálculo, estadísticas y generateReport
-│   ├── admin-render.js     # Todas las funciones render*, toast, prefillPlan, QR, showReportLink, toggleTeamAI, callAnalyzeTeamWithClaude, renderAIPanel
+│   ├── admin-render.js     # Funciones render* del admin (legacy — se eliminará en Fases 4-5)
 │   ├── admin-export.js     # exportCSV, exportPDF, exportRaw, exportPlanPDF, exportPPT, exportAnalisisPDF
-│   └── admin-auth.js       # login, logout, onAuthStateChanged
-├── firebase.json           # Configuración de hosting, firestore y functions
+│   ├── admin-auth.js       # login, logout, onAuthStateChanged (legacy)
+│   └── escape.js           # Helper e() — HTML escaping para interpolaciones en admin-render.js
+├── dist/                   # Build de producción (generado por Vite — no versionado)
+├── vite.config.mjs         # MPA: 4 entradas Vue + static-copy de admin.html y assets legacy
+├── firebase.json           # Hosting (public: dist), CSP headers, rewrites
 ├── firestore.rules         # Reglas de seguridad de Firestore (versionadas)
-├── package.json            # devDependencies: vitest, eslint, prettier, simple-git-hooks, lint-staged, firebase-tools
+├── package.json            # deps: vue@3, firebase@10, chart.js | devDeps: vite, @vitejs/plugin-vue, vitest, eslint, prettier…
 ├── vitest.config.js        # Configuración de tests
 ├── .eslintrc.json          # ESLint: eslint:recommended, browser env, no-var, prefer-const, eqeqeq smart
 ├── .prettierrc.json        # Prettier: singleQuote, 2-space, printWidth 120, endOfLine lf
-├── .prettierignore         # Excluye node_modules, dist y package-lock
-├── .gitattributes          # `* text=auto eol=lf` + binarios — normaliza line endings independiente del SO
-├── .gitignore              # Ignora node_modules/, .firebase/, *.docx
+├── .gitattributes          # `* text=auto eol=lf` + binarios — normaliza line endings
+├── .gitignore              # Ignora node_modules/, dist/, .firebase/, *.docx
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml      # CI/CD: lint+tests en PRs, deploy en main
+│       └── deploy.yml      # CI/CD: lint+tests en PRs; build+deploy en main
 ├── tests/
 │   ├── setup.js            # Globals: DIMS, COACHING_QUESTIONS, MIN_ROLE_RESPONSES, getLevel, state, render stubs
 │   ├── scoring.test.js     # Tests: getLevel, getRec, detectPatterns, getContextNote (27 tests)
 │   ├── analysis.test.js    # Tests: calcDispersion, isPolarized, detectRoleGaps, getMajorityRole, getTeamFilteredStats, computeStats, generateDebriefGuide (52 tests)
 │   └── evolution.test.js   # Tests: getEvolutionData, calcMomentum (17 tests)
 ├── functions/
-│   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB. Logging estructurado vía `firebase-functions/logger` (info/warn/error) + helper `writeAudit()` que registra en colección `auditLog`.
+│   ├── index.js            # Cloud Functions (firebase-functions v1): createWorkspaceAdmin, deleteWorkspaceAdmin, dispatchWebhook, onPlanUpdatedByTeam, analyzeTeamWithClaude — timeoutSeconds:300, memory:512MB. Logging estructurado + writeAudit().
 │   └── package.json        # Dependencias: firebase-admin, firebase-functions v7 (Node.js 22), @anthropic-ai/sdk
 └── .firebaserc             # Proyecto Firebase activo
 PLAN_MEJORAS_COACHING.md    # 10 mejoras fase 1: 8 completadas, 2 descartadas
 PLAN_MEJORAS_V2.md          # 20 mejoras en 4 fases — completado 2026-04-12 (#2 y #15 diferidas)
 PLAN_MEJORAS_V3.md          # 9 mejoras en 4 fases — completado 2026-04-12
 PLAN_MEJORAS_V4.md          # 9 mejoras en 3 prioridades — solidez metodológica del instrumento (completo)
-PLAN_ARQUITECTURA.md        # Plan estratégico de deuda técnica — 9 ítems (Vue 3 y paginación pendientes; auditoría parcial con D2)
-DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos — D1, D2, D8 cerrados; D3–D7, D9, D10 pendientes
+PLAN_ARQUITECTURA.md        # Plan estratégico de deuda técnica — 9 ítems (Vue 3 y paginación pendientes)
+DEUDA_TECNICA.md            # Backlog vivo de hallazgos tácticos — D1–D5, D7–D8 cerrados; D3, D6, D9, D10 pendientes
+PLAN_MIGRACION_VUE3.md      # Plan de migración Vue 3: Fases 0-3 completas, Fases 4-6 pendientes
 ```
 
 ### Routing (firebase.json)
