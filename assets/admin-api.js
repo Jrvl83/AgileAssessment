@@ -1,6 +1,11 @@
+import { state, setState, MIN_ROLE_RESPONSES } from './admin-state.js';
+import { db, auth, fns, firebase } from '../src/firebase-compat.js';
+import { toast } from './admin-toast.js';
+import { SECTIONS, DIMS, LEVELS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS, HEALTH_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec } from '../assessment-config.js';
+
 // ── Helpers ──────────────────────────────────────────────────────
 
-function calcDispersion(pctArr) {
+export function calcDispersion(pctArr) {
   if (pctArr.length < 2) return null;
   const mean = pctArr.reduce((a, b) => a + b, 0) / pctArr.length;
   const sd = Math.round(Math.sqrt(pctArr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / pctArr.length));
@@ -19,7 +24,7 @@ function calcDispersion(pctArr) {
 // counts = [c0, c1, c2, c3] — frecuencia de cada valor de respuesta
 // Requiere que cada extremo represente al menos el 20% del total para evitar
 // falsos positivos cuando hay un solo outlier en un extremo.
-function isPolarized(counts) {
+export function isPolarized(counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   if (total < 3) return false;
   return counts[0] / total >= 0.2 && counts[3] / total >= 0.2 && (counts[0] + counts[3]) / total >= 0.5;
@@ -28,7 +33,7 @@ function isPolarized(counts) {
 // Detecta brechas de percepción entre roles por dimensión
 // Retorna array de { dimKey, dimLabel, dimColor, roleHigh, pctHigh, roleLow, pctLow, diff }
 // ordenado de mayor a menor diferencia. Solo incluye roles con >= MIN_ROLE_RESPONSES respuestas.
-function detectRoleGaps(tid, cycleFilter, threshold) {
+export function detectRoleGaps(tid, cycleFilter, threshold) {
   const thresh = threshold !== undefined ? threshold : 25;
   const minResp = typeof MIN_ROLE_RESPONSES !== 'undefined' ? MIN_ROLE_RESPONSES : 3;
   const cf = cycleFilter || 'Todos';
@@ -84,7 +89,7 @@ function detectRoleGaps(tid, cycleFilter, threshold) {
 
 // Agrupa comentarios por sección, incluyendo el rol del autor
 // Retorna array de { secId, secTitle, secColor, comments:[{text,rol}] } (solo secciones con comentarios)
-function groupCommentsBySection(teamResps) {
+export function groupCommentsBySection(teamResps) {
   return SECTIONS.map((sec) => {
     const dim = DIMS.find((d) => d.key === sec.id);
     const secColor = dim ? dim.color : '#374151';
@@ -114,7 +119,7 @@ const COMMENT_RISK_TERMS = [
   'inútil',
 ];
 
-function detectCommentRisk(teamResps, dimAvgPcts) {
+export function detectCommentRisk(teamResps, dimAvgPcts) {
   const risks = {};
   SECTIONS.forEach((sec) => {
     const pct = dimAvgPcts[sec.id] !== undefined ? dimAvgPcts[sec.id] : 0;
@@ -130,7 +135,7 @@ function detectCommentRisk(teamResps, dimAvgPcts) {
 
 // Calcula el momentum de mejora: delta promedio por ciclo en los últimos n ciclos
 // Retorna { avg, cycles, direction } o null si hay menos de 2 ciclos con datos
-function calcMomentum(tid, role, n) {
+export function calcMomentum(tid, role, n) {
   const evData = getEvolutionData(tid, role || 'Todos');
   if (evData.length < 2) return null;
   const recent = evData.slice(-(n || 3));
@@ -144,7 +149,7 @@ function calcMomentum(tid, role, n) {
   return { avg, cycles: recent.length, direction };
 }
 
-function computeGlobalDimAverages(cFilter, excludeOtro) {
+export function computeGlobalDimAverages(cFilter, excludeOtro) {
   const teamsWithData = Object.values(state.teamStats).filter((s) => s.count > 0);
   if (teamsWithData.length < 2) return null;
   const sums = {};
@@ -168,7 +173,7 @@ function computeGlobalDimAverages(cFilter, excludeOtro) {
   return result;
 }
 
-function getMajorityRole(resps) {
+export function getMajorityRole(resps) {
   const counts = {};
   resps.forEach((r) => {
     const rol = r.fields.Rol;
@@ -179,7 +184,7 @@ function getMajorityRole(resps) {
   return entries[0][0];
 }
 
-function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
+export function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   const cf = cFilter || 'Todos';
   const filtered = state.responses.filter(
     (r) =>
@@ -243,7 +248,7 @@ function getTeamFilteredStats(tid, roleFilter, cFilter, excludeOtro) {
   return { count: filtered.length, avgTotal, avgDims, level: getLevel(avgTotal), dispersion, tamano, tiempoScrum, ctx };
 }
 
-function computeStats() {
+export function computeStats() {
   const stats = {};
   state.teams.forEach((t) => {
     stats[t.id] = { id: t.id, name: t.name, active: t.active, count: 0, dimSums: {}, totalPct: 0 };
@@ -277,7 +282,7 @@ function computeStats() {
 }
 
 // ── Evolution ────────────────────────────────────────────────────
-function getEvolutionData(tid, role) {
+export function getEvolutionData(tid, role) {
   const resps = state.responses.filter(
     (r) => (r.fields.Equipo || []).includes(tid) && (role === 'Todos' || r.fields.Rol === role)
   );
@@ -333,7 +338,7 @@ function getEvolutionData(tid, role) {
 }
 
 // ── API ──────────────────────────────────────────────────────────
-async function fetchAllData() {
+export async function fetchAllData() {
   setState({ loading: true });
   try {
     let tQuery = db.collection('equipos');
@@ -453,7 +458,7 @@ async function fetchAllData() {
   setState({ loading: false });
 }
 
-async function addTeam() {
+export async function addTeam() {
   const name = state.newTeamName.trim();
   if (!name) return;
   try {
@@ -466,7 +471,7 @@ async function addTeam() {
   }
 }
 
-async function toggleActive(id, name, current) {
+export async function toggleActive(id, name, current) {
   try {
     await db.collection('equipos').doc(id).update({ activo: !current });
     toast(current ? `"${name}" desactivado` : `"${name}" activado`);
@@ -476,7 +481,7 @@ async function toggleActive(id, name, current) {
   }
 }
 
-async function saveTeamHealthEnabled(val) {
+export async function saveTeamHealthEnabled(val) {
   setState({ teamHealthEnabled: val });
   try {
     await db.collection('workspaces').doc(state.currentUser.uid).set({ teamHealthEnabled: val }, { merge: true });
@@ -486,7 +491,7 @@ async function saveTeamHealthEnabled(val) {
 }
 
 const _guidanceTimer = {};
-function saveGuidanceText(txt) {
+export function saveGuidanceText(txt) {
   state.guidanceText = txt;
   clearTimeout(_guidanceTimer.t);
   _guidanceTimer.t = setTimeout(async () => {
@@ -502,7 +507,7 @@ function saveGuidanceText(txt) {
   }, 800);
 }
 
-async function saveTeamCategory(teamId, category) {
+export async function saveTeamCategory(teamId, category) {
   try {
     await db
       .collection('equipos')
@@ -516,7 +521,7 @@ async function saveTeamCategory(teamId, category) {
   }
 }
 
-async function deleteTeam(id, name) {
+export async function deleteTeam(id, name) {
   if (!confirm(`¿Eliminar "${name}"? Esta acción no se puede deshacer.`)) return;
   try {
     await db.collection('equipos').doc(id).delete();
@@ -528,7 +533,7 @@ async function deleteTeam(id, name) {
 }
 
 // ── Cycle management ─────────────────────────────────────────────
-async function addCycle() {
+export async function addCycle() {
   const name = state.newCycleName.trim();
   if (!name) return;
   try {
@@ -541,7 +546,7 @@ async function addCycle() {
   }
 }
 
-async function toggleCycle(id, name, current) {
+export async function toggleCycle(id, name, current) {
   try {
     if (!current) {
       const batch = db.batch();
@@ -568,7 +573,7 @@ async function toggleCycle(id, name, current) {
   }
 }
 
-async function deleteCycle(id, name) {
+export async function deleteCycle(id, name) {
   if (!confirm(`¿Eliminar ciclo "${name}"? Las respuestas asociadas no se borrarán.`)) return;
   try {
     await db.collection('ciclos').doc(id).delete();
@@ -580,7 +585,7 @@ async function deleteCycle(id, name) {
 }
 
 // ── Plan de Acción ───────────────────────────────────────────────
-async function fetchPlans() {
+export async function fetchPlans() {
   try {
     const teamIds = new Set(state.teams.map((t) => t.id));
     const snap = await db.collection('planes').get();
@@ -593,7 +598,7 @@ async function fetchPlans() {
   }
 }
 
-async function addPlan() {
+export async function addPlan() {
   if (!state.newPlanTeamId || !state.newPlanIniciativa.trim()) return;
   const team = state.teams.find((t) => t.id === state.newPlanTeamId);
   const cicloFinal = state.newPlanCiclo || (state.cycles.find((c) => c.active) || {}).name || '';
@@ -624,7 +629,7 @@ async function addPlan() {
   }
 }
 
-async function updatePlanStatus(id, status) {
+export async function updatePlanStatus(id, status) {
   try {
     await db.collection('planes').doc(id).update({ estado: status, updatedByTeam: false });
     await fetchPlans();
@@ -634,7 +639,7 @@ async function updatePlanStatus(id, status) {
   }
 }
 
-async function deletePlan(id) {
+export async function deletePlan(id) {
   if (!confirm('¿Eliminar esta acción?')) return;
   try {
     await db.collection('planes').doc(id).delete();
@@ -647,7 +652,7 @@ async function deletePlan(id) {
 }
 
 // ── User management ──────────────────────────────────────────────
-async function fetchUsers() {
+export async function fetchUsers() {
   try {
     const snap = await db.collection('usuarios').get();
     state.users = snap.docs
@@ -659,7 +664,7 @@ async function fetchUsers() {
   }
 }
 
-async function createUser() {
+export async function createUser() {
   const nombre = state.newUserNombre.trim();
   const email = state.newUserEmail.trim();
   if (!nombre || !email) {
@@ -683,7 +688,7 @@ async function createUser() {
   }
 }
 
-async function suspendUser(uid, nombre) {
+export async function suspendUser(uid, nombre) {
   try {
     await db.collection('usuarios').doc(uid).update({ activo: false });
     toast(`"${nombre}" suspendido`);
@@ -694,7 +699,7 @@ async function suspendUser(uid, nombre) {
   }
 }
 
-async function reactivateUser(uid, nombre) {
+export async function reactivateUser(uid, nombre) {
   try {
     await db.collection('usuarios').doc(uid).update({ activo: true });
     toast(`"${nombre}" reactivado`);
@@ -705,7 +710,7 @@ async function reactivateUser(uid, nombre) {
   }
 }
 
-async function deleteUser(uid, nombre) {
+export async function deleteUser(uid, nombre) {
   if (
     !confirm(
       `¿Eliminar la cuenta de "${nombre}"?\n\nEsta acción bloqueará el acceso permanentemente. Sus datos (equipos, respuestas, ciclos) se conservan.`
@@ -722,7 +727,7 @@ async function deleteUser(uid, nombre) {
   }
 }
 
-async function resendInvite(email, nombre) {
+export async function resendInvite(email, nombre) {
   try {
     await auth.sendPasswordResetEmail(email);
     toast(`Invitación reenviada a ${email}`);
@@ -732,7 +737,7 @@ async function resendInvite(email, nombre) {
 }
 
 // ── Reportes compartibles ─────────────────────────────────────────
-async function generateReport(teamId, cycleFilter) {
+export async function generateReport(teamId, cycleFilter) {
   const team = state.teams.find((t) => t.id === teamId);
   if (!team) return;
 
@@ -823,7 +828,7 @@ async function generateReport(teamId, cycleFilter) {
 }
 
 // ── Reportes compartibles — gestión ──────────────────────────────
-async function revokeReport(token, label) {
+export async function revokeReport(token, label) {
   if (!confirm(`¿Revocar el reporte "${label}"?\n\nEl link dejará de funcionar inmediatamente.`)) return;
   try {
     await db.collection('reportes').doc(token).delete();
@@ -836,7 +841,7 @@ async function revokeReport(token, label) {
 
 // ── Briefing pre-assessment ──────────────────────────────────────
 const _briefingTimer = {};
-function saveBriefing(text) {
+export function saveBriefing(text) {
   state.briefingTexto = text;
   clearTimeout(_briefingTimer.t);
   _briefingTimer.t = setTimeout(async () => {
@@ -850,7 +855,7 @@ function saveBriefing(text) {
 
 // ── Marca del workspace ──────────────────────────────────────────
 const _brandingTimers = {};
-function saveBranding(field, value) {
+export function saveBranding(field, value) {
   state[field] = value;
   clearTimeout(_brandingTimers[field]);
   _brandingTimers[field] = setTimeout(async () => {
@@ -867,7 +872,7 @@ function saveBranding(field, value) {
 
 // ── Webhook ───────────────────────────────────────────────────────
 const _webhookTimer = {};
-function saveWebhookUrl(url) {
+export function saveWebhookUrl(url) {
   state.webhookUrl = url;
   clearTimeout(_webhookTimer.t);
   _webhookTimer.t = setTimeout(async () => {
@@ -880,7 +885,7 @@ function saveWebhookUrl(url) {
 }
 
 // ── Anonimato ─────────────────────────────────────────────────────
-async function saveAnonymityMode(mode) {
+export async function saveAnonymityMode(mode) {
   setState({ anonymityMode: mode });
   try {
     await db.collection('workspaces').doc(state.currentUser.uid).set({ anonymityMode: mode }, { merge: true });
@@ -889,7 +894,7 @@ async function saveAnonymityMode(mode) {
   }
 }
 
-async function saveAiEnabled(val) {
+export async function saveAiEnabled(val) {
   setState({ aiEnabled: val });
   try {
     await db.collection('workspaces').doc(state.currentUser.uid).set({ aiEnabled: val }, { merge: true });
@@ -899,7 +904,7 @@ async function saveAiEnabled(val) {
 }
 
 // ── Cadencia de ciclos ────────────────────────────────────────────
-async function saveCadenceWeeks(val) {
+export async function saveCadenceWeeks(val) {
   const n = parseInt(val, 10) || 0;
   setState({ assessmentCadenceWeeks: n, cadenceBannerDismissed: false });
   try {
@@ -909,7 +914,7 @@ async function saveCadenceWeeks(val) {
   }
 }
 
-async function testWebhook() {
+export async function testWebhook() {
   if (!state.webhookUrl) {
     toast('Configura una URL primero');
     return;
@@ -927,7 +932,7 @@ async function testWebhook() {
 
 // ── Contador en tiempo real ──────────────────────────────────────
 let _liveCountUnsub = null;
-function startLiveResponseCount() {
+export function startLiveResponseCount() {
   if (_liveCountUnsub) {
     _liveCountUnsub();
     _liveCountUnsub = null;
@@ -977,7 +982,7 @@ function startLiveResponseCount() {
 // ── Notas del coach ──────────────────────────────────────────────
 const _noteTimers = {};
 const _noteDrafts = {};
-function saveCoachNote(teamId, ciclo, text) {
+export function saveCoachNote(teamId, ciclo, text) {
   const key = ciclo === 'Todos' ? '_general' : ciclo.replace(/[^a-zA-Z0-9]/g, '_');
   _noteDrafts[teamId + '_' + key] = text;
   clearTimeout(_noteTimers[teamId]);
@@ -1002,7 +1007,7 @@ function saveCoachNote(teamId, ciclo, text) {
 // ── Guía de debriefing ────────────────────────────────────────────
 // Genera la estructura de datos para la guía de facilitación.
 // Retorna null si el equipo no existe o no tiene respuestas.
-function generateDebriefGuide(tid, cycleFilter) {
+export function generateDebriefGuide(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
   const team = state.teams.find((t) => t.id === tid);
   if (!team) return null;
@@ -1059,7 +1064,7 @@ function generateDebriefGuide(tid, cycleFilter) {
 }
 
 // ── Configuración de preguntas ────────────────────────────────────
-async function fetchConfig() {
+export async function fetchConfig() {
   if (!state.currentUser) return;
   try {
     const snap = await db.collection('configuraciones').doc(state.currentUser.uid).get();
@@ -1078,7 +1083,7 @@ async function fetchConfig() {
 }
 
 let _configSaveTimer = null;
-function scheduleConfigSave() {
+export function scheduleConfigSave() {
   clearTimeout(_configSaveTimer);
   _configSaveTimer = setTimeout(async () => {
     try {
@@ -1092,26 +1097,26 @@ function scheduleConfigSave() {
   }, 800);
 }
 
-function toggleQuestionDisabled(qKey) {
+export function toggleQuestionDisabled(qKey) {
   if (!state.configOverrides[qKey]) state.configOverrides[qKey] = { texto: '', disabled: false };
   state.configOverrides[qKey].disabled = !state.configOverrides[qKey].disabled;
   scheduleConfigSave();
   setState({});
 }
 
-function saveQuestionText(qKey, text) {
+export function saveQuestionText(qKey, text) {
   if (!state.configOverrides[qKey]) state.configOverrides[qKey] = { texto: '', disabled: false };
   state.configOverrides[qKey].texto = text;
   scheduleConfigSave();
 }
 
-function restoreQuestionText(qKey) {
+export function restoreQuestionText(qKey) {
   if (state.configOverrides[qKey]) state.configOverrides[qKey].texto = '';
   scheduleConfigSave();
   setState({});
 }
 
-function addCustomQuestion(sectionId) {
+export function addCustomQuestion(sectionId) {
   if (!state.configCustom[sectionId]) state.configCustom[sectionId] = [];
   if (state.configCustom[sectionId].length >= 3) return;
   state.configCustom[sectionId].push({
@@ -1123,14 +1128,14 @@ function addCustomQuestion(sectionId) {
   setState({});
 }
 
-function removeCustomQuestion(sectionId, idx) {
+export function removeCustomQuestion(sectionId, idx) {
   if (!state.configCustom[sectionId]) return;
   state.configCustom[sectionId].splice(idx, 1);
   scheduleConfigSave();
   setState({});
 }
 
-function saveCustomQuestionField(sectionId, idx, field, value) {
+export function saveCustomQuestionField(sectionId, idx, field, value) {
   const cqs = state.configCustom[sectionId];
   if (!cqs || !cqs[idx]) return;
   if (field === 'texto') {
@@ -1142,13 +1147,13 @@ function saveCustomQuestionField(sectionId, idx, field, value) {
 }
 
 // ── Portal del equipo ─────────────────────────────────────────────
-function generateToken() {
+export function generateToken() {
   const arr = new Uint8Array(16);
   crypto.getRandomValues(arr);
   return Array.from(arr, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function fetchPortals() {
+export async function fetchPortals() {
   if (!state.currentUser) return;
   try {
     const snap = await db.collection('portales').where('ownerId', '==', state.currentUser.uid).get();
@@ -1163,7 +1168,7 @@ async function fetchPortals() {
   }
 }
 
-async function syncPortalData(teamId) {
+export async function syncPortalData(teamId) {
   const portal = state.portals[teamId];
   if (!portal) return;
   const team = state.teams.find((t) => t.id === teamId);
@@ -1218,7 +1223,7 @@ async function syncPortalData(teamId) {
 }
 
 // Asigna portalToken a todos los planes de un equipo (en batch)
-async function setPortalTokenOnPlans(teamId, token) {
+export async function setPortalTokenOnPlans(teamId, token) {
   const plans = state.plans.filter((p) => p.equipoId === teamId);
   if (!plans.length) return;
   const batch = db.batch();
@@ -1227,7 +1232,7 @@ async function setPortalTokenOnPlans(teamId, token) {
 }
 
 // Elimina portalToken de todos los planes de un equipo
-async function clearPortalTokenOnPlans(teamId) {
+export async function clearPortalTokenOnPlans(teamId) {
   const plans = state.plans.filter((p) => p.equipoId === teamId);
   if (!plans.length) return;
   const batch = db.batch();
@@ -1237,7 +1242,7 @@ async function clearPortalTokenOnPlans(teamId) {
   await batch.commit();
 }
 
-async function createPortal(teamId) {
+export async function createPortal(teamId) {
   const team = state.teams.find((t) => t.id === teamId);
   if (!team) return;
   const token = generateToken();
@@ -1265,7 +1270,7 @@ async function createPortal(teamId) {
   }
 }
 
-async function revokePortal(teamId, teamName) {
+export async function revokePortal(teamId, teamName) {
   const portal = state.portals[teamId];
   if (!portal) return;
   if (!confirm(`¿Revocar el portal de "${teamName}"?\n\nEl link dejará de funcionar inmediatamente.`)) return;
@@ -1280,7 +1285,7 @@ async function revokePortal(teamId, teamName) {
   }
 }
 
-async function syncPortalAndRefresh(teamId) {
+export async function syncPortalAndRefresh(teamId) {
   await syncPortalData(teamId);
   toast('Portal actualizado');
   setState({});
@@ -1288,7 +1293,7 @@ async function syncPortalAndRefresh(teamId) {
 
 // Tendencia org por ciclo — score promedio de TODOS los equipos activos por ciclo
 // Retorna array de { ciclo, avg, count, teamCount } ordenado por el orden de state.cycles
-function calcOrgTrend() {
+export function calcOrgTrend() {
   const cycleNames = state.cycles.map((c) => c.name).filter(Boolean);
   if (cycleNames.length < 2) return [];
   const points = cycleNames

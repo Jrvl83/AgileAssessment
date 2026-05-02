@@ -1,17 +1,20 @@
-// e() → assets/escape.js (cargado antes de este archivo en admin.html)
-
+import { e } from './escape.js';
+import Chart from 'chart.js/auto';
+import { state, setState, MIN_ROLE_RESPONSES } from './admin-state.js';
+import { toast } from './admin-toast.js';
+import {
+  SECTIONS, DIMS, LEVELS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS,
+  COACHING_QUESTIONS, HEALTH_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec,
+} from '../assessment-config.js';
+import {
+  calcDispersion, isPolarized, detectRoleGaps, groupCommentsBySection, detectCommentRisk,
+  calcMomentum, computeGlobalDimAverages, getMajorityRole, getTeamFilteredStats,
+  computeStats, getEvolutionData, generateDebriefGuide, calcOrgTrend,
+} from './admin-api.js';
 let _modalOpener = null;
 
-// ── Toast ────────────────────────────────────────────────────────
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2800);
-}
-
 // ── Helpers de UI ────────────────────────────────────────────────
-function prefillPlan(teamId, recKey, ciclo, dimension) {
+export function prefillPlan(teamId, recKey, ciclo, dimension) {
   const activeCycle = (state.cycles.find((c) => c.active) || {}).name || '';
   setState({
     newPlanTeamId: teamId,
@@ -27,39 +30,39 @@ function prefillPlan(teamId, recKey, ciclo, dimension) {
 }
 
 // teamRoleFilter es un objeto anidado — helper para mutarlo y re-renderizar
-function setTeamRole(tid, role) {
+export function setTeamRole(tid, role) {
   state.teamRoleFilter[tid] = role;
-  render();
+  // state mutation triggers Vue re-render
 }
 
-function toggleTeamRecs(tid) {
+export function toggleTeamRecs(tid) {
   state.teamRecsExpanded[tid] = !state.teamRecsExpanded[tid];
-  render();
+  // state mutation triggers Vue re-render
 }
 
-function toggleTeamAI(tid) {
+export function toggleTeamAI(tid) {
   state.teamAIExpanded[tid] = !state.teamAIExpanded[tid];
-  render();
+  // state mutation triggers Vue re-render
 }
 
-function toggleTeamDetail(tid) {
+export function toggleTeamDetail(tid) {
   state.teamDetailExpanded[tid] = !state.teamDetailExpanded[tid];
-  render();
+  // state mutation triggers Vue re-render
 }
 
-function toggleTeamComments(tid) {
+export function toggleTeamComments(tid) {
   state.teamCommentsExpanded[tid] = !state.teamCommentsExpanded[tid];
-  render();
+  // state mutation triggers Vue re-render
 }
 
 // ── Análisis con IA ───────────────────────────────────────────────
 // Actualiza el contexto del coach sin disparar re-render (evita perder el foco en el textarea)
-function updateAiCtx(key, val) {
+export function updateAiCtx(key, val) {
   state.aiContext = { ...state.aiContext, [key]: val };
 }
 
 // Carga mammoth.js de forma lazy (solo la primera vez que se sube un .docx)
-function _loadMammoth() {
+export function _loadMammoth() {
   return new Promise((resolve, reject) => {
     if (window.mammoth) {
       resolve();
@@ -75,7 +78,7 @@ function _loadMammoth() {
 
 const DOC_CHAR_LIMIT = 10000; // ≈ 5 páginas / ~2.500 palabras
 
-async function handleDocxUpload(key, input) {
+export async function handleDocxUpload(key, input) {
   const file = input.files && input.files[0];
   if (!file) return;
 
@@ -117,7 +120,7 @@ async function handleDocxUpload(key, input) {
   reader.readAsArrayBuffer(file);
 }
 
-function removeDocxUpload(key) {
+export function removeDocxUpload(key) {
   const newCtx = { ...state.aiDocContext };
   delete newCtx[key];
   state.aiDocContext = newCtx;
@@ -131,7 +134,7 @@ function removeDocxUpload(key) {
 const IMG_MAX_SIZE = 2 * 1024 * 1024; // 2 MB por imagen
 const IMG_MAX_COUNT = 3;
 
-async function handleImageUpload(key, input) {
+export async function handleImageUpload(key, input) {
   const files = Array.from(input.files || []);
   if (!files.length) return;
 
@@ -172,10 +175,10 @@ async function handleImageUpload(key, input) {
   if (!loaded.length) return;
 
   state.aiImages = { ...state.aiImages, [key]: [...existing, ...loaded] };
-  render(); // Re-renderiza para mostrar las miniaturas
+  // state mutation triggers Vue re-render // Re-renderiza para mostrar las miniaturas
 }
 
-function removeImage(key, index) {
+export function removeImage(key, index) {
   const imgs = (state.aiImages[key] || []).filter((_, i) => i !== index);
   if (imgs.length) {
     state.aiImages = { ...state.aiImages, [key]: imgs };
@@ -184,10 +187,10 @@ function removeImage(key, index) {
     delete newImgs[key];
     state.aiImages = newImgs;
   }
-  render();
+  // state mutation triggers Vue re-render
 }
 
-async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
+export async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
   const cf = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
   const contextoCoach = (state.aiContext[key] || '').trim();
@@ -223,7 +226,7 @@ async function callAnalyzeTeamWithClaude(tid, forceRefresh) {
 }
 
 // ── Cierre formal del ciclo ───────────────────────────────────────
-function showCloseCycleModal(cycleId, cycleName) {
+export function showCloseCycleModal(cycleId, cycleName) {
   const resps = state.responses.filter((r) => r.fields.Ciclo === cycleName);
   const teamSet = new Set(resps.map((r) => (r.fields.Equipo || [])[0]).filter(Boolean));
   const noResp = state.teams.filter((t) => t.active && !teamSet.has(t.id));
@@ -269,20 +272,20 @@ function showCloseCycleModal(cycleId, cycleName) {
   modal.querySelector('button')?.focus();
 }
 
-function closeCloseCycleModal() {
+export function closeCloseCycleModal() {
   const modal = document.getElementById('close-cycle-modal');
   if (modal) modal.style.display = 'none';
   _modalOpener?.focus();
   _modalOpener = null;
 }
 
-async function confirmCloseCycle(cycleId, cycleName) {
+export async function confirmCloseCycle(cycleId, cycleName) {
   closeCloseCycleModal();
   await toggleCycle(cycleId, cycleName, true);
 }
 
 // ── Panel de Análisis IA ──────────────────────────────────────────
-function renderAIPanel(tid) {
+export function renderAIPanel(tid) {
   const cf = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
   const entry = state.aiAnalysis[key];
@@ -437,7 +440,7 @@ function renderAIPanel(tid) {
 }
 
 // ── Panel de comentarios por sección ─────────────────────────────
-function renderCommentsPanel(tid, cycleFilter) {
+export function renderCommentsPanel(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
   const teamResps = state.responses.filter(
     (r) => (r.fields.Equipo || []).includes(tid) && (cf === 'Todos' || r.fields.Ciclo === cf)
@@ -472,13 +475,13 @@ function renderCommentsPanel(tid, cycleFilter) {
     .join('');
 }
 
-function toggleTeamGaps(tid) {
+export function toggleTeamGaps(tid) {
   state.teamGapsExpanded[tid] = !state.teamGapsExpanded[tid];
-  render();
+  // state mutation triggers Vue re-render
 }
 
 // ── Detalle por pregunta con histogramas ─────────────────────────
-function renderQuestionDetail(tid, selectedRole) {
+export function renderQuestionDetail(tid, selectedRole) {
   const teamResps = state.responses
     .filter((r) => (r.fields.Equipo || []).includes(tid))
     .filter((r) => state.cycleFilter === 'Todos' || r.fields.Ciclo === state.cycleFilter)
@@ -603,7 +606,7 @@ function renderQuestionDetail(tid, selectedRole) {
 }
 
 // ── Radar charts ─────────────────────────────────────────────────
-function initRadarCharts() {
+export function initRadarCharts() {
   if (state.activeTab !== 'analysis') return;
   if (typeof Chart === 'undefined') return;
 
@@ -734,7 +737,7 @@ function initRadarCharts() {
 }
 
 // ── Evolution trend chart ─────────────────────────────────────────
-function initEvolutionTrendChart() {
+export function initEvolutionTrendChart() {
   if (state.activeTab !== 'evolution') return;
   if (typeof Chart === 'undefined') return;
   if (!window._evolTrendData) return;
@@ -810,7 +813,7 @@ function initEvolutionTrendChart() {
 }
 
 // ── Tendencia org por ciclo ───────────────────────────────────────
-function initOrgTrendChart() {
+export function initOrgTrendChart() {
   if (state.activeTab !== 'analysis') return;
   if (typeof Chart === 'undefined') return;
   if (!window._orgTrendData) return;
@@ -883,55 +886,10 @@ function initOrgTrendChart() {
 }
 
 // ── Render ───────────────────────────────────────────────────────
-function render() {
-  const app = document.getElementById('app');
-  const active = document.activeElement;
-  const focusId = active ? active.id : null;
-  const selStart = active ? active.selectionStart : null;
-  const selEnd = active ? active.selectionEnd : null;
-  const isTyping =
-    active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+// No-op: Vue reactivity maneja los re-renders vía AdminShell.vue
+export function render() {}
 
-  if (!state.currentUser) {
-    app.innerHTML = renderLogin();
-    return;
-  }
-  window._radarData = {};
-  window._compareData = null;
-  window._evolTrendData = null;
-  window._orgTrendData = null;
-  app.innerHTML = renderShell();
-  requestAnimationFrame(initRadarCharts);
-  requestAnimationFrame(initEvolutionTrendChart);
-  requestAnimationFrame(initOrgTrendChart);
-
-  // Solo animar en cambios de tab o carga inicial, no en cada tecla
-  if (!isTyping) {
-    app.classList.remove('fade-in');
-    void app.offsetWidth;
-    app.classList.add('fade-in');
-  }
-
-  // Restaurar foco y cursor después del render
-  if (focusId) {
-    const el = document.getElementById(focusId);
-    if (el) {
-      el.focus();
-      if (selStart !== null) {
-        try {
-          el.setSelectionRange(selStart, selEnd);
-        } catch (e) {
-          // email/number/date no soportan setSelectionRange — forzar cursor al final
-          const v = el.value;
-          el.value = '';
-          el.value = v;
-        }
-      }
-    }
-  }
-}
-
-function renderLogin() {
+export function renderLogin() {
   return `
     <div class="login-card fade-in">
       <h2>Acceso restringido</h2>
@@ -952,7 +910,7 @@ function renderLogin() {
     </div>`;
 }
 
-function renderShell() {
+export function renderShell() {
   const userLabel = state.currentUserName
     ? `<span style="font-size:12px;color:var(--ink-faint);margin-right:4px;">${state.currentUserName}</span>`
     : '';
@@ -989,7 +947,7 @@ function renderShell() {
 }
 
 // ── Participation panel ───────────────────────────────────────────
-function renderParticipationPanel(tid, cycleFilter) {
+export function renderParticipationPanel(tid, cycleFilter) {
   const cf = cycleFilter || 'Todos';
   const ROLES_ORDER = ['Dev Team', 'Product Owner', 'Scrum Master', 'Otro'];
   const teamResps = state.responses.filter(
@@ -1059,7 +1017,7 @@ function renderParticipationPanel(tid, cycleFilter) {
 }
 
 // ── Cadence reminder banner ───────────────────────────────────────
-function renderCadenceBanner() {
+export function renderCadenceBanner() {
   if (!state.assessmentCadenceWeeks || state.loading || state.cadenceBannerDismissed) return '';
   if (!state.responses.length) return '';
   const lastFecha = state.responses[0].fields.Fecha;
@@ -1077,7 +1035,7 @@ function renderCadenceBanner() {
 }
 
 // ── Analysis tab ─────────────────────────────────────────────────
-function renderAnalysis() {
+export function renderAnalysis() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
   state.recTexts = {};
@@ -1868,7 +1826,7 @@ function renderAnalysis() {
 }
 
 // ── Evolution tab ─────────────────────────────────────────────────
-function renderEvolution() {
+export function renderEvolution() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
   const withData = Object.values(state.teamStats).filter((s) => s.count > 0);
@@ -2162,7 +2120,7 @@ function renderEvolution() {
 }
 
 // ── Teams tab ─────────────────────────────────────────────────────
-function renderTeams() {
+export function renderTeams() {
   const cyclesSection = `
     <div class="section-card">
       <div class="section-title">Gestión de ciclos</div>
@@ -2394,7 +2352,7 @@ function renderTeams() {
 }
 
 // ── Guía de facilitación ──────────────────────────────────────────
-function showDebriefGuide(tid, cycleFilter) {
+export function showDebriefGuide(tid, cycleFilter) {
   const guide = generateDebriefGuide(tid, cycleFilter);
   if (!guide) {
     toast('Sin datos suficientes para generar la guía');
@@ -2543,7 +2501,7 @@ function showDebriefGuide(tid, cycleFilter) {
 }
 
 // ── Reporte compartible ───────────────────────────────────────────
-function showReportLink(url, teamName, ciclo) {
+export function showReportLink(url, teamName, ciclo) {
   _modalOpener = document.activeElement;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
@@ -2572,7 +2530,7 @@ function showReportLink(url, teamName, ciclo) {
 }
 
 // ── Portal del equipo ─────────────────────────────────────────────
-function showPortalLink(url, teamName) {
+export function showPortalLink(url, teamName) {
   _modalOpener = document.activeElement;
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'flex';
@@ -2599,21 +2557,21 @@ function showPortalLink(url, teamName) {
   modal.querySelector('button')?.focus();
 }
 
-function showExistingPortal(teamId, teamName) {
+export function showExistingPortal(teamId, teamName) {
   const portal = state.portals[teamId];
   if (!portal) return;
   showPortalLink(location.origin + '/equipo.html?t=' + portal.token, teamName);
 }
 
 // ── Modo facilitación ─────────────────────────────────────────────
-function openFacilitar(tid) {
+export function openFacilitar(tid) {
   const ciclo =
     state.cycleFilter && state.cycleFilter !== 'Todos' ? '&ciclo=' + encodeURIComponent(state.cycleFilter) : '';
   window.open('/facilitar?workspaceId=' + state.currentUser.uid + '&equipoId=' + tid + ciclo, '_blank');
 }
 
 // ── QR Code ──────────────────────────────────────────────────────
-function showQR(teamId, teamName) {
+export function showQR(teamId, teamName) {
   _modalOpener = document.activeElement;
   const url = window.location.origin + '/?workspaceId=' + state.currentUser.uid + '&equipoId=' + teamId;
   const modal = document.getElementById('qr-modal');
@@ -2650,7 +2608,7 @@ function showQR(teamId, teamName) {
   }
 }
 
-function closeQR() {
+export function closeQR() {
   const modal = document.getElementById('qr-modal');
   modal.style.display = 'none';
   modal.innerHTML = '';
@@ -2658,7 +2616,7 @@ function closeQR() {
   _modalOpener = null;
 }
 
-function copyQRUrl(url) {
+export function copyQRUrl(url) {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(url).then(() => toast('Link copiado'));
   } else {
@@ -2673,7 +2631,7 @@ function copyQRUrl(url) {
 }
 
 // ── Plan de Acción tab ────────────────────────────────────────────
-function renderPlan() {
+export function renderPlan() {
   if (state.loading) return `<div class="empty-state">Cargando datos…</div>`;
 
   const STATE = {
@@ -2832,7 +2790,7 @@ function renderPlan() {
 }
 
 // ── Configuración tab ─────────────────────────────────────────────
-function renderConfig() {
+export function renderConfig() {
   if (state.loading) return `<div class="empty-state">Cargando…</div>`;
 
   const overrides = state.configOverrides || {};
@@ -3045,7 +3003,7 @@ function renderConfig() {
 }
 
 // ── Usuarios tab ─────────────────────────────────────────────────
-function renderUsuarios() {
+export function renderUsuarios() {
   if (state.currentRole !== 'super_admin') return `<div class="empty-state">Acceso no autorizado.</div>`;
 
   const addForm = `

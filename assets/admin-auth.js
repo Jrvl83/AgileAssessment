@@ -1,71 +1,69 @@
+import { auth, db } from '../src/firebase-compat.js';
+import { state, setState } from './admin-state.js';
+import { fetchAllData, fetchUsers } from './admin-api.js';
+
 // ── Auth ─────────────────────────────────────────────────────────
-async function login() {
-  const email = (document.getElementById('emailInput').value || '').trim();
-  const password = document.getElementById('pwInput').value;
+export async function login(email, password) {
   const errEl = document.getElementById('loginError');
   const btn = document.getElementById('loginBtn');
-  errEl.textContent = '';
+  if (errEl) errEl.textContent = '';
   if (!email || !password) {
-    errEl.textContent = 'Ingresa email y contraseña';
+    if (errEl) errEl.textContent = 'Ingresa email y contraseña';
     return;
   }
-  btn.disabled = true;
-  btn.textContent = 'Ingresando…';
+  if (btn) { btn.disabled = true; btn.textContent = 'Ingresando…'; }
   try {
     await auth.signInWithEmailAndPassword(email, password);
     // onAuthStateChanged maneja el resto
   } catch (e) {
-    errEl.textContent = 'Email o contraseña incorrectos';
-    btn.disabled = false;
-    btn.textContent = 'Ingresar →';
+    if (errEl) errEl.textContent = 'Email o contraseña incorrectos';
+    if (btn) { btn.disabled = false; btn.textContent = 'Ingresar →'; }
   }
 }
 
-async function logout() {
+export async function logout() {
   await auth.signOut();
-  // onAuthStateChanged maneja la limpieza
 }
 
-// ── Init ─────────────────────────────────────────────────────────
-render(); // Muestra login inmediatamente mientras Firebase resuelve la sesión
-auth.onAuthStateChanged(async (firebaseUser) => {
-  if (!firebaseUser) {
-    setState({
-      currentUser: null,
-      currentRole: null,
-      currentUserName: '',
-      teams: [],
-      responses: [],
-      teamStats: {},
-      cycles: [],
-      plans: [],
-      users: [],
-    });
-    return;
-  }
+export function initAuth() {
+  auth.onAuthStateChanged(async (firebaseUser) => {
+    if (!firebaseUser) {
+      setState({
+        currentUser: null,
+        currentRole: null,
+        currentUserName: '',
+        teams: [],
+        responses: [],
+        teamStats: {},
+        cycles: [],
+        plans: [],
+        users: [],
+      });
+      return;
+    }
 
-  // Leer documento de usuario en Firestore
-  try {
-    const doc = await db.collection('usuarios').doc(firebaseUser.uid).get();
-    if (!doc.exists) {
-      state.loginMessage = 'No se encontró tu cuenta. Contacta al administrador.';
+    try {
+      const doc = await db.collection('usuarios').doc(firebaseUser.uid).get();
+      if (!doc.exists) {
+        state.loginMessage = 'No se encontró tu cuenta. Contacta al administrador.';
+        await auth.signOut();
+        return;
+      }
+      if (doc.data().activo === false) {
+        state.loginMessage = 'Cuenta suspendida. Contacta al administrador.';
+        await auth.signOut();
+        return;
+      }
+      state.currentUser = firebaseUser;
+      state.currentRole = doc.data().role;
+      state.currentUserName = doc.data().nombre || firebaseUser.email;
+      state.loginMessage = '';
+    } catch (e) {
       await auth.signOut();
       return;
     }
-    if (doc.data().activo === false) {
-      state.loginMessage = 'Cuenta suspendida. Contacta al administrador.';
-      await auth.signOut();
-      return;
-    }
-    state.currentUser = firebaseUser;
-    state.currentRole = doc.data().role;
-    state.currentUserName = doc.data().nombre || firebaseUser.email;
-    state.loginMessage = '';
-  } catch (e) {
-    await auth.signOut();
-    return;
-  }
 
-  if (state.currentRole === 'super_admin') await fetchUsers();
-  await fetchAllData();
-});
+    if (state.currentRole === 'super_admin') await fetchUsers();
+    await fetchAllData();
+  });
+}

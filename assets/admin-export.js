@@ -1,5 +1,10 @@
+import { state } from './admin-state.js';
+import { toast } from './admin-toast.js';
+import { DIMS, LEVELS, getLevel } from '../assessment-config.js';
+import { getTeamFilteredStats, getMajorityRole } from './admin-api.js';
+
 // ── Export ───────────────────────────────────────────────────────
-function downloadCSV(filename, rows) {
+export function downloadCSV(filename, rows) {
   const csv =
     'sep=;\r\n' +
     '\uFEFF' +
@@ -15,7 +20,7 @@ function downloadCSV(filename, rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportSummary() {
+export function exportSummary() {
   const headers = [
     'Equipo',
     'Ciclo',
@@ -44,7 +49,7 @@ function exportSummary() {
   downloadCSV(`resumen-assessment-${new Date().toISOString().slice(0, 10)}.csv`, rows);
 }
 
-function exportRaw() {
+export function exportRaw() {
   const headers = [
     'Fecha',
     'Equipo',
@@ -78,11 +83,11 @@ function exportRaw() {
   downloadCSV(`respuestas-assessment-${new Date().toISOString().slice(0, 10)}.csv`, rows);
 }
 
-function exportPDF() {
+export function exportPDF() {
   window.print();
 }
 
-async function exportPPT(teamId) {
+export async function exportPPT(teamId) {
   if (typeof PptxGenJS === 'undefined') {
     toast('Librería PPT no disponible');
     return;
@@ -396,7 +401,7 @@ async function exportPPT(teamId) {
   await pres.writeFile({ fileName: filename });
 }
 
-function exportPlanPDF() {
+export function exportPlanPDF() {
   const STATUS = {
     pendiente: { label: 'Pendiente', color: '#a05c0a', bg: '#fdefd6' },
     'en-curso': { label: 'En curso', color: '#1a4fd6', bg: '#dce6ff' },
@@ -514,7 +519,7 @@ function exportPlanPDF() {
 
 // ── exportAnalisisPDF ─────────────────────────────────────────────
 // Genera un PDF limpio del informe de facilitación (análisis IA + scores).
-function exportAnalisisPDF(tid) {
+export function exportAnalisisPDF(tid) {
   const cf = state.cycleFilter || 'Todos';
   const key = `${tid}__${cf}`;
   const entry = state.aiAnalysis[key];

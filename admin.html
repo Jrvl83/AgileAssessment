@@ -8,7 +8,6 @@
       href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/admin.css" />
   </head>
   <body>
     <div class="shell">
@@ -19,45 +18,11 @@
       </div>
       <div id="app"></div>
     </div>
-    <div class="toast" id="toast"></div>
-    <div
-      id="qr-modal"
-      style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.45);
-        z-index: 100;
-        align-items: center;
-        justify-content: center;
-      "
-    ></div>
-    <div
-      id="close-cycle-modal"
-      style="
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.45);
-        z-index: 100;
-        align-items: center;
-        justify-content: center;
-      "
-    ></div>
 
+    <!-- CDN libs sin equivalente npm usado en admin (QR, PPT) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
-    <script src="assessment-config.js"></script>
-    <script src="assets/escape.js"></script>
-    <script src="assets/admin-state.js"></script>
-    <script src="assets/admin-export.js"></script>
-    <script src="assets/admin-api.js"></script>
-    <script src="assets/admin-render.js"></script>
-    <script src="assets/admin-auth.js"></script>
+
+    <script type="module" src="/src/pages/admin.js"></script>
   </body>
 </html>
