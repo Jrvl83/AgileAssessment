@@ -6,17 +6,8 @@
     "source": "functions"
   },
   "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "firestore.rules",
-      ".firebaserc",
-      ".git/**",
-      ".claude/**",
-      "PLAN_*.md",
-      "PROYECTO.md",
-      "*.py"
-    ],
+    "public": "dist",
+    "ignore": ["firebase.json", "firestore.rules", ".firebaserc"],
     "rewrites": [
       {
         "source": "/admin",
