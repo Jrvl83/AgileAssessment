@@ -20,18 +20,23 @@
       </div>
     </div>
 
+    <!-- Banner de cadencia -->
+    <div v-if="showCadenceBanner"
+      style="background:var(--amber-light);border-bottom:1px solid #e0c06a;padding:11px 20px;font-size:13px;color:var(--amber);display:flex;align-items:center;gap:8px;">
+      <span style="font-size:15px;">⏰</span>
+      <span>Han pasado <strong>{{ weeksSinceLast === 1 ? '1 semana' : weeksSinceLast + ' semanas' }}</strong> desde la última respuesta — cadencia configurada cada <strong>{{ state.assessmentCadenceWeeks === 1 ? '1 semana' : state.assessmentCadenceWeeks + ' semanas' }}</strong>. ¿Ya abriste el nuevo ciclo?</span>
+      <button @click="state.cadenceBannerDismissed = true" title="Descartar"
+        style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:var(--amber);line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
+    </div>
+
     <!-- Contenido principal -->
     <div class="tab-content-wrapper">
-      <!-- Tabs migrados a SFC -->
-      <TeamsView    v-if="state.activeTab === 'teams'"    />
-      <ConfigView   v-if="state.activeTab === 'config'"   />
-      <PlanView     v-if="state.activeTab === 'plan'"     />
-      <UsuariosView v-if="state.activeTab === 'usuarios'" />
+      <AnalysisView  v-if="state.activeTab === 'analysis'"  />
       <EvolutionView v-if="state.activeTab === 'evolution'" />
-
-      <!-- Análisis — sigue en v-html hasta Fase 5 Grupo C -->
-      <div v-if="state.activeTab === 'analysis'"
-        v-html="tabContent" ref="tabContentEl"></div>
+      <PlanView      v-if="state.activeTab === 'plan'"      />
+      <TeamsView     v-if="state.activeTab === 'teams'"     />
+      <ConfigView    v-if="state.activeTab === 'config'"    />
+      <UsuariosView  v-if="state.activeTab === 'usuarios'"  />
     </div>
 
     <!-- Toast -->
@@ -52,37 +57,31 @@
 </template>
 
 <script setup>
-import { computed, watch, nextTick, ref } from 'vue';
+import { computed } from 'vue';
 import { state } from '../../assets/admin-state.js';
 import { logout } from '../../assets/admin-auth.js';
 import { fetchAllData } from '../../assets/admin-api.js';
-import {
-  renderCadenceBanner,
-  renderAnalysis,
-  initRadarCharts,
-  initOrgTrendChart,
-} from '../../assets/admin-render.js';
+import AnalysisView  from './AnalysisView.vue';
+import EvolutionView from './EvolutionView.vue';
+import PlanView      from './PlanView.vue';
 import TeamsView     from './TeamsView.vue';
 import ConfigView    from './ConfigView.vue';
-import PlanView      from './PlanView.vue';
 import UsuariosView  from './UsuariosView.vue';
-import EvolutionView from './EvolutionView.vue';
 
-const tabContentEl = ref(null);
-
-const tabContent = computed(() => {
-  if (state.activeTab !== 'analysis') return '';
-  window._radarData = {};
-  window._compareData = null;
-  window._orgTrendData = null;
-  return renderCadenceBanner() + renderAnalysis();
+const weeksSinceLast = computed(() => {
+  if (!state.responses.length) return 0;
+  const lastFecha = state.responses[0].fields.Fecha;
+  if (!lastFecha) return 0;
+  return Math.floor((Date.now() - new Date(lastFecha).getTime()) / (7 * 24 * 60 * 60 * 1000));
 });
 
-watch(tabContent, async () => {
-  await nextTick();
-  initRadarCharts();
-  initOrgTrendChart();
-}, { flush: 'post' });
+const showCadenceBanner = computed(() =>
+  !!(state.assessmentCadenceWeeks
+    && !state.loading
+    && !state.cadenceBannerDismissed
+    && state.responses.length
+    && weeksSinceLast.value >= state.assessmentCadenceWeeks)
+);
 
 async function doLogout() { await logout(); }
 async function refresh()   { await fetchAllData(); }
