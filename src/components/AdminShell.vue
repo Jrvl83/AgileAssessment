@@ -1,6 +1,6 @@
 <template>
   <div>
-    <!-- Tab bar (Vue-native, sin v-html) -->
+    <!-- Tab bar -->
     <div class="tab-bar">
       <div class="tabs">
         <button class="tab" :class="{ active: state.activeTab === 'analysis' }"   @click="state.activeTab = 'analysis'">Análisis</button>
@@ -20,8 +20,18 @@
       </div>
     </div>
 
-    <!-- Contenido de tabs via v-html (temporal — se reemplaza en Fase 5) -->
-    <div v-html="tabContent" ref="tabContentEl"></div>
+    <!-- Contenido principal -->
+    <div class="tab-content-wrapper">
+      <!-- Tabs migrados a SFC -->
+      <TeamsView   v-if="state.activeTab === 'teams'"    />
+      <ConfigView  v-if="state.activeTab === 'config'"   />
+      <PlanView    v-if="state.activeTab === 'plan'"     />
+      <UsuariosView v-if="state.activeTab === 'usuarios'" />
+
+      <!-- Tabs pendientes — siguen usando v-html hasta Fase 5 Grupo C -->
+      <div v-if="state.activeTab === 'analysis' || state.activeTab === 'evolution'"
+        v-html="tabContent" ref="tabContentEl"></div>
+    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -49,35 +59,27 @@ import {
   renderCadenceBanner,
   renderAnalysis,
   renderEvolution,
-  renderPlan,
-  renderTeams,
-  renderConfig,
-  renderUsuarios,
   initRadarCharts,
   initEvolutionTrendChart,
   initOrgTrendChart,
 } from '../../assets/admin-render.js';
+import TeamsView    from './TeamsView.vue';
+import ConfigView   from './ConfigView.vue';
+import PlanView     from './PlanView.vue';
+import UsuariosView from './UsuariosView.vue';
 
 const tabContentEl = ref(null);
 
 const tabContent = computed(() => {
+  if (state.activeTab !== 'analysis' && state.activeTab !== 'evolution') return '';
   window._radarData = {};
   window._compareData = null;
   window._evolTrendData = null;
   window._orgTrendData = null;
 
   const banner = renderCadenceBanner();
-  let content = '';
-  switch (state.activeTab) {
-    case 'analysis':  content = renderAnalysis();  break;
-    case 'evolution': content = renderEvolution(); break;
-    case 'plan':      content = renderPlan();       break;
-    case 'teams':     content = renderTeams();      break;
-    case 'config':    content = renderConfig();     break;
-    case 'usuarios':  content = renderUsuarios();   break;
-    default:          content = renderAnalysis();
-  }
-  return banner + content;
+  if (state.activeTab === 'evolution') return banner + renderEvolution();
+  return banner + renderAnalysis();
 });
 
 watch(tabContent, async () => {
@@ -87,11 +89,6 @@ watch(tabContent, async () => {
   initOrgTrendChart();
 }, { flush: 'post' });
 
-async function doLogout() {
-  await logout();
-}
-
-async function refresh() {
-  await fetchAllData();
-}
+async function doLogout() { await logout(); }
+async function refresh()   { await fetchAllData(); }
 </script>
