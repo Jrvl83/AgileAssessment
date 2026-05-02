@@ -12,21 +12,24 @@ export default defineConfig({
     // Páginas legacy (admin, assessment, facilitar) se copian tal cual hasta que migren a Vue
     viteStaticCopy({
       targets: [
-        { src: 'admin.html',            dest: '.' },
-        { src: 'assessment-agile.html', dest: '.' },
-        { src: 'facilitar.html',        dest: '.' },
-        { src: 'assets',                dest: '.' },
-        { src: 'assessment-config.js',  dest: '.' },
+        { src: 'admin.html',           dest: '.' },
+        { src: 'facilitar.html',       dest: '.' },
+        { src: 'assets',               dest: '.' },
+        { src: 'assessment-config.js', dest: '.' },
       ],
     }),
   ],
   build: {
     outDir: 'dist',
+    commonjsOptions: {
+      include: [/assessment-config\.js$/, /node_modules/],
+    },
     rollupOptions: {
       input: {
-        equipo:  resolve(__dirname, 'equipo.html'),
-        reporte: resolve(__dirname, 'reporte.html'),
-        // admin, assessment, facilitar se agregan cuando migren a Vue
+        equipo:     resolve(__dirname, 'equipo.html'),
+        reporte:    resolve(__dirname, 'reporte.html'),
+        assessment: resolve(__dirname, 'assessment-agile.html'),
+        // admin, facilitar se agregan cuando migren a Vue
       },
     },
   },
