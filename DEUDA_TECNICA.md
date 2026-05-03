@@ -3,7 +3,7 @@
 Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITECTURA.md` (plan estratégico: Vue 3, paginación, auditoría). Acá van los ítems chicos que surgen de revisiones de código, pair-reviews, bugs de producción y auditorías de buenas prácticas.
 
 **Última auditoría:** 2026-04-23 (buenas prácticas previas a refactor Vue 3).  
-**Última actualización:** 2026-05-01 — Fases 0-3 de migración Vue 3 completadas.
+**Última actualización:** 2026-05-02 — Fases 0-5 de migración Vue 3 completadas.
 
 ---
 
@@ -48,21 +48,11 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 **Contexto:** `DIMS`, `SECTIONS`, las recomendaciones y parte del scoring están duplicados entre `assessment-config.js` (frontend) y `functions/index.js` como `DIMS_CFG`, `SECTIONS_CFG`. Cualquier cambio obliga a tocar ambos.
 
-**Avance (2026-05-01):** `assessment-config.js` ahora se importa como ESM desde los componentes Vue via `build.commonjsOptions` en Vite. El bloqueo de "ES modules" en frontend está resuelto. Falta resolver el lado de Cloud Functions.
+**Avance (2026-05-02):** `assessment-config.js` se importa como ESM desde todos los componentes Vue. Fases 4-5 completadas — Fase 6 desbloqueada. Falta resolver el lado de Cloud Functions.
 
 **Propuesta:** mover a `shared/config.js` importado por ambos. Para functions, se puede usar un `symlink` o copiar el archivo en el step de build de CI. Ver Fase 6 de `PLAN_MIGRACION_VUE3.md`.
 
 **Esfuerzo:** M (medio día, desbloqueado en Fase 6).
-
----
-
-### D10 — Funciones gigantes en `admin-render.js`
-
-**Contexto:** `generateDebriefGuide()` tiene ~800 líneas. `render()` llama a ~15 funciones que concatenan template literals con 6+ niveles de anidamiento.
-
-**Avance (2026-05-01):** equipo.html, reporte.html, assessment-agile.html y facilitar.html ya migraron a Vue 3 SFCs — sus funciones de render desaparecieron. Solo queda `admin-render.js` (admin.html). Se resolverá en Fases 4-5 de `PLAN_MIGRACION_VUE3.md`.
-
-**Esfuerzo:** L (depende de Fases 4-5 de la migración).
 
 ---
 
@@ -77,9 +67,11 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 | 2026-04-23 | **D1** — Helper `e()` unificado en `assets/escape.js` (5 entidades) cargado por las 5 páginas; eliminados escapes ad-hoc incompletos                                                                                                                                                                           | `b2e770f` |
 | 2026-04-24 | **D2** — `functions.logger` estructurado en todas las CFs; colección `auditLog` (read: super_admin, write: false) con helper `writeAudit`; integrado en `createWorkspaceAdmin`, `deleteWorkspaceAdmin`, `analyzeTeamWithClaude`; eliminados los 2 `catch { /* silent */ }` y 3 `.catch(() => {})` del frontend | `fa01fae` |
 | 2026-04-24 | **D8** — `.gitattributes` con `* text=auto eol=lf` + binarios comunes; `.prettierrc.json` revertido a `endOfLine: lf`; renormalización de 26 archivos (formato puro, sin lógica)                                                                                                                                | `bcbc853` |
-| 2026-05-01 | **D5** — Listener global `Escape` cierra `qr-modal` y `close-cycle-modal`; `aria-label="Cerrar"` en botones ✕ (3 modales); foco al primer botón al abrir; foco devuelto al disparador al cerrar | `b0a7ce7` |
-| 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. `'unsafe-inline'` requerido por onclick/style inline. | `3771ef8` |
 | 2026-05-01 | **D4** — `README.md` con setup local, tests, lint, secrets (Secret Manager), deploy y datos de prueba | `f6c6f85` |
+| 2026-05-01 | **D5** — Listener global `Escape` cierra modales; `aria-label="Cerrar"` en botones ✕; foco al primer botón al abrir; foco devuelto al disparador al cerrar. Migrado a `onMounted`/`onUnmounted` en QRModal y CloseCycleModal (Fase 5D). | `b0a7ce7` |
+| 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. | `3771ef8` |
+| 2026-05-02 | **D7.2** — `'unsafe-inline'` eliminado de `script-src` (Fase 6.2). `style-src` conserva `'unsafe-inline'` — necesario por inline `style=` en templates Vue (no es vector de ejecución de código). | — |
+| 2026-05-02 | **D10** — Funciones gigantes en `admin-render.js`: todas las `renderXxx()` convertidas a SFCs Vue (Fases 4-5). `admin-render.js` queda solo con funciones de negocio puras (sin DOM). Bundle admin: −92 kB. | `1baea8b`…`2180a3a` |
 
 ---
 

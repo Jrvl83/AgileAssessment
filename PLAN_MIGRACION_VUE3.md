@@ -1,7 +1,7 @@
 # Plan de Migración Vanilla JS → Vue 3
 
 **Fecha:** 2026-05-01  
-**Estado:** En progreso — Fases 0–3 completas (2026-05-01)
+**Estado:** En progreso — Fases 0–5 completas (2026-05-02)
 
 ---
 
@@ -215,11 +215,17 @@ createApp(EquipoApp).mount('#app');
 
 ---
 
-## Fase 4 — Admin: infraestructura Vue
+## Fase 4 — Admin: infraestructura Vue ✅ `1baea8b`
 
 **Objetivo:** Convertir `admin.html` en app Vue funcional con el mismo comportamiento actual. Las tabs aún renderizan HTML existente via `v-html` (compatibilidad temporal). Los `onclick` inline siguen funcionando porque las funciones permanecen globales.
 
 **Esfuerzo:** 4-5 días | **Riesgo:** Alto
+
+**Lo que cambió respecto al plan original:**
+- `AdminApp.vue` + `AdminShell.vue` + `AdminLogin.vue` — auth con `onAuthStateChanged` en `onMounted`.
+- `admin-state.js` convertido a `reactive()` — `setState(patch)` conservado para compatibilidad con assets existentes.
+- `Object.assign(window, adminApi/Render/Export)` + `window.login/logout/setState/state` expuestos temporalmente para que los `onclick` en `v-html` sigan funcionando.
+- `admin.html` de ~350 líneas a 15 líneas.
 
 ### Estrategia `v-html` temporal
 
@@ -257,34 +263,35 @@ export function setState(patch) { Object.assign(state, patch); }
 
 ---
 
-## Fase 5 — Admin: componentes individuales
+## Fase 5 — Admin: componentes individuales ✅
 
 **Objetivo:** Reemplazar cada `renderXxx()` con SFC Vue. Eliminar `v-html`. Eliminar funciones globales de render.
 
 **Esfuerzo:** 8-12 días | **Riesgo:** Medio por grupos
 
-Se hace en grupos deployables, de menor a mayor complejidad:
+### Grupo A/B — Tabs sin charts ✅ `95c961e`
+`TeamsView.vue`, `PlanView.vue`, `UsuariosView.vue`, `ConfigView.vue`, `UsuariosView.vue` — SFCs nativos con `@click` handlers. Tab bar y cadence banner inline en `AdminShell.vue`.
 
-### Grupo A — Componentes atómicos (1-2 días)
-`ToastNotification.vue`, `TabBar.vue`, `StatCard.vue`, `RolePill.vue`, `LoginForm.vue`
+### Grupo C — Tabs con charts ✅ `6266314` `770f1fe`
+`EvolutionView.vue`, `AnalysisView.vue`, `TeamCard.vue`.
 
-### Grupo B — Tabs sin charts (2-3 días)
-`TeamsView.vue`, `PlanView.vue`, `UsuariosView.vue`
+Patrón definitivo para Chart.js en SFCs: `ref()` para canvas + `watch([canvasRef, dataKey], callback, { flush: 'post' })` + `onUnmounted` para cleanup. Elimina los globals `window._radarData` / `window._evolTrendData`.
 
-### Grupo C — Tabs con charts (2-3 días)
-`EvolutionView.vue`, `AnalysisView.vue` (dividida en: `TeamCard.vue`, `RadarChart.vue`, `ParticipationPanel.vue`, `AIPanel.vue`, `CommentsPanel.vue`)
+`v-html` conservado solo para tres paneles de solo lectura sin `onclick`: participación, comentarios y detalle de pregunta.
 
-Usar `@vue/chart.js` o wrapper manual con `onMounted`/`onUpdated`. Reemplaza el patrón `window._radarData` con `watchEffect`.
+AI panel convertido a template inline — elimina el último `onclick` de la pestaña Análisis.
 
-### Grupo D — Modales (2-3 días)
-`QRModal.vue`, `CloseCycleModal.vue`, `DebriefGuide.vue`
+### Grupo D — Modales ✅ `2180a3a` + sesión 2026-05-02
+`QRModal.vue` (tipos: qr / report / portal) y `CloseCycleModal.vue`.
 
-Preservar la lógica de foco implementada en D5.
+Estrategia: `state.qrModal` y `state.closeCycleModal` en `admin-state.js` como fuente de verdad. Las funciones `showQR`, `showCloseCycleModal`, etc. en `admin-render.js` mudan `state` en lugar de inyectar `innerHTML`. `admin-api.js` también muta `state.qrModal` directamente (elimina dependencia implícita en `window.showReportLink`). ESC key con `onMounted`/`onUnmounted` en cada modal.
 
-### Grupo E — Config (1-2 días)
-`ConfigView.vue`
+`DebriefGuide` no requirió componente Vue — abre `window.open` + `document.write` en ventana nueva; el `onclick="window.print()"` está en la ventana popup, no en el admin. Se llama directamente como `@click` handler.
 
-**Al terminar cada grupo:** eliminar las funciones JS correspondientes de `admin-render.js`. Al terminar Grupo E, `admin-render.js` queda vacío y se elimina del proyecto.
+**Resultado final:**
+- `window.*` en `admin.js`: de ~30 funciones globales expuestas → **0**
+- Admin chunk: 317 kB → 225 kB (−92 kB)
+- `admin-render.js`: de ~3.000 líneas (render + DOM mutation) → funciones de negocio puras sin DOM
 
 ---
 
@@ -296,21 +303,17 @@ Preservar la lógica de foco implementada en D5.
 
 Mover `assessment-config.js` a `shared/config.js` e importarlo tanto desde los componentes Vue como desde `functions/index.js`. Elimina la duplicación de `DIMS_CFG`/`SECTIONS_CFG` en functions.
 
-### 6.2 — Endurecer CSP (cierra D7 completamente)
+### 6.2 — Endurecer CSP ✅
 
-Con todos los `onclick` inline eliminados, quitar `'unsafe-inline'` de `script-src` y `style-src` en `firebase.json`.
+`'unsafe-inline'` eliminado de `script-src` en `firebase.json`. `style-src` conserva `'unsafe-inline'` — necesario por inline `style=` en templates Vue (no es vector de ejecución de código).
 
 ### 6.3 — Tests de componentes (cierra D6)
 
 Con Vitest + `@vue/test-utils`, agregar tests de render para los componentes críticos (`AnalysisView`, `AssessmentSection`, `LoginForm`).
 
-### 6.4 — Mammoth.js como dynamic import
+### 6.4 — Mammoth.js como dynamic import ✅
 
-```js
-const { default: mammoth } = await import('mammoth');
-```
-
-Reemplaza el workaround de `document.createElement('script')`.
+`await import('mammoth')` reemplaza el workaround de `document.createElement('script')`. Mammoth se split en chunk lazy propio (~496 kB) — solo carga cuando el usuario sube un `.docx`.
 
 ---
 
@@ -322,11 +325,14 @@ Reemplaza el workaround de `document.createElement('script')`.
 | 1 | equipo.html + reporte.html | ✅ Completo | `b356ff1` |
 | 2 | assessment-agile.html | ✅ Completo | `99b227e` |
 | 3 | facilitar.html | ✅ Completo | `9091677` |
-| 4 | Admin: shell Vue + estado reactivo | ⏳ Pendiente | — |
-| 5A | Admin: componentes atómicos + tabs simples | ⏳ Pendiente | — |
-| 5B | Admin: tabs con charts | ⏳ Pendiente | — |
-| 5C | Admin: modales + Config | ⏳ Pendiente | — |
-| 6 | Limpieza, CSP, tests | ⏳ Pendiente | — |
+| 4 | Admin: shell Vue + estado reactivo | ✅ Completo | `1baea8b` |
+| 5A/B | Admin: tabs sin charts (TeamsView, PlanView, ConfigView, UsuariosView) | ✅ Completo | `95c961e` |
+| 5C | Admin: tabs con charts (EvolutionView, AnalysisView, TeamCard) | ✅ Completo | `6266314` `770f1fe` |
+| 5D | Admin: modales Vue (QRModal, CloseCycleModal) + cero window.* | ✅ Completo | `2180a3a` |
+| 6.2 | CSP: `script-src` sin `unsafe-inline` | ✅ Completo | — |
+| 6.4 | Mammoth.js lazy via `await import()` | ✅ Completo | — |
+| 6.1 | Shared config: `assessment-config.js` → `shared/` | ⏳ Pendiente | — |
+| 6.3 | Tests de componentes Vue (D6) | ⏳ Pendiente | — |
 
 Cada fase es deployable de forma independiente. La app permanece funcional en producción durante toda la migración.
 
