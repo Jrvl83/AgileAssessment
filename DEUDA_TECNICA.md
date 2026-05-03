@@ -25,11 +25,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ---
 
-## Prioridad Baja
-
-
----
-
 ## Resuelto
 
 | Fecha      | Ítem                                                                                                                                                                                                                                                                                                           | Commit    |
