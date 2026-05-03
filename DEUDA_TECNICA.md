@@ -3,7 +3,7 @@
 Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITECTURA.md` (plan estratégico: Vue 3, paginación, auditoría). Acá van los ítems chicos que surgen de revisiones de código, pair-reviews, bugs de producción y auditorías de buenas prácticas.
 
 **Última auditoría:** 2026-04-23 (buenas prácticas previas a refactor Vue 3).  
-**Última actualización:** 2026-05-02 — Fases 0-5 de migración Vue 3 completadas.
+**Última actualización:** 2026-05-03 — Migración Vue 3 completa (Fase 6.3). 109 tests.
 
 ---
 
@@ -22,23 +22,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ---
 
-### D6 — Tests de componentes Vue y CFs ausentes
-
-**Contexto:** 96 tests Vitest, pero 100% son unitarios sobre `admin-api.js` y `assessment-config.js`. Con la migración Vue 3 (Fases 0-3 completas), hay nuevos objetivos de testing:
-
-- Componentes Vue (`EquipoApp`, `AssessmentApp`, `FacilitarApp`) — happy path y edge cases
-- Flujos de autenticación (`admin-auth.js`, `FacilitarApp` login flow)
-- Cloud Functions (requiere emulator)
-- Flujos de integración (submit assessment → Firestore → cálculo)
-
-**Propuesta:** agregar suite progresiva con `@vue/test-utils`:
-
-- `tests/components/AssessmentApp.test.js` — renderizado condicional de screens, pick/answer state.
-- `tests/components/FacilitarApp.test.js` — navegación de slides, action form.
-- `tests/functions.test.js` con Firebase emulator para CFs.
-- No apuntar al 100% — priorizar rutas críticas (submit assessment, callAnalyzeTeamWithClaude).
-
-**Esfuerzo:** L (3–5 días). Desbloqueado en Fase 6 de `PLAN_MIGRACION_VUE3.md`.
 
 ---
 
@@ -64,6 +47,7 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 | 2026-05-02 | **D7.2** — `'unsafe-inline'` eliminado de `script-src` (Fase 6.2). `style-src` conserva `'unsafe-inline'` — necesario por inline `style=` en templates Vue (no es vector de ejecución de código). | — |
 | 2026-05-02 | **D10** — Funciones gigantes en `admin-render.js`: todas las `renderXxx()` convertidas a SFCs Vue (Fases 4-5). `admin-render.js` queda solo con funciones de negocio puras (sin DOM). Bundle admin: −92 kB. | `1baea8b`…`2180a3a` |
 | 2026-05-02 | **D9** — `DIMS_CFG`/`SECTIONS_CFG` duplicados en `functions/index.js` eliminados. CF ahora usa `require('./assessment-config')` (copiado via predeploy hook en `firebase.json`). Bug colateral: `transparencia.max` corregido de 9 → 12 en functions. | — |
+| 2026-05-03 | **D6** — `@vue/test-utils` + `happy-dom`; `vitest.config.mjs`; suite de componentes: `AssessmentApp.test.js` (8 tests — screens, rol, navegación) + `EquipoApp.test.js` (5 tests — estados, plan status). Total: 96 → **109 tests**. | — |
 
 ---
 

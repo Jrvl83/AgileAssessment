@@ -307,9 +307,14 @@ Estrategia: `state.qrModal` y `state.closeCycleModal` en `admin-state.js` como f
 
 `'unsafe-inline'` eliminado de `script-src` en `firebase.json`. `style-src` conserva `'unsafe-inline'` — necesario por inline `style=` en templates Vue (no es vector de ejecución de código).
 
-### 6.3 — Tests de componentes (cierra D6)
+### 6.3 — Tests de componentes (cierra D6) ✅
 
-Con Vitest + `@vue/test-utils`, agregar tests de render para los componentes críticos (`AnalysisView`, `AssessmentSection`, `LoginForm`).
+`@vue/test-utils` + `happy-dom` instalados. `vitest.config.js` renombrado a `vitest.config.mjs` con `environmentMatchGlobs` para separar ambientes (node para unit tests, happy-dom para componentes).
+
+- `tests/components/AssessmentApp.test.js` — 8 tests: estados loading/invalid/intro/briefing, rol seleccionado, botón deshabilitado, navegación a context.
+- `tests/components/EquipoApp.test.js` — 5 tests: estados loading/error/ready, snapshot con portal inexistente, cambio de estado de plan con `updateDoc`.
+
+Suite total: 96 → **109 tests** (todos en verde).
 
 ### 6.4 — Mammoth.js como dynamic import ✅
 
@@ -332,7 +337,7 @@ Con Vitest + `@vue/test-utils`, agregar tests de render para los componentes cr�
 | 6.2 | CSP: `script-src` sin `unsafe-inline` | ✅ Completo | — |
 | 6.4 | Mammoth.js lazy via `await import()` | ✅ Completo | — |
 | 6.1 | Shared config: `assessment-config.js` → `shared/` | ✅ Completo | — |
-| 6.3 | Tests de componentes Vue (D6) | ⏳ Pendiente | — |
+| 6.3 | Tests de componentes Vue (D6) | ✅ Completo | — |
 
 Cada fase es deployable de forma independiente. La app permanece funcional en producción durante toda la migración.
 
