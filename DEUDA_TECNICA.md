@@ -44,15 +44,6 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 
 ## Prioridad Baja
 
-### D9 — Duplicación de lógica entre `assessment-config.js` y `functions/index.js`
-
-**Contexto:** `DIMS`, `SECTIONS`, las recomendaciones y parte del scoring están duplicados entre `assessment-config.js` (frontend) y `functions/index.js` como `DIMS_CFG`, `SECTIONS_CFG`. Cualquier cambio obliga a tocar ambos.
-
-**Avance (2026-05-02):** `assessment-config.js` se importa como ESM desde todos los componentes Vue. Fases 4-5 completadas — Fase 6 desbloqueada. Falta resolver el lado de Cloud Functions.
-
-**Propuesta:** mover a `shared/config.js` importado por ambos. Para functions, se puede usar un `symlink` o copiar el archivo en el step de build de CI. Ver Fase 6 de `PLAN_MIGRACION_VUE3.md`.
-
-**Esfuerzo:** M (medio día, desbloqueado en Fase 6).
 
 ---
 
@@ -72,6 +63,7 @@ Backlog vivo de hallazgos de auditorías tácticas. Complementa a `PLAN_ARQUITEC
 | 2026-05-01 | **D7** — CSP en `firebase.json`: allowlist gstatic/jsdelivr/cdnjs/fonts; connect-src Firebase; `object-src 'none'`; `frame-ancestors 'none'`; `X-Content-Type-Options: nosniff`. | `3771ef8` |
 | 2026-05-02 | **D7.2** — `'unsafe-inline'` eliminado de `script-src` (Fase 6.2). `style-src` conserva `'unsafe-inline'` — necesario por inline `style=` en templates Vue (no es vector de ejecución de código). | — |
 | 2026-05-02 | **D10** — Funciones gigantes en `admin-render.js`: todas las `renderXxx()` convertidas a SFCs Vue (Fases 4-5). `admin-render.js` queda solo con funciones de negocio puras (sin DOM). Bundle admin: −92 kB. | `1baea8b`…`2180a3a` |
+| 2026-05-02 | **D9** — `DIMS_CFG`/`SECTIONS_CFG` duplicados en `functions/index.js` eliminados. CF ahora usa `require('./assessment-config')` (copiado via predeploy hook en `firebase.json`). Bug colateral: `transparencia.max` corregido de 9 → 12 en functions. | — |
 
 ---
 

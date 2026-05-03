@@ -299,9 +299,9 @@ Estrategia: `state.qrModal` y `state.closeCycleModal` en `admin-state.js` como f
 
 **Esfuerzo:** 2-3 días | **Riesgo:** Bajo
 
-### 6.1 — Resolver D9: shared config
+### 6.1 — Resolver D9: shared config ✅
 
-Mover `assessment-config.js` a `shared/config.js` e importarlo tanto desde los componentes Vue como desde `functions/index.js`. Elimina la duplicación de `DIMS_CFG`/`SECTIONS_CFG` en functions.
+`functions/index.js` ahora hace `require('./assessment-config')` para `DIMS` y `SECTIONS`, eliminando `DIMS_CFG`/`SECTIONS_CFG` hardcodeados. El archivo se copia via predeploy hook en `firebase.json` antes de que Firebase empaquete `functions/`. Bug colateral corregido: `transparencia.max` era 9 en functions (correcto: 12 desde V4).
 
 ### 6.2 — Endurecer CSP ✅
 
@@ -331,7 +331,7 @@ Con Vitest + `@vue/test-utils`, agregar tests de render para los componentes cr�
 | 5D | Admin: modales Vue (QRModal, CloseCycleModal) + cero window.* | ✅ Completo | `2180a3a` |
 | 6.2 | CSP: `script-src` sin `unsafe-inline` | ✅ Completo | — |
 | 6.4 | Mammoth.js lazy via `await import()` | ✅ Completo | — |
-| 6.1 | Shared config: `assessment-config.js` → `shared/` | ⏳ Pendiente | — |
+| 6.1 | Shared config: `assessment-config.js` → `shared/` | ✅ Completo | — |
 | 6.3 | Tests de componentes Vue (D6) | ⏳ Pendiente | — |
 
 Cada fase es deployable de forma independiente. La app permanece funcional en producción durante toda la migración.

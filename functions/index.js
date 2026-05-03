@@ -25,24 +25,7 @@ async function writeAudit({ accion, realizadoPor, detalles, severity }) {
   }
 }
 
-// ── Configuración de dimensiones y secciones (espejo de assessment-config.js) ─
-const DIMS_CFG = [
-  { key: 'eventos', label: 'Ceremonias', max: 12, storeKey: 'scoreEventos' },
-  { key: 'backlog', label: 'Product Backlog', max: 9, storeKey: 'scoreBacklog' },
-  { key: 'devteam', label: 'Dev Team', max: 12, storeKey: 'scoreDevTeam' },
-  { key: 'transparencia', label: 'Transparencia', max: 9, storeKey: 'scoreTransparencia' },
-  { key: 'tecnico', label: 'Exc. Técnica', max: 9, storeKey: 'scoreTecnico' },
-  { key: 'cliente', label: 'Orient. Cliente', max: 9, storeKey: 'scoreCliente' },
-];
-
-const SECTIONS_CFG = [
-  { id: 'eventos', title: 'Ceremonias y ritmo del equipo' },
-  { id: 'backlog', title: 'Gestión del Product Backlog' },
-  { id: 'devteam', title: 'Autoorganización y entrega' },
-  { id: 'transparencia', title: 'Transparencia, inspección y adaptación' },
-  { id: 'tecnico', title: 'Excelencia técnica' },
-  { id: 'cliente', title: 'Orientación al cliente' },
-];
+const { DIMS: DIMS_CFG, SECTIONS: SECTIONS_CFG } = require('./assessment-config');
 
 function getLevel(pct) {
   if (pct <= 40) return 'Inicial';
