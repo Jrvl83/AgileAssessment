@@ -183,7 +183,7 @@ import {
   saveBriefing, saveBranding,
 } from '../../assets/admin-api.js';
 import {
-  showQR, showExistingPortal, openFacilitar, copyQRUrl,
+  showQR, showExistingPortal, openFacilitar,
 } from '../../assets/admin-render.js';
 import { toast } from '../../assets/admin-toast.js';
 

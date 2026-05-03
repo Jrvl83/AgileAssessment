@@ -58,6 +58,8 @@ export const state = reactive({
   cadenceBannerDismissed: false,
   teamHealthEnabled: false,
   guidanceText: '',
+  qrModal: null,
+  closeCycleModal: null,
 });
 
 export function setState(patch) {

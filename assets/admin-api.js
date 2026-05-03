@@ -812,7 +812,7 @@ export async function generateReport(teamId, cycleFilter) {
   try {
     const ref = await db.collection('reportes').add(snapshot);
     const url = window.location.origin + '/reporte.html?t=' + ref.id;
-    showReportLink(url, team.name, cf);
+    state.qrModal = { type: 'report', url, teamName: team.name, ciclo: cf };
     toast('Reporte generado');
     if (state.webhookUrl) {
       fns
@@ -1262,7 +1262,7 @@ export async function createPortal(teamId) {
     state.portals[teamId] = { token };
     await setPortalTokenOnPlans(teamId, token);
     await syncPortalData(teamId);
-    showPortalLink(location.origin + '/equipo.html?t=' + token, team.name);
+    state.qrModal = { type: 'portal', url: location.origin + '/equipo.html?t=' + token, teamName: team.name };
     toast('Portal del equipo creado');
     setState({});
   } catch (e) {

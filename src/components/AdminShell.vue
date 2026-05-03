@@ -42,17 +42,9 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
-    <!-- Modal QR -->
-    <div
-      id="qr-modal"
-      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;"
-    ></div>
-
-    <!-- Modal cierre de ciclo -->
-    <div
-      id="close-cycle-modal"
-      style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;align-items:center;justify-content:center;"
-    ></div>
+    <!-- Modales Vue -->
+    <QRModal         v-if="state.qrModal"         />
+    <CloseCycleModal v-if="state.closeCycleModal"  />
   </div>
 </template>
 
@@ -61,12 +53,14 @@ import { computed } from 'vue';
 import { state } from '../../assets/admin-state.js';
 import { logout } from '../../assets/admin-auth.js';
 import { fetchAllData } from '../../assets/admin-api.js';
-import AnalysisView  from './AnalysisView.vue';
-import EvolutionView from './EvolutionView.vue';
-import PlanView      from './PlanView.vue';
-import TeamsView     from './TeamsView.vue';
-import ConfigView    from './ConfigView.vue';
-import UsuariosView  from './UsuariosView.vue';
+import AnalysisView   from './AnalysisView.vue';
+import EvolutionView  from './EvolutionView.vue';
+import PlanView       from './PlanView.vue';
+import TeamsView      from './TeamsView.vue';
+import ConfigView     from './ConfigView.vue';
+import UsuariosView   from './UsuariosView.vue';
+import QRModal        from './QRModal.vue';
+import CloseCycleModal from './CloseCycleModal.vue';
 
 const weeksSinceLast = computed(() => {
   if (!state.responses.length) return 0;
