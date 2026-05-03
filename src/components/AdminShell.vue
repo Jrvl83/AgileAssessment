@@ -1,5 +1,10 @@
 <template>
-  <div>
+  <div class="shell">
+    <div class="header">
+      <div class="header-eyebrow">Panel de Administración</div>
+      <h1>Assessment Agile</h1>
+      <p>Análisis comparativo de madurez por equipo</p>
+    </div>
     <!-- Tab bar -->
     <div class="tab-bar">
       <div class="tabs">
