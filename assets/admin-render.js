@@ -2,6 +2,7 @@ import { e } from './escape.js';
 import Chart from 'chart.js/auto';
 import { state, setState, MIN_ROLE_RESPONSES } from './admin-state.js';
 import { toast } from './admin-toast.js';
+import { fns } from '../src/firebase-compat.js';
 import {
   SECTIONS, DIMS, LEVELS, RECS, RECS_ROLE, CROSS_PATTERNS, DIM_COLORS,
   COACHING_QUESTIONS, HEALTH_QUESTIONS, detectPatterns, getContextNote, getLevel, getRec,
