@@ -65,6 +65,10 @@
       <div class="field-group">
         <label>¿A qué equipo perteneces?</label>
         <div v-if="teams.length === 0" class="teams-loading">Cargando equipos…</div>
+        <div v-else-if="teamLocked"
+          style="padding:10px 14px;background:var(--surface-2);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:15px;color:var(--ink);font-weight:500;">
+          {{ teamName }}
+        </div>
         <select v-else class="field-input" :value="teamId" @change="onTeamChange">
           <option value="">— Selecciona tu equipo —</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.name }}</option>
@@ -288,6 +292,7 @@ const role = ref('');
 const teams = ref([]);
 const teamId = ref('');
 const teamName = ref('');
+const teamLocked = ref(false);
 const participantName = ref('');
 const submitStatus = ref('');
 const cicloNombre = ref('');
@@ -626,11 +631,11 @@ onMounted(async () => {
     cicloNombre.value = active ? active.data().nombre || '' : '';
   } catch { cicloNombre.value = ''; }
 
-  // Pre-seleccionar equipo desde URL param (QR / link directo)
+  // Pre-seleccionar equipo desde URL param (QR / link directo) y bloquearlo
   const presetId = params.get('equipoId') || params.get('teamId');
   if (presetId) {
     const found = teams.value.find(t => t.id === presetId);
-    if (found) { teamId.value = found.id; teamName.value = found.name; }
+    if (found) { teamId.value = found.id; teamName.value = found.name; teamLocked.value = true; }
   }
 
   try {
