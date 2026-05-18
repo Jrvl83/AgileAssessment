@@ -17,6 +17,14 @@
           :class="{ active: state.activeTab === 'usuarios' }" @click="state.activeTab = 'usuarios'">Usuarios</button>
       </div>
       <div class="tab-actions">
+        <input
+          v-model="searchQuery"
+          @input="onSearch"
+          class="search-input"
+          type="text"
+          placeholder="Buscar equipo…"
+          style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;width:160px;"
+        />
         <span v-if="state.currentUserName" style="font-size:12px;color:var(--ink-faint);margin-right:4px;">
           {{ state.currentUserName }}
         </span>
@@ -54,10 +62,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { state } from '../../assets/admin-state.js';
 import { logout } from '../../assets/admin-auth.js';
 import { fetchAllData } from '../../assets/admin-api.js';
+import { filterTeams, renderSearchResults, computeSearchStats } from '../../assets/admin-search.js';
 import AnalysisView   from './AnalysisView.vue';
 import EvolutionView  from './EvolutionView.vue';
 import PlanView       from './PlanView.vue';
@@ -81,6 +90,24 @@ const showCadenceBanner = computed(() =>
     && state.responses.length
     && weeksSinceLast.value >= state.assessmentCadenceWeeks)
 );
+
+const searchQuery = ref('');
+const searchResultsEl = ref(null);
+
+function onSearch() {
+  const matched = filterTeams(searchQuery.value);
+  const container = document.getElementById('search-results-panel');
+  renderSearchResults(container, matched, searchQuery.value);
+
+  if (matched.length) {
+    const stats = computeSearchStats(state.responses.filter(
+      (r) => matched.some((t) => (r.fields.Equipo || []).includes(t.id))
+    ));
+    state.searchStats = stats;
+  } else {
+    state.searchStats = null;
+  }
+}
 
 async function doLogout() { await logout(); }
 async function refresh()   { await fetchAllData(); }
